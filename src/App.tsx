@@ -25,7 +25,10 @@ import {
   recordAnsweredQuestion,
   togglePinnedId,
   getQuestionHistoryKey,
+  getAccountProgressStorageKey,
+  createFreshAccountProgress,
   type AnsweredQuestionRecord,
+  type PerAccountProgressData,
 } from './utils/logic';
 import {
   AuthAndIntroModal,
@@ -40,6 +43,31 @@ import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallButto
 
 type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
 
+const ALL_MODULE_IDS = LEARNING_MODULES.map((m) => m.id);
+
+function loadAccountProgress(email: string | undefined | null): PerAccountProgressData {
+  const fallback = createFreshAccountProgress(ALL_MODULE_IDS);
+  if (!email) return fallback;
+  try {
+    const raw = localStorage.getItem(getAccountProgressStorageKey(email));
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw) as Partial<PerAccountProgressData>;
+    return {
+      answeredQuestions: parsed.answeredQuestions || {},
+      completedModuleIds: Array.isArray(parsed.completedModuleIds) ? parsed.completedModuleIds : [],
+      pinnedCardIds: Array.isArray(parsed.pinnedCardIds) ? parsed.pinnedCardIds : [],
+      pinnedBankIds: Array.isArray(parsed.pinnedBankIds) ? parsed.pinnedBankIds : [],
+      moduleSlideIndices: {
+        ...fallback.moduleSlideIndices,
+        ...(parsed.moduleSlideIndices || {}),
+      },
+      hasStartedLearning: Boolean(parsed.hasStartedLearning),
+    };
+  } catch {
+    return fallback;
+  }
+}
+
 export default function App() {
   const isAutostart =
     typeof window !== 'undefined' &&
@@ -47,7 +75,7 @@ export default function App() {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
-      const saved = localStorage.getItem('onit_profile_v3');
+      const saved = localStorage.getItem('onit_profile_v4');
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore storage errors
@@ -100,8 +128,30 @@ export default function App() {
   const [navDragIndex, setNavDragIndex] = useState<number | null>(null);
 
   const [activeModuleId, setActiveModuleId] = useState<string>(LEARNING_MODULES[0].id);
-  const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>(() =>
-    Object.fromEntries(LEARNING_MODULES.map((m) => [m.id, 0]))
+
+  // Per-account isolated progress states (New users start at 0 XP, 0 quizzes, 0 pinned cards, 0 pinned banks)
+  const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>(
+    () => loadAccountProgress(userProfile?.email).moduleSlideIndices
+  );
+
+  const [answeredQuestions, setAnsweredQuestions] = useState<
+    Record<string, AnsweredQuestionRecord>
+  >(() => loadAccountProgress(userProfile?.email).answeredQuestions);
+
+  const [completedModuleIds, setCompletedModuleIds] = useState<string[]>(
+    () => loadAccountProgress(userProfile?.email).completedModuleIds
+  );
+
+  const [pinnedCardIds, setPinnedCardIds] = useState<string[]>(
+    () => loadAccountProgress(userProfile?.email).pinnedCardIds
+  );
+
+  const [pinnedBankIds, setPinnedBankIds] = useState<string[]>(
+    () => loadAccountProgress(userProfile?.email).pinnedBankIds
+  );
+
+  const [hasStartedLearning, setHasStartedLearning] = useState<boolean>(
+    () => loadAccountProgress(userProfile?.email).hasStartedLearning
   );
 
   // Scroll to top whenever activeTab, activeModuleId, or current slide index changes
@@ -116,72 +166,63 @@ export default function App() {
     }
   }, [activeTab, activeModuleId, moduleSlideIndices, mobilePhoneFrameMode]);
 
-  // Requirement #5: Persistent answered questions map so going Back NEVER re-gives a solved question
-  const [answeredQuestions, setAnsweredQuestions] = useState<
-    Record<string, AnsweredQuestionRecord>
-  >(() => {
-    try {
-      const saved = localStorage.getItem('onit_answered_q_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return {};
-  });
-
-  const [completedModuleIds, setCompletedModuleIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('onit_completed_mods_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return [];
-  });
-
-  // Requirement #8: Pinned banks and cards stay at the top before filtering AND populate Compare
-  const [pinnedCardIds, setPinnedCardIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('onit_pinned_cards_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return ['card-amex-bce', 'card-capone-savor-student'];
-  });
-
-  const [pinnedBankIds, setPinnedBankIds] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('onit_pinned_banks_v1');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // ignore
-    }
-    return ['bank-sofi', 'bank-ally'];
-  });
-
-  // Persist key user states
+  // Persist isolated progress strictly under the active user's account email
   useEffect(() => {
+    if (!userProfile?.email) return;
     try {
-      localStorage.setItem('onit_answered_q_v1', JSON.stringify(answeredQuestions));
+      const accountData: PerAccountProgressData = {
+        answeredQuestions,
+        completedModuleIds,
+        pinnedCardIds,
+        pinnedBankIds,
+        moduleSlideIndices,
+        hasStartedLearning,
+      };
+      localStorage.setItem(
+        getAccountProgressStorageKey(userProfile.email),
+        JSON.stringify(accountData)
+      );
     } catch {
-      // ignore
+      // ignore storage errors
     }
-  }, [answeredQuestions]);
+  }, [
+    userProfile?.email,
+    answeredQuestions,
+    completedModuleIds,
+    pinnedCardIds,
+    pinnedBankIds,
+    moduleSlideIndices,
+    hasStartedLearning,
+  ]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('onit_pinned_cards_v1', JSON.stringify(pinnedCardIds));
-      localStorage.setItem('onit_pinned_banks_v1', JSON.stringify(pinnedBankIds));
-    } catch {
-      // ignore
-    }
-  }, [pinnedCardIds, pinnedBankIds]);
+  const applyAccountProgressToState = (progress: PerAccountProgressData) => {
+    setAnsweredQuestions(progress.answeredQuestions);
+    setCompletedModuleIds(progress.completedModuleIds);
+    setPinnedCardIds(progress.pinnedCardIds);
+    setPinnedBankIds(progress.pinnedBankIds);
+    setModuleSlideIndices(progress.moduleSlideIndices);
+    setHasStartedLearning(progress.hasStartedLearning);
+  };
 
   const handleUpdateProfileFromSettings = (updatedProfile: UserProfile) => {
+    const previousEmail = userProfile?.email;
     setUserProfile(updatedProfile);
     try {
-      localStorage.setItem('onit_profile_v3', JSON.stringify(updatedProfile));
+      localStorage.setItem('onit_profile_v4', JSON.stringify(updatedProfile));
+      if (previousEmail && previousEmail.toLowerCase() !== updatedProfile.email.toLowerCase()) {
+        const currentProgress: PerAccountProgressData = {
+          answeredQuestions,
+          completedModuleIds,
+          pinnedCardIds,
+          pinnedBankIds,
+          moduleSlideIndices,
+          hasStartedLearning,
+        };
+        localStorage.setItem(
+          getAccountProgressStorageKey(updatedProfile.email),
+          JSON.stringify(currentProgress)
+        );
+      }
     } catch {
       // ignore
     }
@@ -194,11 +235,30 @@ export default function App() {
     });
   };
 
-  const handleCompleteSignup = (profile: UserProfile) => {
+  const handleCompleteSignup = (profile: UserProfile, isNewSignup: boolean) => {
+    let targetProgress: PerAccountProgressData;
+    if (isNewSignup) {
+      targetProgress = createFreshAccountProgress(ALL_MODULE_IDS);
+      try {
+        localStorage.setItem(
+          getAccountProgressStorageKey(profile.email),
+          JSON.stringify(targetProgress)
+        );
+      } catch {
+        // ignore
+      }
+    } else {
+      targetProgress = loadAccountProgress(profile.email);
+    }
+
+    applyAccountProgressToState(targetProgress);
     setUserProfile(profile);
+    setActiveTab('home');
+    setActiveModuleId(LEARNING_MODULES[0].id);
+
     try {
-      localStorage.setItem('onit_profile_v3', JSON.stringify(profile));
-      localStorage.setItem('onit_intro_done_v3', 'true');
+      localStorage.setItem('onit_profile_v4', JSON.stringify(profile));
+      localStorage.setItem('onit_intro_done_v4', 'true');
     } catch {
       // ignore
     }
@@ -215,7 +275,7 @@ export default function App() {
 
   const handleFinishIntro = () => {
     try {
-      localStorage.setItem('onit_intro_done_v3', 'true');
+      localStorage.setItem('onit_intro_done_v4', 'true');
     } catch {
       // ignore
     }
@@ -224,16 +284,19 @@ export default function App() {
 
   const handleSignOut = () => {
     try {
-      localStorage.removeItem('onit_profile_v3');
-      localStorage.removeItem('onit_intro_done_v3');
+      localStorage.removeItem('onit_profile_v4');
+      localStorage.removeItem('onit_intro_done_v4');
     } catch {
       // ignore
     }
     setUserProfile(null);
+    applyAccountProgressToState(createFreshAccountProgress(ALL_MODULE_IDS));
+    setActiveTab('home');
     setOnboardingStage('signup');
   };
 
   const handleOpenModule = (moduleId: string, startSlideIndex?: number) => {
+    setHasStartedLearning(true);
     setActiveModuleId(moduleId);
     if (typeof startSlideIndex === 'number') {
       setModuleSlideIndices((prev) => ({ ...prev, [moduleId]: startSlideIndex }));
@@ -250,6 +313,7 @@ export default function App() {
     const slide = mod?.slides.find((s) => s.id === slideId);
     if (!slide || !slide.options) return;
 
+    setHasStartedLearning(true);
     setAnsweredQuestions((prev) =>
       recordAnsweredQuestion(prev, moduleId, slideId, selectedOptionIds, slide.options!)
     );
@@ -265,13 +329,14 @@ export default function App() {
   };
 
   const handleCompleteModule = (moduleId: string) => {
+    setHasStartedLearning(true);
     setCompletedModuleIds((prev) =>
       prev.includes(moduleId) ? prev : [...prev, moduleId]
     );
     setActiveTab('home');
   };
 
-  // Calculate total XP from answered questions and completed modules
+  // Calculate total XP strictly from the current user's answered questions and completed modules (starts at 0 XP)
   const earnedQuestionXp = Object.values(answeredQuestions).reduce(
     (sum, rec) => sum + rec.evaluation.scoreDelta,
     0
@@ -280,7 +345,7 @@ export default function App() {
     const m = LEARNING_MODULES.find((mod) => mod.id === id);
     return sum + (m ? m.xpReward : 0);
   }, 0);
-  const totalXp = 350 + earnedQuestionXp + earnedModuleXp;
+  const totalXp = earnedQuestionXp + earnedModuleXp;
 
   const activeModule =
     LEARNING_MODULES.find((m) => m.id === activeModuleId) || LEARNING_MODULES[0];
@@ -290,6 +355,13 @@ export default function App() {
     0
   );
   const solvedQuizzesCount = Object.keys(answeredQuestions).length;
+
+  const hasUserStartedProgress =
+    hasStartedLearning ||
+    totalXp > 0 ||
+    solvedQuizzesCount > 0 ||
+    completedModuleIds.length > 0 ||
+    Object.values(moduleSlideIndices).some((idx) => idx > 0);
 
   return (
     <div className="min-h-screen bg-[#070B14] text-slate-100 pb-28 md:pb-12 relative overflow-x-clip">
@@ -523,7 +595,13 @@ export default function App() {
                   <div className={mobilePhoneFrameMode ? 'space-y-3.5' : 'lg:col-span-7 space-y-4'}>
                     <div className="flex flex-wrap items-center gap-1.5 text-xs text-emerald-300 font-semibold">
                       <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                      <span>{userProfile ? `Welcome back, ${userProfile.name}` : 'Onit: Own Your Future'}</span>
+                      <span>
+                        {userProfile
+                          ? hasUserStartedProgress
+                            ? `Welcome back, ${userProfile.name}`
+                            : `Welcome, ${userProfile.name}`
+                          : 'Onit: Own Your Future'}
+                      </span>
                       <span aria-hidden="true">·</span>
                       <span className="font-mono-tabular font-bold text-amber-300">{totalXp} XP Earned</span>
                     </div>
@@ -557,7 +635,7 @@ export default function App() {
                         } min-h-[46px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer`}
                       >
                         <Play className="h-4 w-4 fill-current shrink-0" aria-hidden="true" />
-                        <span>Continue Learning</span>
+                        <span>{hasUserStartedProgress ? 'Continue Learning' : 'Start Learning'}</span>
                       </button>
 
                       <div
@@ -978,8 +1056,8 @@ export default function App() {
             onReplayIntro={() => setOnboardingStage('intro')}
             onResetQuizzes={() => setAnsweredQuestions({})}
             onResetPins={() => {
-              setPinnedCardIds(['card-amex-bce', 'card-capone-savor-student']);
-              setPinnedBankIds(['bank-sofi', 'bank-ally']);
+              setPinnedCardIds([]);
+              setPinnedBankIds([]);
             }}
             onSignOut={handleSignOut}
             onClose={() => setShowSettingsModal(false)}
@@ -1110,8 +1188,8 @@ export default function App() {
           onReplayIntro={() => setOnboardingStage('intro')}
           onResetQuizzes={() => setAnsweredQuestions({})}
           onResetPins={() => {
-            setPinnedCardIds(['card-amex-bce', 'card-capone-savor-student']);
-            setPinnedBankIds(['bank-sofi', 'bank-ally']);
+            setPinnedCardIds([]);
+            setPinnedBankIds([]);
           }}
           onSignOut={handleSignOut}
           onClose={() => setShowSettingsModal(false)}

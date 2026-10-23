@@ -192,7 +192,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             >
               <span className="flex items-center gap-2">
                 <Pin className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Restore Default Pins</span>
+                <span>Clear Pinned Items</span>
               </span>
               <span className="font-mono-tabular text-[11px] text-slate-400">
                 {pinnedCardsCount + pinnedBanksCount} Pinned

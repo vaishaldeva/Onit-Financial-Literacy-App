@@ -601,3 +601,69 @@ export function removeSearchHistoryEntry(
   );
 }
 
+export interface PasswordValidationResult {
+  isValid: boolean;
+  hasMinSevenLetters: boolean;
+  hasCapitalLetter: boolean;
+  letterCount: number;
+  errorMessage: string;
+}
+
+/**
+ * Validates that a password contains at least 7 letters (A-Z / a-z)
+ * and at least 1 capital letter (A-Z).
+ */
+export function validatePasswordRules(password: string): PasswordValidationResult {
+  const lettersOnly = password.replace(/[^a-zA-Z]/g, '');
+  const letterCount = lettersOnly.length;
+  const hasMinSevenLetters = letterCount >= 7;
+  const hasCapitalLetter = /[A-Z]/.test(password);
+  const isValid = hasMinSevenLetters && hasCapitalLetter;
+
+  let errorMessage = '';
+  if (!hasMinSevenLetters && !hasCapitalLetter) {
+    errorMessage = 'Password must contain at least 7 letters and at least 1 capital letter.';
+  } else if (!hasMinSevenLetters) {
+    errorMessage = `Password must contain at least 7 letters (currently ${letterCount}).`;
+  } else if (!hasCapitalLetter) {
+    errorMessage = 'Password must include at least 1 capital letter (A–Z).';
+  }
+
+  return {
+    isValid,
+    hasMinSevenLetters,
+    hasCapitalLetter,
+    letterCount,
+    errorMessage,
+  };
+}
+
+export interface PerAccountProgressData {
+  answeredQuestions: Record<string, AnsweredQuestionRecord>;
+  completedModuleIds: string[];
+  pinnedCardIds: string[];
+  pinnedBankIds: string[];
+  moduleSlideIndices: Record<string, number>;
+  hasStartedLearning: boolean;
+}
+
+export function normalizeAccountEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function getAccountProgressStorageKey(email: string): string {
+  return `onit_account_progress_v2:${normalizeAccountEmail(email)}`;
+}
+
+export function createFreshAccountProgress(moduleIds: string[]): PerAccountProgressData {
+  return {
+    answeredQuestions: {},
+    completedModuleIds: [],
+    pinnedCardIds: [],
+    pinnedBankIds: [],
+    moduleSlideIndices: Object.fromEntries(moduleIds.map((id) => [id, 0])),
+    hasStartedLearning: false,
+  };
+}
+
+
