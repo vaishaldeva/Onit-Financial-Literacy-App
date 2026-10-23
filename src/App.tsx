@@ -75,6 +75,35 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [mobilePhoneFrameMode, setMobilePhoneFrameMode] = useState(false);
+  const [isStandalonePWA, setIsStandalonePWA] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: fullscreen)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    );
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const checkStandalone = () => {
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        window.matchMedia('(display-mode: fullscreen)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setIsStandalonePWA(standalone);
+    };
+    checkStandalone();
+    const mq = window.matchMedia('(display-mode: standalone)');
+    mq.addEventListener?.('change', checkStandalone);
+    return () => mq.removeEventListener?.('change', checkStandalone);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !mobilePhoneFrameMode) {
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [activeTab, mobilePhoneFrameMode]);
 
   const [activeModuleId, setActiveModuleId] = useState<string>(LEARNING_MODULES[0].id);
   const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>({
@@ -243,7 +272,7 @@ export default function App() {
   const solvedQuizzesCount = Object.keys(answeredQuestions).length;
 
   return (
-    <div className="min-h-screen bg-[#070B14] text-slate-100 pb-20 md:pb-12 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#070B14] text-slate-100 pb-28 md:pb-12 relative overflow-x-clip">
       {/* Vibrant Ambient Background Glows */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
         <div className="absolute -top-40 left-1/4 h-96 w-96 rounded-full bg-emerald-500/15 blur-[130px]" />
@@ -275,9 +304,13 @@ export default function App() {
         </button>
       </div>
 
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-30 glass-panel border-b border-white/10">
-        <div className="mx-auto max-w-7xl flex items-center justify-between gap-6 px-4 sm:px-6 h-14">
+      {/* Top Navigation Bar — Respects iOS Status Bar / Dynamic Island Safe Area */}
+      <header
+        className={`sticky top-0 z-30 glass-panel border-b border-white/10 safe-top-header ${
+          isStandalonePWA ? 'safe-top-standalone-fallback' : ''
+        }`}
+      >
+        <div className="mx-auto max-w-7xl flex items-center justify-between gap-4 px-[22px] sm:px-7 min-h-[58px]">
           {/* App Brand Wordmark */}
           <a
             href="#top"
@@ -347,9 +380,9 @@ export default function App() {
               type="button"
               onClick={() => setShowSettingsModal(true)}
               aria-label="Open Account Settings"
-              className="px-3 py-2 text-xs font-semibold text-slate-200 bg-white/8 hover:bg-white/15 border border-white/12 rounded-xl transition-colors flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+              className="min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/8 hover:bg-white/15 border border-white/12 rounded-xl transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
-              <Settings className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+              <Settings className="h-4 w-4 text-emerald-400" aria-hidden="true" />
               <span className="hidden sm:inline">Settings</span>
             </button>
 
@@ -438,8 +471,8 @@ export default function App() {
           <main
             className={`relative z-10 mx-auto w-full ${
               mobilePhoneFrameMode
-                ? 'flex-1 overflow-y-auto max-w-full px-3.5 pt-3.5 pb-6 space-y-5'
-                : 'max-w-7xl px-4 sm:px-6 pt-5 sm:pt-6 pb-8 space-y-6 sm:space-y-8'
+                ? 'flex-1 overflow-y-auto max-w-full px-5 pt-4 pb-6 space-y-5'
+                : 'max-w-7xl px-[22px] sm:px-7 pt-5 sm:pt-6 pb-8 space-y-6 sm:space-y-8'
             }`}
           >
           {/* =========================================================
@@ -914,69 +947,79 @@ export default function App() {
             aria-label="Mobile bottom navigation"
             className={`${
               mobilePhoneFrameMode
-                ? 'shrink-0 z-40 w-full bg-slate-950/95 backdrop-blur-xl border-t border-white/12 pt-1 pb-2 px-1'
-                : 'md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-xl border-t border-white/12 py-1 px-1'
+                ? 'shrink-0 z-40 w-full bg-slate-950/96 backdrop-blur-2xl border-t border-white/15 pt-2 pb-3 px-2.5'
+                : 'md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/96 backdrop-blur-2xl border-t border-white/15 pt-2 pb-[max(0.85rem,env(safe-area-inset-bottom))] px-3 shadow-[0_-10px_30px_rgba(0,0,0,0.55)]'
             }`}
           >
-            <div className="grid grid-cols-5 items-center h-13">
+            <div className="grid grid-cols-5 items-center gap-1.5 min-h-[64px]">
               <button
                 type="button"
                 onClick={() => setActiveTab('home')}
-                className={`flex flex-col items-center justify-center min-h-[44px] text-[10px] font-medium cursor-pointer ${
-                  activeTab === 'home' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
+                  activeTab === 'home'
+                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
+                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
                 }`}
               >
-                <Compass className="h-4 w-4" aria-hidden="true" />
-                <span className="mt-0.5">Home</span>
+                <Compass className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="mt-1 leading-tight">Home</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('modules')}
-                className={`flex flex-col items-center justify-center min-h-[44px] text-[10px] font-medium cursor-pointer ${
-                  activeTab === 'modules' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
+                  activeTab === 'modules'
+                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
+                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
                 }`}
               >
-                <BookOpen className="h-4 w-4" aria-hidden="true" />
-                <span className="mt-0.5">Modules</span>
+                <BookOpen className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="mt-1 leading-tight">Modules</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('cards')}
-                className={`flex flex-col items-center justify-center min-h-[44px] text-[10px] font-medium cursor-pointer ${
-                  activeTab === 'cards' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
+                  activeTab === 'cards'
+                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
+                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
                 }`}
               >
-                <CreditCard className="h-4 w-4" aria-hidden="true" />
-                <span className="mt-0.5">Cards</span>
+                <CreditCard className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="mt-1 leading-tight">Cards</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('banks')}
-                className={`flex flex-col items-center justify-center min-h-[44px] text-[10px] font-medium cursor-pointer ${
-                  activeTab === 'banks' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
+                  activeTab === 'banks'
+                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
+                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
                 }`}
               >
-                <Building2 className="h-4 w-4" aria-hidden="true" />
-                <span className="mt-0.5">Banks</span>
+                <Building2 className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="mt-1 leading-tight">Banks</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTab('compare')}
-                className={`flex flex-col items-center justify-center min-h-[44px] text-[10px] font-medium cursor-pointer ${
-                  activeTab === 'compare' ? 'text-emerald-400 font-bold' : 'text-slate-400'
+                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
+                  activeTab === 'compare'
+                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
+                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
                 }`}
               >
-                <Scale className="h-4 w-4" aria-hidden="true" />
-                <span className="mt-0.5">Compare</span>
+                <Scale className="h-6 w-6 shrink-0" aria-hidden="true" />
+                <span className="mt-1 leading-tight">Compare</span>
               </button>
             </div>
 
             {mobilePhoneFrameMode && (
-              <div className="w-32 h-1 bg-white/25 rounded-full mx-auto mt-1" />
+              <div className="w-32 h-1 bg-white/25 rounded-full mx-auto mt-1.5" />
             )}
           </nav>
         )}

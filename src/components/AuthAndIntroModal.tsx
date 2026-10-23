@@ -80,8 +80,8 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
       <div
         className={
           isPhoneView
-            ? 'w-full h-full flex flex-col justify-start overflow-y-auto p-4'
-            : 'fixed inset-0 z-50 flex items-center justify-center bg-[#060911]/90 backdrop-blur-xl p-4 overflow-y-auto'
+            ? 'w-full h-full flex flex-col justify-start overflow-y-auto px-5 py-4'
+            : 'fixed inset-0 z-50 flex items-center justify-center bg-[#060911]/90 backdrop-blur-xl px-[22px] pt-[max(3.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto'
         }
       >
         <div
@@ -248,8 +248,8 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
     <div
       className={
         isPhoneView
-          ? 'w-full h-full flex flex-col justify-start overflow-y-auto p-4'
-          : 'fixed inset-0 z-50 flex items-center justify-center bg-[#060911]/90 backdrop-blur-xl p-4 overflow-y-auto'
+          ? 'w-full h-full flex flex-col justify-start overflow-y-auto px-5 py-4'
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-[#060911]/90 backdrop-blur-xl px-[22px] pt-[max(3.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto'
       }
     >
       <div

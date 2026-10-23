@@ -41,11 +41,11 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({ compact = fa
           aria-modal="true"
           aria-label="Install Onit on iPhone or iPad"
           onClick={() => setShowIOSGuide(false)}
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto"
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/80 backdrop-blur-md px-[22px] pt-[max(3.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="glass-panel-elevated w-full max-w-md max-h-[85dvh] overflow-y-auto my-auto rounded-3xl p-5 sm:p-6 border border-white/15 space-y-4 shadow-2xl relative"
+            className="glass-panel-elevated w-full max-w-md max-h-[82dvh] overflow-y-auto my-auto rounded-3xl p-5 sm:p-6 border border-white/15 space-y-4 shadow-2xl relative"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">

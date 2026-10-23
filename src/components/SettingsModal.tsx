@@ -60,8 +60,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       aria-label="Onit Account and App Settings"
       className={
         isPhoneView
-          ? 'absolute inset-0 z-40 bg-slate-950/98 backdrop-blur-xl flex flex-col justify-start p-4 overflow-y-auto'
-          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto'
+          ? 'absolute inset-0 z-40 bg-slate-950/98 backdrop-blur-xl flex flex-col justify-start px-5 py-4 overflow-y-auto'
+          : 'fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md px-[22px] pt-[max(3.75rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto'
       }
     >
       <div
