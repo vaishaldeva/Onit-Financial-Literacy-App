@@ -13,8 +13,6 @@ import {
   TrendingUp,
   Lock,
   Building2,
-  MailCheck,
-  RefreshCw,
 } from 'lucide-react';
 import { POST_SIGNUP_INTRO_SLIDES } from '../data/finlitData';
 import { validatePasswordRules, normalizeAccountEmail } from '../utils/logic';
@@ -24,14 +22,13 @@ export interface UserProfile {
   name: string;
   email: string;
   createdAt: number;
-  emailVerified?: boolean;
 }
 
 interface StoredAccountRecord extends UserProfile {
   password: string;
 }
 
-const ACCOUNTS_REGISTRY_KEY = 'onit_registered_accounts_v2';
+const ACCOUNTS_REGISTRY_KEY = 'onit_registered_accounts_v5';
 
 function getRegisteredAccounts(): Record<string, StoredAccountRecord> {
   try {
@@ -197,13 +194,6 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
   const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
 
-  // Email verification step state during Sign Up
-  const [signupStep, setSignupStep] = useState<'form' | 'verify'>('form');
-  const [expectedCode, setExpectedCode] = useState('');
-  const [enteredCode, setEnteredCode] = useState('');
-  const [showMailBanner, setShowMailBanner] = useState(false);
-  const [resendConfirmation, setResendConfirmation] = useState(false);
-
   // Splash animation progress (0 -> 100)
   const [splashProgress, setSplashProgress] = useState(0);
   const [splashExiting, setSplashExiting] = useState(false);
@@ -266,23 +256,7 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
     };
   }, [mode, onFinishSplash]);
 
-  // Show incoming verification code banner shortly after entering 'verify' step
-  useEffect(() => {
-    if (signupStep !== 'verify') {
-      setShowMailBanner(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setShowMailBanner(true);
-    }, 450);
-    return () => window.clearTimeout(timer);
-  }, [signupStep, expectedCode]);
-
   const pwValidation = validatePasswordRules(password);
-
-  const generateSixDigitCode = () => {
-    return String(Math.floor(100000 + Math.random() * 900000));
-  };
 
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,117 +283,56 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
         return;
       }
 
-      // Proceed to Email Verification step
+      const newAccount: StoredAccountRecord = {
+        name: name.trim(),
+        email: cleanEmail,
+        password,
+        createdAt: Date.now(),
+      };
+
+      saveRegisteredAccount(newAccount);
       setFormError('');
-      const newCode = generateSixDigitCode();
-      setExpectedCode(newCode);
-      setEnteredCode('');
-      setSignupStep('verify');
+      onCompleteSignup(
+        {
+          name: newAccount.name,
+          email: newAccount.email,
+          createdAt: newAccount.createdAt,
+        },
+        true
+      );
       return;
     }
 
-    // Sign In flow
+    // Strict Sign In flow: ONLY registered users in the database can sign in
     if (!cleanEmail || !password.trim()) {
-      setFormError('Please enter your email and password.');
+      setFormError('Please enter both your email and password.');
       return;
     }
 
     const accounts = getRegisteredAccounts();
     const existingAccount = accounts[normalizedEmail];
 
-    if (existingAccount) {
-      if (existingAccount.password !== password) {
-        setFormError('Incorrect password for this account. Please try again.');
-        return;
-      }
-      setFormError('');
-      onCompleteSignup(
-        {
-          name: existingAccount.name,
-          email: existingAccount.email,
-          createdAt: existingAccount.createdAt,
-          emailVerified: true,
-        },
-        false
+    if (!existingAccount) {
+      setFormError(
+        'No account found with this email address. Please switch to Sign Up to create an account first.'
       );
       return;
     }
 
-    // If signing in with an email not yet registered on this device, enforce password rules & register isolated account
-    if (!pwValidation.isValid) {
-      setFormError('Account not found, or password does not meet requirements (7+ letters, 1 capital).');
+    if (existingAccount.password !== password) {
+      setFormError('Incorrect password for this account. Please try again.');
       return;
     }
 
-    const derivedName =
-      cleanEmail
-        .split('@')[0]
-        .replace(/[._]/g, ' ')
-        .replace(/\b\w/g, (l) => l.toUpperCase()) || 'Member';
-
-    const newRecord: StoredAccountRecord = {
-      name: derivedName,
-      email: cleanEmail,
-      password,
-      createdAt: Date.now(),
-      emailVerified: true,
-    };
-    saveRegisteredAccount(newRecord);
     setFormError('');
     onCompleteSignup(
       {
-        name: newRecord.name,
-        email: newRecord.email,
-        createdAt: newRecord.createdAt,
-        emailVerified: true,
+        name: existingAccount.name,
+        email: existingAccount.email,
+        createdAt: existingAccount.createdAt,
       },
       false
     );
-  };
-
-  const handleVerifyEmailSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCode = enteredCode.trim();
-    if (cleanCode.length !== 6) {
-      setFormError('Please enter the 6-digit verification code.');
-      return;
-    }
-    if (cleanCode !== expectedCode) {
-      setFormError('Invalid verification code. Tap the notification banner above or check the code.');
-      return;
-    }
-
-    const cleanName = name.trim();
-    const cleanEmail = email.trim();
-    const newAccount: StoredAccountRecord = {
-      name: cleanName,
-      email: cleanEmail,
-      password,
-      createdAt: Date.now(),
-      emailVerified: true,
-    };
-
-    saveRegisteredAccount(newAccount);
-    setFormError('');
-    setSignupStep('form');
-    onCompleteSignup(
-      {
-        name: newAccount.name,
-        email: newAccount.email,
-        createdAt: newAccount.createdAt,
-        emailVerified: true,
-      },
-      true
-    );
-  };
-
-  const handleResendCode = () => {
-    const freshCode = generateSixDigitCode();
-    setExpectedCode(freshCode);
-    setEnteredCode('');
-    setFormError('');
-    setResendConfirmation(true);
-    window.setTimeout(() => setResendConfirmation(false), 2500);
   };
 
   // Wrapper classes guaranteeing a 100% opaque, static, mobile-safe non-scrolling viewport
@@ -487,7 +400,7 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
   }
 
   // ============================================================================
-  // 2. STATIC, SIMPLE, MOBILE-FIRST "CREATE YOUR ACCOUNT" + EMAIL VERIFICATION PAGE
+  // 2. STATIC, SIMPLE, MOBILE-FIRST "CREATE YOUR ACCOUNT" / "SIGN IN" PAGE
   // ============================================================================
   if (mode === 'signup') {
     return (
@@ -513,309 +426,182 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
           <PWAInstallButton compact={isPhoneView} />
         </header>
 
-        {/* STEP 2B: EMAIL VERIFICATION SCREEN */}
-        {signupStep === 'verify' ? (
-          <main className="relative z-10 w-full max-w-md mx-auto my-auto animate-page-enter space-y-3">
-            {/* Interactive Incoming Verification Email Banner (Tap to Auto-Fill on Mobile) */}
-            {showMailBanner && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEnteredCode(expectedCode);
-                  setFormError('');
-                }}
-                className="w-full text-left rounded-2xl bg-slate-900/95 border border-emerald-400/45 p-3 shadow-xl shadow-emerald-500/15 flex items-center justify-between gap-3 animate-page-enter cursor-pointer hover:bg-slate-900 transition-colors"
+        {/* SIMPLE CREATE YOUR ACCOUNT / SIGN IN FORM */}
+        <main className="relative z-10 w-full max-w-md mx-auto my-auto animate-page-enter">
+          <div
+            className={`rounded-3xl bg-[#0D1526] border border-white/15 shadow-2xl ${
+              isPhoneView ? 'p-4' : 'p-5 sm:p-6'
+            }`}
+          >
+            {/* Clean Title & Sign Up / Sign In Switcher */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h1
+                className={`${
+                  isPhoneView ? 'text-lg' : 'text-xl sm:text-2xl'
+                } font-bold text-white tracking-tight`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300">
-                    <MailCheck className="h-5 w-5" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-emerald-300 truncate">
-                      Onit Verification Email · Now
-                    </p>
-                    <p className="text-xs text-white font-semibold truncate mt-0.5">
-                      Your code is <span className="font-mono-tabular font-extrabold text-amber-300">{expectedCode}</span>
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-[11px] font-bold shrink-0">
-                  Tap to Fill
-                </span>
-              </button>
-            )}
+                {authTab === 'signup' ? 'Create Your Account' : 'Sign In'}
+              </h1>
 
-            <div
-              className={`rounded-3xl bg-[#0D1526] border border-white/15 shadow-2xl ${
-                isPhoneView ? 'p-4' : 'p-5 sm:p-6'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
-                  Verify Your Email
-                </h1>
-                <span className="text-xs font-mono-tabular font-bold text-emerald-400">
-                  Step 2 of 2
-                </span>
-              </div>
-
-              <p className="text-xs text-slate-300 leading-relaxed mb-4">
-                We sent a 6-digit verification code to{' '}
-                <strong className="text-white">{email.trim()}</strong>. Enter the code below to activate your account.
-              </p>
-
-              <form onSubmit={handleVerifyEmailSubmit} className="space-y-3.5">
-                <div>
-                  <label
-                    htmlFor="verification-code-input"
-                    className="block text-xs font-semibold text-slate-300 mb-1.5"
-                  >
-                    6-Digit Verification Code
-                  </label>
-                  <input
-                    id="verification-code-input"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={enteredCode}
-                    onChange={(e) => {
-                      setEnteredCode(e.target.value.replace(/[^0-9]/g, ''));
-                      setFormError('');
-                    }}
-                    placeholder="000000"
-                    className="w-full rounded-xl bg-slate-950 border border-white/15 px-4 py-3 text-center font-mono-tabular text-xl font-bold tracking-[0.35em] text-white placeholder:text-slate-600 focus:border-emerald-400 focus:outline-none select-text"
-                  />
-                </div>
-
-                {resendConfirmation && (
-                  <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/40 px-3 py-1.5 text-xs font-medium text-emerald-200 flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>A new 6-digit verification code has been sent!</span>
-                  </div>
-                )}
-
-                {formError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl bg-rose-500/15 border border-rose-400/40 px-3 py-1.5 text-xs font-medium text-rose-200"
-                  >
-                    {formError}
-                  </div>
-                )}
-
-                <div className="space-y-2 pt-1">
-                  <button
-                    type="submit"
-                    className="w-full min-h-[46px] rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>Verify & Create Account</span>
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={handleResendCode}
-                      className="min-h-[40px] rounded-xl bg-white/8 hover:bg-white/14 border border-white/12 px-3 py-2 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
-                      <span>Resend Code</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSignupStep('form');
-                        setFormError('');
-                      }}
-                      className="min-h-[40px] rounded-xl bg-white/8 hover:bg-white/14 border border-white/12 px-3 py-2 text-xs font-semibold text-slate-300 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>Edit Details</span>
-                    </button>
-                  </div>
-                </div>
-              </form>
-            </div>
-          </main>
-        ) : (
-          /* STEP 2A: SIMPLE CREATE YOUR ACCOUNT / SIGN IN FORM */
-          <main className="relative z-10 w-full max-w-md mx-auto my-auto animate-page-enter">
-            <div
-              className={`rounded-3xl bg-[#0D1526] border border-white/15 shadow-2xl ${
-                isPhoneView ? 'p-4' : 'p-5 sm:p-6'
-              }`}
-            >
-              {/* Clean Title & Sign Up / Sign In Switcher */}
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <h1
-                  className={`${
-                    isPhoneView ? 'text-lg' : 'text-xl sm:text-2xl'
-                  } font-bold text-white tracking-tight`}
+              <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/12 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthTab('signup');
+                    setFormError('');
+                  }}
+                  className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                    authTab === 'signup'
+                      ? 'bg-emerald-400 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
                 >
-                  {authTab === 'signup' ? 'Create Your Account' : 'Sign In'}
-                </h1>
+                  <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Sign Up</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthTab('login');
+                    setFormError('');
+                  }}
+                  className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                    authTab === 'login'
+                      ? 'bg-cyan-400 text-slate-950 shadow-sm'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Sign In</span>
+                </button>
+              </div>
+            </div>
 
-                <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/12 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthTab('signup');
+            <p className="text-xs text-slate-300 mb-3">
+              {authTab === 'signup'
+                ? 'Enter your details below to get started.'
+                : 'Sign in with your registered email and password.'}
+            </p>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-2.5">
+              {authTab === 'signup' && (
+                <div>
+                  <label
+                    htmlFor="user-name"
+                    className="block text-xs font-semibold text-slate-300 mb-1"
+                  >
+                    Full Name
+                  </label>
+                  <input
+                    id="user-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
                       setFormError('');
                     }}
-                    className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      authTab === 'signup'
-                        ? 'bg-emerald-400 text-slate-950 shadow-sm'
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Sign Up</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthTab('login');
-                      setFormError('');
-                    }}
-                    className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
-                      authTab === 'login'
-                        ? 'bg-cyan-400 text-slate-950 shadow-sm'
-                        : 'text-slate-300 hover:text-white'
-                    }`}
-                  >
-                    <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Sign In</span>
-                  </button>
+                    placeholder="Enter your full name"
+                    className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
+                  />
                 </div>
+              )}
+
+              <div>
+                <label
+                  htmlFor="user-email"
+                  className="block text-xs font-semibold text-slate-300 mb-1"
+                >
+                  Email
+                </label>
+                <input
+                  id="user-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setFormError('');
+                  }}
+                  placeholder="you@email.com"
+                  className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
+                />
               </div>
 
-              <p className="text-xs text-slate-300 mb-3">
-                {authTab === 'signup'
-                  ? 'Enter your details below to get started.'
-                  : 'Enter your email and password to continue.'}
-              </p>
+              <div>
+                <label
+                  htmlFor="user-password"
+                  className="block text-xs font-semibold text-slate-300 mb-1"
+                >
+                  Password
+                </label>
+                <input
+                  id="user-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setFormError('');
+                  }}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
+                />
 
-              <form onSubmit={handleAuthSubmit} className="space-y-2.5">
+                {/* Live Password Requirements Checklist on Sign Up */}
                 {authTab === 'signup' && (
-                  <div>
-                    <label
-                      htmlFor="user-name"
-                      className="block text-xs font-semibold text-slate-300 mb-1"
+                  <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px]">
+                    <div
+                      className={`flex items-center gap-1.5 ${
+                        pwValidation.hasMinSevenLetters ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+                      }`}
                     >
-                      Full Name
-                    </label>
-                    <input
-                      id="user-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => {
-                        setName(e.target.value);
-                        setFormError('');
-                      }}
-                      placeholder="Enter your full name"
-                      className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label
-                    htmlFor="user-email"
-                    className="block text-xs font-semibold text-slate-300 mb-1"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="user-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setFormError('');
-                    }}
-                    placeholder="you@email.com"
-                    className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="user-password"
-                    className="block text-xs font-semibold text-slate-300 mb-1"
-                  >
-                    Password
-                  </label>
-                  <input
-                    id="user-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setFormError('');
-                    }}
-                    placeholder="••••••••"
-                    className="w-full rounded-xl bg-slate-950 border border-white/15 px-3.5 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none select-text"
-                  />
-
-                  {/* Live Password Requirements Checklist on Sign Up */}
-                  {authTab === 'signup' && (
-                    <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px]">
-                      <div
-                        className={`flex items-center gap-1.5 ${
-                          pwValidation.hasMinSevenLetters ? 'text-emerald-400 font-semibold' : 'text-slate-400'
-                        }`}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>Min. 7 letters ({pwValidation.letterCount}/7)</span>
-                      </div>
-                      <div
-                        className={`flex items-center gap-1.5 ${
-                          pwValidation.hasCapitalLetter ? 'text-emerald-400 font-semibold' : 'text-slate-400'
-                        }`}
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>1+ capital letter</span>
-                      </div>
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span>Min. 7 letters ({pwValidation.letterCount}/7)</span>
                     </div>
-                  )}
-                </div>
-
-                {formError && (
-                  <div
-                    role="alert"
-                    className="rounded-xl bg-rose-500/15 border border-rose-400/40 px-3 py-1.5 text-xs font-medium text-rose-200"
-                  >
-                    {formError}
+                    <div
+                      className={`flex items-center gap-1.5 ${
+                        pwValidation.hasCapitalLetter ? 'text-emerald-400 font-semibold' : 'text-slate-400'
+                      }`}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      <span>1+ capital letter</span>
+                    </div>
                   </div>
                 )}
+              </div>
 
-                <div className="pt-1.5 space-y-2">
-                  <button
-                    type="submit"
-                    className="w-full min-h-[46px] rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-                  >
-                    <span>{authTab === 'signup' ? 'Create Account' : 'Sign In'}</span>
-                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormError('');
-                      setDemoSlideIndex(0);
-                      onStartQuickDemo();
-                    }}
-                    className="w-full min-h-[42px] rounded-xl bg-white/8 hover:bg-white/14 border border-white/15 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
-                  >
-                    <Sparkles className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
-                    <span>Quick Demo</span>
-                  </button>
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-xl bg-rose-500/15 border border-rose-400/40 px-3 py-1.5 text-xs font-medium text-rose-200"
+                >
+                  {formError}
                 </div>
-              </form>
-            </div>
-          </main>
-        )}
+              )}
+
+              <div className="pt-1.5 space-y-2">
+                <button
+                  type="submit"
+                  className="w-full min-h-[46px] rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  <span>{authTab === 'signup' ? 'Create Account' : 'Sign In'}</span>
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormError('');
+                    setDemoSlideIndex(0);
+                    onStartQuickDemo();
+                  }}
+                  className="w-full min-h-[42px] rounded-xl bg-white/8 hover:bg-white/14 border border-white/15 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-200 transition-colors flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+                  <span>Quick Demo</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </main>
 
         {/* Empty bottom spacer to balance vertical centering cleanly on mobile */}
         <div className="h-2 shrink-0" aria-hidden="true" />

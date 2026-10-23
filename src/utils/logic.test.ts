@@ -14,6 +14,8 @@ import {
   auditTravelReadiness,
   calculateSubscriptionSniperSummary,
   calculateInternshipAndRothProjection,
+  calculateModuleCompletionGate,
+  filterModulesByKeyword,
   type QuizOption,
 } from './logic.ts';
 
@@ -182,3 +184,78 @@ test('Onit Toolkit #1–#5: Checkout Radar, Statement Shield, Travel Check, Subs
   assert.equal(intern.grossSummerPay, 11200);
   assert.ok(intern.projectedTaxFreeRothAt60 > 35000);
 });
+
+test('Module Completion Gate: requires all slides viewed AND >= 70% quiz score to unlock Complete button', () => {
+  const mockModule = {
+    id: 'mod-test',
+    slides: [
+      { id: 's1', type: 'content' as const },
+      { id: 's2', type: 'select-all' as const },
+    ],
+  };
+
+  // Not all slides viewed
+  const gate1 = calculateModuleCompletionGate(mockModule, {}, ['s1']);
+  assert.equal(gate1.canComplete, false);
+  assert.equal(gate1.allSlidesViewed, false);
+
+  // All slides viewed, but quiz not answered
+  const gate2 = calculateModuleCompletionGate(mockModule, {}, ['s1', 's2']);
+  assert.equal(gate2.canComplete, false);
+  assert.equal(gate2.allSlidesViewed, true);
+  assert.equal(gate2.allQuizzesAnswered, false);
+
+  // Quiz answered with 50% (< 70%)
+  const wrongHistory = recordAnsweredQuestion(
+    {},
+    'mod-test',
+    's2',
+    ['opt-1'],
+    sampleOptions
+  );
+  const gate3 = calculateModuleCompletionGate(mockModule, wrongHistory, ['s1', 's2']);
+  assert.equal(gate3.quizAccuracyPercent, 50);
+  assert.equal(gate3.canComplete, false);
+
+  // Quiz answered with 100% (>= 70%)
+  const rightHistory = recordAnsweredQuestion(
+    {},
+    'mod-test',
+    's2',
+    ['opt-1', 'opt-2'],
+    sampleOptions
+  );
+  const gate4 = calculateModuleCompletionGate(mockModule, rightHistory, ['s1', 's2']);
+  assert.equal(gate4.quizAccuracyPercent, 100);
+  assert.equal(gate4.canComplete, true);
+});
+
+test('Module Keyword Search: matches title, description, category, key skills, or slide content', () => {
+  const sampleModules = [
+    {
+      id: 'm1',
+      numberLabel: 'Module 01',
+      title: 'Intro to Financial Literacy',
+      category: 'Foundations',
+      summary: 'Master the 50/30/20 rule and emergency funds.',
+      keySkills: ['50/30/20 Rule', 'Emergency Fund'],
+      slides: [{ title: 'Cash Flow', subtitle: 'Budgeting basics', badge: 'Slide 1' }],
+    },
+    {
+      id: 'm2',
+      numberLabel: 'Module 05',
+      title: 'Mastering Your Credit Score',
+      category: 'Credit',
+      summary: 'Learn how FICO scores and utilization work.',
+      keySkills: ['FICO Score', 'Utilization'],
+      slides: [{ title: 'Statement Closing Date', subtitle: 'Keep under 10%', badge: 'Slide 1' }],
+    },
+  ];
+
+  assert.equal(filterModulesByKeyword(sampleModules, 'fico').length, 1);
+  assert.equal(filterModulesByKeyword(sampleModules, 'fico')[0].id, 'm2');
+  assert.equal(filterModulesByKeyword(sampleModules, 'emergency').length, 1);
+  assert.equal(filterModulesByKeyword(sampleModules, 'statement closing').length, 1);
+  assert.equal(filterModulesByKeyword(sampleModules, '').length, 2);
+});
+

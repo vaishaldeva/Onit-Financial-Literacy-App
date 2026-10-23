@@ -644,6 +644,7 @@ export interface PerAccountProgressData {
   pinnedCardIds: string[];
   pinnedBankIds: string[];
   moduleSlideIndices: Record<string, number>;
+  viewedSlideIds: Record<string, string[]>;
   hasStartedLearning: boolean;
 }
 
@@ -652,18 +653,172 @@ export function normalizeAccountEmail(email: string): string {
 }
 
 export function getAccountProgressStorageKey(email: string): string {
-  return `onit_account_progress_v2:${normalizeAccountEmail(email)}`;
+  return `onit_account_progress_v5:${normalizeAccountEmail(email)}`;
 }
 
-export function createFreshAccountProgress(moduleIds: string[]): PerAccountProgressData {
+export function createFreshAccountProgress(
+  moduleIds: string[],
+  firstSlideByModule?: Record<string, string>
+): PerAccountProgressData {
+  const initialViewed: Record<string, string[]> = {};
+  for (const id of moduleIds) {
+    const firstSlideId = firstSlideByModule?.[id];
+    initialViewed[id] = firstSlideId ? [firstSlideId] : [];
+  }
   return {
     answeredQuestions: {},
     completedModuleIds: [],
     pinnedCardIds: [],
     pinnedBankIds: [],
     moduleSlideIndices: Object.fromEntries(moduleIds.map((id) => [id, 0])),
+    viewedSlideIds: initialViewed,
     hasStartedLearning: false,
   };
 }
+
+export interface ModuleCompletionGateResult {
+  allSlidesViewed: boolean;
+  viewedSlidesCount: number;
+  totalSlidesCount: number;
+  allQuizzesAnswered: boolean;
+  answeredQuizzesCount: number;
+  totalQuizzesCount: number;
+  quizAccuracyPercent: number;
+  meetsPassingScore: boolean;
+  canComplete: boolean;
+  lockReason: string;
+}
+
+/**
+ * Evaluates whether a user is allowed to press the "Complete" button on a module:
+ * 1. Must have viewed all slides/materials in the module.
+ * 2. Must have answered all quizzes in the module.
+ * 3. Must have achieved an average quiz accuracy of 70% or higher across the module's quizzes.
+ */
+export function calculateModuleCompletionGate(
+  module: {
+    id: string;
+    slides: {
+      id: string;
+      type: 'content' | 'single-choice' | 'select-all';
+    }[];
+  },
+  answeredQuestions: Record<string, AnsweredQuestionRecord>,
+  viewedSlideIdsForModule: string[]
+): ModuleCompletionGateResult {
+  const viewedSet = new Set(viewedSlideIdsForModule);
+  const totalSlidesCount = module.slides.length;
+  const viewedSlidesCount = module.slides.filter((s) => viewedSet.has(s.id)).length;
+  const allSlidesViewed = viewedSlidesCount >= totalSlidesCount;
+
+  const quizSlides = module.slides.filter((s) => s.type !== 'content');
+  const totalQuizzesCount = quizSlides.length;
+
+  let answeredQuizzesCount = 0;
+  let cumulativeQuizScore = 0;
+
+  for (const qSlide of quizSlides) {
+    const key = getQuestionHistoryKey(module.id, qSlide.id);
+    const rec = answeredQuestions[key];
+    if (rec) {
+      answeredQuizzesCount += 1;
+      if (rec.evaluation.isFullyCorrect) {
+        cumulativeQuizScore += 100;
+      } else if (qSlide.type === 'select-all') {
+        const netCorrect = Math.max(
+          0,
+          rec.evaluation.correctSelectedCount - rec.evaluation.wrongSelectedCount
+        );
+        const partialPct = Math.round(
+          (netCorrect / Math.max(1, rec.evaluation.totalCorrectRequired)) * 100
+        );
+        cumulativeQuizScore += Math.min(99, partialPct);
+      } else {
+        cumulativeQuizScore += 0;
+      }
+    }
+  }
+
+  const allQuizzesAnswered = answeredQuizzesCount >= totalQuizzesCount;
+  const quizAccuracyPercent =
+    totalQuizzesCount === 0
+      ? 100
+      : allQuizzesAnswered
+      ? Math.round(cumulativeQuizScore / totalQuizzesCount)
+      : Math.round(cumulativeQuizScore / totalQuizzesCount);
+
+  const meetsPassingScore = allQuizzesAnswered && quizAccuracyPercent >= 70;
+  const canComplete = allSlidesViewed && allQuizzesAnswered && meetsPassingScore;
+
+  let lockReason = '';
+  if (!allSlidesViewed) {
+    const remainingSlides = totalSlidesCount - viewedSlidesCount;
+    lockReason = `Review all module slides (${viewedSlidesCount}/${totalSlidesCount} viewed — ${remainingSlides} left) before completing.`;
+  } else if (!allQuizzesAnswered) {
+    const remainingQuizzes = totalQuizzesCount - answeredQuizzesCount;
+    lockReason = `Complete all module quizzes (${answeredQuizzesCount}/${totalQuizzesCount} answered — ${remainingQuizzes} left) and score 70%+ to unlock Complete.`;
+  } else if (!meetsPassingScore) {
+    lockReason = `Quiz score is ${quizAccuracyPercent}% (70% required to pass). Retry the quiz question${
+      totalQuizzesCount > 1 ? 's' : ''
+    } to reach 70%+ and unlock Complete.`;
+  }
+
+  return {
+    allSlidesViewed,
+    viewedSlidesCount,
+    totalSlidesCount,
+    allQuizzesAnswered,
+    answeredQuizzesCount,
+    totalQuizzesCount,
+    quizAccuracyPercent,
+    meetsPassingScore,
+    canComplete,
+    lockReason,
+  };
+}
+
+export interface SearchableLearningModule {
+  id: string;
+  numberLabel: string;
+  title: string;
+  category: string;
+  summary: string;
+  keySkills: string[];
+  slides: {
+    title: string;
+    subtitle: string;
+    badge: string;
+  }[];
+}
+
+/**
+ * Filters learning modules by keyword across title, summary/description, category,
+ * module number, key skill tags, and slide titles/subtitles.
+ */
+export function filterModulesByKeyword<T extends SearchableLearningModule>(
+  modules: T[],
+  rawQuery: string
+): T[] {
+  const query = rawQuery.trim().toLowerCase();
+  if (!query) return modules;
+
+  const queryTokens = query.split(/\s+/).filter(Boolean);
+
+  return modules.filter((mod) => {
+    const searchableText = [
+      mod.numberLabel,
+      mod.title,
+      mod.category,
+      mod.summary,
+      ...mod.keySkills,
+      ...mod.slides.flatMap((s) => [s.title, s.subtitle, s.badge]),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return queryTokens.every((token) => searchableText.includes(token));
+  });
+}
+
 
 

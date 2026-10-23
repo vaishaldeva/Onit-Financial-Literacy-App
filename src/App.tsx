@@ -15,6 +15,8 @@ import {
   ExternalLink,
   Settings,
   Sparkles,
+  Search,
+  X,
 } from 'lucide-react';
 import {
   LEARNING_MODULES,
@@ -27,6 +29,7 @@ import {
   getQuestionHistoryKey,
   getAccountProgressStorageKey,
   createFreshAccountProgress,
+  filterModulesByKeyword,
   type AnsweredQuestionRecord,
   type PerAccountProgressData,
 } from './utils/logic';
@@ -44,9 +47,12 @@ import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallButto
 type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
 
 const ALL_MODULE_IDS = LEARNING_MODULES.map((m) => m.id);
+const FIRST_SLIDE_BY_MODULE: Record<string, string> = Object.fromEntries(
+  LEARNING_MODULES.map((m) => [m.id, m.slides[0]?.id || ''])
+);
 
 function loadAccountProgress(email: string | undefined | null): PerAccountProgressData {
-  const fallback = createFreshAccountProgress(ALL_MODULE_IDS);
+  const fallback = createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE);
   if (!email) return fallback;
   try {
     const raw = localStorage.getItem(getAccountProgressStorageKey(email));
@@ -60,6 +66,10 @@ function loadAccountProgress(email: string | undefined | null): PerAccountProgre
       moduleSlideIndices: {
         ...fallback.moduleSlideIndices,
         ...(parsed.moduleSlideIndices || {}),
+      },
+      viewedSlideIds: {
+        ...fallback.viewedSlideIds,
+        ...(parsed.viewedSlideIds || {}),
       },
       hasStartedLearning: Boolean(parsed.hasStartedLearning),
     };
@@ -75,7 +85,7 @@ export default function App() {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
-      const saved = localStorage.getItem('onit_profile_v4');
+      const saved = localStorage.getItem('onit_profile_v5');
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore storage errors
@@ -98,6 +108,7 @@ export default function App() {
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const [moduleSearchQuery, setModuleSearchQuery] = useState('');
   const [mobilePhoneFrameMode, setMobilePhoneFrameMode] = useState(false);
   const [isStandalonePWA, setIsStandalonePWA] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -123,6 +134,38 @@ export default function App() {
     return () => mq.removeEventListener?.('change', checkStandalone);
   }, []);
 
+  // Lock mobile screen from iOS pinch-to-zoom shifting or horizontal drift
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const preventPinchGesture = (e: Event) => {
+      e.preventDefault();
+    };
+    const preventMultiTouchZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) {
+        e.preventDefault();
+      }
+    };
+    const resetHorizontalShift = () => {
+      if (window.scrollX !== 0) {
+        window.scrollTo(0, window.scrollY);
+      }
+    };
+
+    document.addEventListener('gesturestart', preventPinchGesture, { passive: false });
+    document.addEventListener('gesturechange', preventPinchGesture, { passive: false });
+    document.addEventListener('gestureend', preventPinchGesture, { passive: false });
+    document.addEventListener('touchmove', preventMultiTouchZoom, { passive: false });
+    window.addEventListener('scroll', resetHorizontalShift, { passive: true });
+
+    return () => {
+      document.removeEventListener('gesturestart', preventPinchGesture);
+      document.removeEventListener('gesturechange', preventPinchGesture);
+      document.removeEventListener('gestureend', preventPinchGesture);
+      document.removeEventListener('touchmove', preventMultiTouchZoom);
+      window.removeEventListener('scroll', resetHorizontalShift);
+    };
+  }, []);
+
   const mainContainerRef = useRef<HTMLElement | null>(null);
   const navTrackRef = useRef<HTMLDivElement | null>(null);
   const [navDragIndex, setNavDragIndex] = useState<number | null>(null);
@@ -132,6 +175,10 @@ export default function App() {
   // Per-account isolated progress states (New users start at 0 XP, 0 quizzes, 0 pinned cards, 0 pinned banks)
   const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>(
     () => loadAccountProgress(userProfile?.email).moduleSlideIndices
+  );
+
+  const [viewedSlideIds, setViewedSlideIds] = useState<Record<string, string[]>>(
+    () => loadAccountProgress(userProfile?.email).viewedSlideIds
   );
 
   const [answeredQuestions, setAnsweredQuestions] = useState<
@@ -153,6 +200,24 @@ export default function App() {
   const [hasStartedLearning, setHasStartedLearning] = useState<boolean>(
     () => loadAccountProgress(userProfile?.email).hasStartedLearning
   );
+
+  // Ensure current slide in activeModuleId is recorded as viewed whenever on 'modules' tab
+  useEffect(() => {
+    const mod = LEARNING_MODULES.find((m) => m.id === activeModuleId);
+    if (!mod) return;
+    const currentIdx = moduleSlideIndices[activeModuleId] || 0;
+    const currentSlide = mod.slides[currentIdx] || mod.slides[0];
+    if (!currentSlide) return;
+
+    setViewedSlideIds((prev) => {
+      const existing = prev[activeModuleId] || [];
+      if (existing.includes(currentSlide.id)) return prev;
+      return {
+        ...prev,
+        [activeModuleId]: [...existing, currentSlide.id],
+      };
+    });
+  }, [activeModuleId, moduleSlideIndices]);
 
   // Scroll to top whenever activeTab, activeModuleId, or current slide index changes
   useEffect(() => {
@@ -176,6 +241,7 @@ export default function App() {
         pinnedCardIds,
         pinnedBankIds,
         moduleSlideIndices,
+        viewedSlideIds,
         hasStartedLearning,
       };
       localStorage.setItem(
@@ -192,6 +258,7 @@ export default function App() {
     pinnedCardIds,
     pinnedBankIds,
     moduleSlideIndices,
+    viewedSlideIds,
     hasStartedLearning,
   ]);
 
@@ -201,6 +268,7 @@ export default function App() {
     setPinnedCardIds(progress.pinnedCardIds);
     setPinnedBankIds(progress.pinnedBankIds);
     setModuleSlideIndices(progress.moduleSlideIndices);
+    setViewedSlideIds(progress.viewedSlideIds);
     setHasStartedLearning(progress.hasStartedLearning);
   };
 
@@ -208,7 +276,7 @@ export default function App() {
     const previousEmail = userProfile?.email;
     setUserProfile(updatedProfile);
     try {
-      localStorage.setItem('onit_profile_v4', JSON.stringify(updatedProfile));
+      localStorage.setItem('onit_profile_v5', JSON.stringify(updatedProfile));
       if (previousEmail && previousEmail.toLowerCase() !== updatedProfile.email.toLowerCase()) {
         const currentProgress: PerAccountProgressData = {
           answeredQuestions,
@@ -216,6 +284,7 @@ export default function App() {
           pinnedCardIds,
           pinnedBankIds,
           moduleSlideIndices,
+          viewedSlideIds,
           hasStartedLearning,
         };
         localStorage.setItem(
@@ -238,7 +307,7 @@ export default function App() {
   const handleCompleteSignup = (profile: UserProfile, isNewSignup: boolean) => {
     let targetProgress: PerAccountProgressData;
     if (isNewSignup) {
-      targetProgress = createFreshAccountProgress(ALL_MODULE_IDS);
+      targetProgress = createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE);
       try {
         localStorage.setItem(
           getAccountProgressStorageKey(profile.email),
@@ -257,8 +326,8 @@ export default function App() {
     setActiveModuleId(LEARNING_MODULES[0].id);
 
     try {
-      localStorage.setItem('onit_profile_v4', JSON.stringify(profile));
-      localStorage.setItem('onit_intro_done_v4', 'true');
+      localStorage.setItem('onit_profile_v5', JSON.stringify(profile));
+      localStorage.setItem('onit_intro_done_v5', 'true');
     } catch {
       // ignore
     }
@@ -275,7 +344,7 @@ export default function App() {
 
   const handleFinishIntro = () => {
     try {
-      localStorage.setItem('onit_intro_done_v4', 'true');
+      localStorage.setItem('onit_intro_done_v5', 'true');
     } catch {
       // ignore
     }
@@ -284,13 +353,13 @@ export default function App() {
 
   const handleSignOut = () => {
     try {
-      localStorage.removeItem('onit_profile_v4');
-      localStorage.removeItem('onit_intro_done_v4');
+      localStorage.removeItem('onit_profile_v5');
+      localStorage.removeItem('onit_intro_done_v5');
     } catch {
       // ignore
     }
     setUserProfile(null);
-    applyAccountProgressToState(createFreshAccountProgress(ALL_MODULE_IDS));
+    applyAccountProgressToState(createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE));
     setActiveTab('home');
     setOnboardingStage('signup');
   };
@@ -298,8 +367,23 @@ export default function App() {
   const handleOpenModule = (moduleId: string, startSlideIndex?: number) => {
     setHasStartedLearning(true);
     setActiveModuleId(moduleId);
+    const mod = LEARNING_MODULES.find((m) => m.id === moduleId);
+    const targetIdx =
+      typeof startSlideIndex === 'number'
+        ? startSlideIndex
+        : moduleSlideIndices[moduleId] || 0;
+    const targetSlideId = mod?.slides[targetIdx]?.id;
+
     if (typeof startSlideIndex === 'number') {
       setModuleSlideIndices((prev) => ({ ...prev, [moduleId]: startSlideIndex }));
+    }
+    if (targetSlideId) {
+      setViewedSlideIds((prev) => {
+        const cur = prev[moduleId] || [];
+        return cur.includes(targetSlideId)
+          ? prev
+          : { ...prev, [moduleId]: [...cur, targetSlideId] };
+      });
     }
     setActiveTab('modules');
   };
@@ -724,7 +808,7 @@ export default function App() {
 
               {/* Interactive Learning Modules Grid */}
               <section className="space-y-3.5 sm:space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-1.5">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                   <div>
                     <p className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-emerald-400">
                       Interactive Financial Literacy Curriculum
@@ -738,124 +822,182 @@ export default function App() {
                   </p>
                 </div>
 
-                <div
-                  className={`grid grid-cols-1 ${
-                    mobilePhoneFrameMode ? '' : 'md:grid-cols-2'
-                  } gap-5 sm:gap-6`}
-                >
-                  {LEARNING_MODULES.map((mod) => {
-                    const currentSlideIdx = moduleSlideIndices[mod.id] || 0;
-                    const solvedInModule = mod.slides.filter(
-                      (s) =>
-                        s.type !== 'content' &&
-                        Boolean(answeredQuestions[getQuestionHistoryKey(mod.id, s.id)])
-                    ).length;
-                    const totalQuizzesInModule = mod.slides.filter(
-                      (s) => s.type !== 'content'
-                    ).length;
-                    const isCompleted =
-                      completedModuleIds.includes(mod.id) ||
-                      (totalQuizzesInModule > 0 && solvedInModule === totalQuizzesInModule);
-
-                    const accentStyles = {
-                      emerald: {
-                        border: 'hover:border-emerald-400/60',
-                        badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
-                        pill: 'bg-emerald-500/12 text-emerald-200 border-emerald-400/25',
-                      },
-                      cyan: {
-                        border: 'hover:border-cyan-400/60',
-                        badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30',
-                        pill: 'bg-cyan-500/12 text-cyan-200 border-cyan-400/25',
-                      },
-                      violet: {
-                        border: 'hover:border-violet-400/60',
-                        badge: 'bg-violet-500/20 text-violet-300 border-violet-400/30',
-                        pill: 'bg-violet-500/12 text-violet-200 border-violet-400/25',
-                      },
-                      amber: {
-                        border: 'hover:border-amber-400/60',
-                        badge: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
-                        pill: 'bg-amber-500/12 text-amber-200 border-amber-400/25',
-                      },
-                    }[mod.accentColor];
-
-                    return (
-                      <article
-                        key={mod.id}
-                        className={`glass-panel-elevated group rounded-3xl overflow-hidden border border-white/15 bg-gradient-to-br ${mod.gradientClass} transition-all duration-300 flex flex-col justify-between ${accentStyles.border}`}
-                      >
-                        <div>
-                          <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-900">
-                            <img
-                              src={mod.heroImage}
-                              alt={mod.title}
-                              referrerPolicy="no-referrer"
-                              className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#070B14] via-black/40 to-transparent" />
-                            <div className="absolute top-3 left-3.5 right-3.5 flex items-center justify-between gap-2">
-                              <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border backdrop-blur-md truncate ${accentStyles.badge}`}>
-                                {mod.numberLabel} · {mod.category}
-                              </span>
-                              <span className="px-2.5 py-1 rounded-xl bg-slate-950/85 border border-white/15 font-mono-tabular text-[11px] font-bold text-amber-300 shrink-0">
-                                +{mod.xpReward} XP
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="p-4 sm:p-6">
-                            <div className="flex items-start justify-between gap-3">
-                              <h3 className="text-base sm:text-xl font-bold text-white tracking-tight">
-                                {mod.title}
-                              </h3>
-                              {isCompleted && (
-                                <CheckCircle2
-                                  className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5"
-                                  aria-label="Module Completed"
-                                />
-                              )}
-                            </div>
-
-                            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed mt-2">
-                              {mod.summary}
-                            </p>
-
-                            <div className="flex flex-wrap gap-1.5 mt-3.5">
-                              {mod.keySkills.map((skill, idx) => (
-                                <span
-                                  key={idx}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${accentStyles.pill}`}
-                                >
-                                  {skill}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-3">
-                          <div className="text-[11px] sm:text-xs text-slate-300 font-mono-tabular">
-                            <span>
-                              {mod.slides.length} Slides · {solvedInModule}/{totalQuizzesInModule} Quizzes
-                            </span>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleOpenModule(mod.id, 0)}
-                            className="min-h-[42px] px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-                          >
-                            <span>
-                              {currentSlideIdx > 0 ? 'Resume' : 'Start Module'}
-                            </span>
-                            <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })}
+                {/* Keyword Search Bar for Modules */}
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={moduleSearchQuery}
+                    onChange={(e) => setModuleSearchQuery(e.target.value)}
+                    placeholder="Search modules by keyword (e.g., FICO, credit, taxes, FAFSA, HYSA, investing)..."
+                    aria-label="Search learning modules by keyword"
+                    className="w-full rounded-2xl bg-slate-950/90 border border-white/15 pl-10 pr-24 py-3 text-base sm:text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
+                  />
+                  {moduleSearchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setModuleSearchQuery('')}
+                      aria-label="Clear module search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>Clear</span>
+                    </button>
+                  )}
                 </div>
+
+                {(() => {
+                  const filteredModules = filterModulesByKeyword(
+                    LEARNING_MODULES,
+                    moduleSearchQuery
+                  );
+
+                  if (filteredModules.length === 0) {
+                    return (
+                      <div className="glass-panel rounded-3xl p-6 text-center space-y-2 border border-white/12">
+                        <p className="text-sm font-bold text-white">
+                          No modules matched &ldquo;{moduleSearchQuery}&rdquo;
+                        </p>
+                        <p className="text-xs text-slate-300">
+                          Try searching for a topic like credit, taxes, budgeting, college, banking, or investing.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setModuleSearchQuery('')}
+                          className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-bold cursor-pointer"
+                        >
+                          Show All 10 Modules
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      className={`grid grid-cols-1 ${
+                        mobilePhoneFrameMode ? '' : 'md:grid-cols-2'
+                      } gap-5 sm:gap-6`}
+                    >
+                      {filteredModules.map((mod) => {
+                        const currentSlideIdx = moduleSlideIndices[mod.id] || 0;
+                        const solvedInModule = mod.slides.filter(
+                          (s) =>
+                            s.type !== 'content' &&
+                            Boolean(answeredQuestions[getQuestionHistoryKey(mod.id, s.id)])
+                        ).length;
+                        const totalQuizzesInModule = mod.slides.filter(
+                          (s) => s.type !== 'content'
+                        ).length;
+                        const isCompleted = completedModuleIds.includes(mod.id);
+
+                        const accentStyles = {
+                          emerald: {
+                            border: 'hover:border-emerald-400/60',
+                            badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30',
+                            pill: 'bg-emerald-500/12 text-emerald-200 border-emerald-400/25',
+                          },
+                          cyan: {
+                            border: 'hover:border-cyan-400/60',
+                            badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-400/30',
+                            pill: 'bg-cyan-500/12 text-cyan-200 border-cyan-400/25',
+                          },
+                          violet: {
+                            border: 'hover:border-violet-400/60',
+                            badge: 'bg-violet-500/20 text-violet-300 border-violet-400/30',
+                            pill: 'bg-violet-500/12 text-violet-200 border-violet-400/25',
+                          },
+                          amber: {
+                            border: 'hover:border-amber-400/60',
+                            badge: 'bg-amber-500/20 text-amber-300 border-amber-400/30',
+                            pill: 'bg-amber-500/12 text-amber-200 border-amber-400/25',
+                          },
+                        }[mod.accentColor];
+
+                        return (
+                          <article
+                            key={mod.id}
+                            className={`glass-panel-elevated group rounded-3xl overflow-hidden border border-white/15 bg-gradient-to-br ${mod.gradientClass} transition-all duration-300 flex flex-col justify-between ${accentStyles.border}`}
+                          >
+                            <div>
+                              <div className="relative h-44 sm:h-52 w-full overflow-hidden bg-slate-900">
+                                <img
+                                  src={mod.heroImage}
+                                  alt={mod.title}
+                                  referrerPolicy="no-referrer"
+                                  className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-[#070B14] via-black/40 to-transparent" />
+                                <div className="absolute top-3 left-3.5 right-3.5 flex items-center justify-between gap-2">
+                                  <span className={`px-2.5 py-1 rounded-xl text-[11px] font-bold border backdrop-blur-md truncate ${accentStyles.badge}`}>
+                                    {mod.numberLabel} · {mod.category}
+                                  </span>
+                                  <span className="px-2.5 py-1 rounded-xl bg-slate-950/85 border border-white/15 font-mono-tabular text-[11px] font-bold text-amber-300 shrink-0">
+                                    +{mod.xpReward} XP
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="p-4 sm:p-6">
+                                <div className="flex items-start justify-between gap-3">
+                                  <h3 className="text-base sm:text-xl font-bold text-white tracking-tight">
+                                    {mod.title}
+                                  </h3>
+                                  {isCompleted && (
+                                    <CheckCircle2
+                                      className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5"
+                                      aria-label="Module Completed"
+                                    />
+                                  )}
+                                </div>
+
+                                <p className="text-xs sm:text-sm text-slate-200 leading-relaxed mt-2">
+                                  {mod.summary}
+                                </p>
+
+                                <div className="flex flex-wrap gap-1.5 mt-3.5">
+                                  {mod.keySkills.map((skill, idx) => (
+                                    <span
+                                      key={idx}
+                                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border ${accentStyles.pill}`}
+                                    >
+                                      {skill}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-3.5 border-t border-white/10 flex items-center justify-between gap-3">
+                              <div className="text-[11px] sm:text-xs text-slate-300 font-mono-tabular">
+                                <span>
+                                  {mod.slides.length} Slides · {solvedInModule}/{totalQuizzesInModule} Quizzes
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenModule(mod.id, 0)}
+                                className="min-h-[42px] px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                              >
+                                <span>
+                                  {isCompleted
+                                    ? 'Review'
+                                    : currentSlideIdx > 0
+                                    ? 'Resume'
+                                    : 'Start Module'}
+                                </span>
+                                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
 
                 {/* Original "About bank offers" Callout Banner */}
                 <div className="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-400 border border-white/12 space-y-1.5">
@@ -987,34 +1129,113 @@ export default function App() {
               INTERACTIVE MODULE PLAYER VIEW
              ========================================================= */}
           {activeTab === 'modules' && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                {LEARNING_MODULES.map((mod) => (
-                  <button
-                    key={mod.id}
-                    type="button"
-                    onClick={() => handleOpenModule(mod.id)}
-                    className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-                      activeModule.id === mod.id
-                        ? 'bg-white text-slate-950 shadow-md'
-                        : 'bg-white/8 text-slate-300 hover:bg-white/15'
-                    }`}
-                  >
-                    {mod.numberLabel}: {mod.title}
-                  </button>
-                ))}
+            <div className="space-y-4 sm:space-y-5">
+              {/* Keyword Search Bar inside Modules Section */}
+              <div className="space-y-2.5">
+                <div className="relative">
+                  <Search
+                    className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400"
+                    aria-hidden="true"
+                  />
+                  <input
+                    type="search"
+                    value={moduleSearchQuery}
+                    onChange={(e) => setModuleSearchQuery(e.target.value)}
+                    placeholder="Search modules by keyword (title, topic, skill, or description)..."
+                    aria-label="Search modules in player"
+                    className="w-full rounded-2xl bg-slate-950/90 border border-white/15 pl-10 pr-24 py-2.5 text-base sm:text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
+                  />
+                  {moduleSearchQuery.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => setModuleSearchQuery('')}
+                      aria-label="Clear module search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" aria-hidden="true" />
+                      <span>Clear</span>
+                    </button>
+                  )}
+                </div>
+
+                {(() => {
+                  const matchingModules = filterModulesByKeyword(
+                    LEARNING_MODULES,
+                    moduleSearchQuery
+                  );
+
+                  if (matchingModules.length === 0) {
+                    return (
+                      <div className="rounded-2xl bg-slate-950/80 border border-white/12 p-3.5 flex items-center justify-between gap-3">
+                        <span className="text-xs text-slate-300">
+                          No modules found matching &ldquo;{moduleSearchQuery}&rdquo;.
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setModuleSearchQuery('')}
+                          className="px-3 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-bold shrink-0 cursor-pointer"
+                        >
+                          Reset Search
+                        </button>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                      {matchingModules.map((mod) => (
+                        <button
+                          key={mod.id}
+                          type="button"
+                          onClick={() => handleOpenModule(mod.id)}
+                          className={`min-h-[40px] px-3.5 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
+                            activeModule.id === mod.id
+                              ? 'bg-white text-slate-950 shadow-md'
+                              : 'bg-white/8 text-slate-300 hover:bg-white/15'
+                          }`}
+                        >
+                          <span>
+                            {mod.numberLabel}: {mod.title}
+                          </span>
+                          {completedModuleIds.includes(mod.id) && (
+                            <CheckCircle2
+                              className={`h-3.5 w-3.5 shrink-0 ${
+                                activeModule.id === mod.id
+                                  ? 'text-emerald-600'
+                                  : 'text-emerald-400'
+                              }`}
+                              aria-label="Completed"
+                            />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               <ModulePlayerView
                 module={activeModule}
                 slideIndex={moduleSlideIndices[activeModule.id] || 0}
-                onChangeSlideIndex={(newIdx) =>
+                onChangeSlideIndex={(newIdx) => {
+                  const targetSlide = activeModule.slides[newIdx];
                   setModuleSlideIndices((prev) => ({
                     ...prev,
                     [activeModule.id]: newIdx,
-                  }))
-                }
+                  }));
+                  if (targetSlide) {
+                    setViewedSlideIds((prev) => {
+                      const existing = prev[activeModule.id] || [];
+                      if (existing.includes(targetSlide.id)) return prev;
+                      return {
+                        ...prev,
+                        [activeModule.id]: [...existing, targetSlide.id],
+                      };
+                    });
+                  }
+                }}
                 answeredQuestions={answeredQuestions}
+                viewedSlideIdsForModule={viewedSlideIds[activeModule.id] || []}
                 onSubmitAnswer={handleSubmitQuestionAnswer}
                 onResetSingleQuestion={handleResetSingleQuestion}
                 onBackToDashboard={() => setActiveTab('home')}

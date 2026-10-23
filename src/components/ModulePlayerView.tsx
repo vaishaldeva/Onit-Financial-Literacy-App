@@ -11,12 +11,14 @@ import {
   Trophy,
   BookOpen,
   Check,
+  Lock,
 } from 'lucide-react';
 import type { LearningModule, ModuleSlide } from '../data/finlitData';
 import {
   getQuestionHistoryKey,
   calculateHysaComparison,
   estimateUtilizationImpact,
+  calculateModuleCompletionGate,
   type AnsweredQuestionRecord,
 } from '../utils/logic';
 
@@ -25,6 +27,7 @@ interface ModulePlayerViewProps {
   slideIndex: number;
   onChangeSlideIndex: (newIndex: number) => void;
   answeredQuestions: Record<string, AnsweredQuestionRecord>;
+  viewedSlideIdsForModule?: string[];
   onSubmitAnswer: (
     moduleId: string,
     slideId: string,
@@ -41,6 +44,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   slideIndex,
   onChangeSlideIndex,
   answeredQuestions,
+  viewedSlideIdsForModule = [],
   onSubmitAnswer,
   onResetSingleQuestion,
   onBackToDashboard,
@@ -54,6 +58,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
   const historyKey = getQuestionHistoryKey(module.id, slide.id);
   const existingRecord = answeredQuestions[historyKey];
+
+  const effectiveViewedSlideIds = Array.from(
+    new Set([...viewedSlideIdsForModule, slide.id])
+  );
+  const completionGate = calculateModuleCompletionGate(
+    module,
+    answeredQuestions,
+    effectiveViewedSlideIds
+  );
 
   const [selectedIds, setSelectedIds] = useState<string[]>(
     existingRecord ? existingRecord.selectedOptionIds : []
@@ -187,17 +200,42 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           </div>
         </div>
 
-        <div className="pt-2 border-t border-white/8">
-          <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-slate-300">
-            <span className="font-mono-tabular font-bold text-emerald-400">
-              {module.numberLabel}
-            </span>
-            <span aria-hidden="true">·</span>
-            <span className="truncate">{module.category}</span>
+        <div className="pt-2 border-t border-white/8 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-slate-300">
+              <span className="font-mono-tabular font-bold text-emerald-400">
+                {module.numberLabel}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="truncate">{module.category}</span>
+            </div>
+            <h1 className="text-base sm:text-lg font-bold text-white leading-snug mt-0.5">
+              {module.title}
+            </h1>
           </div>
-          <h1 className="text-base sm:text-lg font-bold text-white leading-snug mt-0.5">
-            {module.title}
-          </h1>
+
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+            <span
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono-tabular font-bold border ${
+                completionGate.allSlidesViewed
+                  ? 'bg-emerald-500/15 border-emerald-400/35 text-emerald-300'
+                  : 'bg-white/8 border-white/12 text-slate-300'
+              }`}
+            >
+              Slides {completionGate.viewedSlidesCount}/{completionGate.totalSlidesCount}
+            </span>
+            <span
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono-tabular font-bold border ${
+                completionGate.meetsPassingScore
+                  ? 'bg-emerald-500/15 border-emerald-400/35 text-emerald-300'
+                  : completionGate.allQuizzesAnswered
+                  ? 'bg-rose-500/15 border-rose-400/35 text-rose-300'
+                  : 'bg-amber-500/15 border-amber-400/35 text-amber-300'
+              }`}
+            >
+              Quiz Score: {completionGate.quizAccuracyPercent}% (70%+ req)
+            </span>
+          </div>
         </div>
       </div>
 
@@ -820,6 +858,54 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           </div>
         )}
 
+        {/* Module Completion Requirement Callout on Final Slide when not yet unlocked */}
+        {isLastSlide && !completionGate.canComplete && (
+          <div className="mt-5 rounded-2xl bg-amber-500/12 border border-amber-400/35 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <Lock className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="text-xs text-amber-100 leading-relaxed">
+                <p className="font-bold text-amber-300">
+                  Complete Button Locked (70%+ Quiz Score & All Slides Required)
+                </p>
+                <p className="mt-0.5">{completionGate.lockReason}</p>
+              </div>
+            </div>
+
+            {!completionGate.allSlidesViewed ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const firstUnviewedIdx = module.slides.findIndex(
+                    (s) => !effectiveViewedSlideIds.includes(s.id)
+                  );
+                  if (firstUnviewedIdx !== -1) {
+                    onChangeSlideIndex(firstUnviewedIdx);
+                  }
+                }}
+                className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer hover:brightness-110 transition-all"
+              >
+                Go to Unviewed Slide
+              </button>
+            ) : (
+              !completionGate.meetsPassingScore &&
+              slide.type === 'content' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const quizIdx = module.slides.findIndex((s) => s.type !== 'content');
+                    if (quizIdx !== -1) {
+                      onChangeSlideIndex(quizIdx);
+                    }
+                  }}
+                  className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold whitespace-nowrap shrink-0 cursor-pointer hover:brightness-110 transition-all"
+                >
+                  Go to Quiz
+                </button>
+              )
+            )}
+          </div>
+        )}
+
         {/* Slide Footer Navigation — Touch-Friendly 2-Column Split on Mobile */}
         <div className="mt-6 pt-4 border-t border-white/10 grid grid-cols-2 sm:flex items-center justify-between gap-3">
           <button
@@ -844,11 +930,33 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           ) : (
             <button
               type="button"
-              onClick={() => setShowCelebration(true)}
-              className="min-h-[44px] px-3 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+              disabled={!completionGate.canComplete}
+              onClick={() => {
+                if (!completionGate.canComplete) return;
+                setShowCelebration(true);
+              }}
+              title={
+                completionGate.canComplete
+                  ? `Complete module and claim +${module.xpReward} XP`
+                  : completionGate.lockReason
+              }
+              className={`min-h-[44px] px-3 sm:px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap transition-all ${
+                completionGate.canComplete
+                  ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-lg shadow-emerald-500/20 hover:brightness-110 cursor-pointer'
+                  : 'bg-slate-800/90 border border-white/15 text-slate-400 opacity-75 cursor-not-allowed'
+              }`}
             >
-              <Trophy className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>Complete (+{module.xpReward} XP)</span>
+              {completionGate.canComplete ? (
+                <>
+                  <Trophy className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>Complete (+{module.xpReward} XP)</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="h-3.5 w-3.5 shrink-0 text-amber-400" aria-hidden="true" />
+                  <span>Locked (Need 70%+ Quiz)</span>
+                </>
+              )}
             </button>
           )}
         </div>
