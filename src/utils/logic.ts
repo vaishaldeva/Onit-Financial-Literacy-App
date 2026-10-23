@@ -1,0 +1,571 @@
+export interface QuizOption {
+  id: string;
+  label: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+export type OptionDiagnosticStatus =
+  | 'correct-selected'
+  | 'wrong-selected'
+  | 'missed-correct'
+  | 'neutral-unselected';
+
+export interface OptionEvaluation {
+  optionId: string;
+  label: string;
+  isCorrect: boolean;
+  wasSelected: boolean;
+  status: OptionDiagnosticStatus;
+  statusBadgeText: string;
+  explanation: string;
+}
+
+export interface QuestionEvaluationResult {
+  isFullyCorrect: boolean;
+  correctSelectedCount: number;
+  wrongSelectedCount: number;
+  missedCorrectCount: number;
+  totalCorrectRequired: number;
+  scoreDelta: number;
+  summaryMessage: string;
+  optionBreakdown: OptionEvaluation[];
+}
+
+export interface AnsweredQuestionRecord {
+  key: string;
+  moduleId: string;
+  slideId: string;
+  selectedOptionIds: string[];
+  evaluation: QuestionEvaluationResult;
+  answeredAt: number;
+}
+
+export interface PinnableItem {
+  id: string;
+  name: string;
+  category: string;
+  searchKeywords?: string[];
+  description?: string;
+}
+
+export type CheckoutCategoryKey =
+  | 'groceries'
+  | 'gas'
+  | 'dining'
+  | 'online'
+  | 'rent'
+  | 'travel';
+
+export interface CheckoutSwipeCardInput {
+  id: string;
+  name: string;
+  issuer: string;
+  foreignTxFee: string;
+  categoryRates: Record<CheckoutCategoryKey, number>;
+}
+
+export interface RankedCheckoutCard {
+  id: string;
+  name: string;
+  issuer: string;
+  isPinned: boolean;
+  ratePercent: number;
+  estimatedRewardDollars: number;
+}
+
+export interface TrackedSubscriptionItem {
+  id: string;
+  name: string;
+  category: string;
+  monthlyCost: number;
+  daysUntilRenewal: number;
+  isStudentTrial: boolean;
+  status: 'active' | 'canceled';
+}
+
+/**
+ * Evaluates a Select-All-That-Apply or Single-Choice question, returning
+ * exact per-option diagnostics so the user sees which selected answers are
+ * right, which selected answers are wrong, and which right answers were missed.
+ */
+export function evaluateQuestionSelection(
+  options: QuizOption[],
+  selectedIds: string[]
+): QuestionEvaluationResult {
+  const selectedSet = new Set(selectedIds);
+  let correctSelectedCount = 0;
+  let wrongSelectedCount = 0;
+  let missedCorrectCount = 0;
+  let totalCorrectRequired = 0;
+
+  const optionBreakdown: OptionEvaluation[] = options.map((opt) => {
+    const wasSelected = selectedSet.has(opt.id);
+    if (opt.isCorrect) {
+      totalCorrectRequired += 1;
+    }
+
+    let status: OptionDiagnosticStatus;
+    let statusBadgeText: string;
+
+    if (wasSelected && opt.isCorrect) {
+      correctSelectedCount += 1;
+      status = 'correct-selected';
+      statusBadgeText = 'Correct Selection';
+    } else if (wasSelected && !opt.isCorrect) {
+      wrongSelectedCount += 1;
+      status = 'wrong-selected';
+      statusBadgeText = 'Incorrect Selection';
+    } else if (!wasSelected && opt.isCorrect) {
+      missedCorrectCount += 1;
+      status = 'missed-correct';
+      statusBadgeText = 'Missed Right Answer';
+    } else {
+      status = 'neutral-unselected';
+      statusBadgeText = 'Not Selected (Incorrect Option)';
+    }
+
+    return {
+      optionId: opt.id,
+      label: opt.label,
+      isCorrect: opt.isCorrect,
+      wasSelected,
+      status,
+      statusBadgeText,
+      explanation: opt.explanation,
+    };
+  });
+
+  const isFullyCorrect =
+    wrongSelectedCount === 0 &&
+    missedCorrectCount === 0 &&
+    correctSelectedCount === totalCorrectRequired &&
+    totalCorrectRequired > 0;
+
+  const scoreDelta = isFullyCorrect
+    ? 50
+    : Math.max(15, correctSelectedCount * 15);
+
+  let summaryMessage = '';
+  if (isFullyCorrect) {
+    summaryMessage = `Spot on! You identified all ${totalCorrectRequired} correct factor${totalCorrectRequired > 1 ? 's' : ''} with zero false picks.`;
+  } else {
+    const parts: string[] = [];
+    if (correctSelectedCount > 0) {
+      parts.push(`${correctSelectedCount} right selection${correctSelectedCount > 1 ? 's' : ''}`);
+    }
+    if (wrongSelectedCount > 0) {
+      parts.push(`${wrongSelectedCount} wrong selection${wrongSelectedCount > 1 ? 's' : ''}`);
+    }
+    if (missedCorrectCount > 0) {
+      parts.push(`${missedCorrectCount} missed right answer${missedCorrectCount > 1 ? 's' : ''}`);
+    }
+    summaryMessage = `Breakdown: ${parts.join(' · ')}. Check the highlighted badges below so you never have to guess.`;
+  }
+
+  return {
+    isFullyCorrect,
+    correctSelectedCount,
+    wrongSelectedCount,
+    missedCorrectCount,
+    totalCorrectRequired,
+    scoreDelta,
+    summaryMessage,
+    optionBreakdown,
+  };
+}
+
+/**
+ * Builds the canonical persistence key for a question slide so navigating
+ * Back after answering a question preserves the answered state and never re-gives it.
+ */
+export function getQuestionHistoryKey(moduleId: string, slideId: string): string {
+  return `${moduleId}:${slideId}`;
+}
+
+export function recordAnsweredQuestion(
+  history: Record<string, AnsweredQuestionRecord>,
+  moduleId: string,
+  slideId: string,
+  selectedOptionIds: string[],
+  options: QuizOption[],
+  timestamp = Date.now()
+): Record<string, AnsweredQuestionRecord> {
+  const key = getQuestionHistoryKey(moduleId, slideId);
+  const evaluation = evaluateQuestionSelection(options, selectedOptionIds);
+  return {
+    ...history,
+    [key]: {
+      key,
+      moduleId,
+      slideId,
+      selectedOptionIds: [...selectedOptionIds],
+      evaluation,
+      answeredAt: timestamp,
+    },
+  };
+}
+
+/**
+ * Pinned items are ALWAYS kept at the top before category and search filtering.
+ */
+export function filterAndSortWithPinnedFirst<T extends PinnableItem>(
+  items: T[],
+  pinnedIds: string[],
+  searchQuery: string,
+  categoryFilter: string
+): T[] {
+  const pinnedSet = new Set(pinnedIds);
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  // Step 1: Order with pinned items at the very top first (preserving original relative order)
+  const orderedWithPinnedTop = [...items].sort((a, b) => {
+    const aPinned = pinnedSet.has(a.id) ? 1 : 0;
+    const bPinned = pinnedSet.has(b.id) ? 1 : 0;
+    return bPinned - aPinned;
+  });
+
+  // Step 2: Apply category and search filters while keeping pinned items at the top
+  return orderedWithPinnedTop.filter((item) => {
+    const matchesCategory =
+      categoryFilter === 'all' ||
+      (categoryFilter === 'pinned' && pinnedSet.has(item.id)) ||
+      item.category.toLowerCase() === categoryFilter.toLowerCase();
+
+    if (!matchesCategory) return false;
+    if (!normalizedQuery) return true;
+
+    const haystack = [
+      item.name,
+      item.category,
+      item.description || '',
+      ...(item.searchKeywords || []),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return haystack.includes(normalizedQuery);
+  });
+}
+
+/**
+ * Returns only the items that the user has explicitly pinned for the Compare Studio.
+ */
+export function getPinnedComparableItems<T extends { id: string }>(
+  items: T[],
+  pinnedIds: string[]
+): T[] {
+  const pinnedSet = new Set(pinnedIds);
+  return items.filter((item) => pinnedSet.has(item.id));
+}
+
+/**
+ * Toggles an item ID in a pinned ID array.
+ */
+export function togglePinnedId(pinnedIds: string[], targetId: string): string[] {
+  if (pinnedIds.includes(targetId)) {
+    return pinnedIds.filter((id) => id !== targetId);
+  }
+  return [targetId, ...pinnedIds];
+}
+
+/**
+ * Calculates projected HYSA compound balance vs traditional bank 0.01% APY.
+ */
+export function calculateHysaComparison(
+  initialDeposit: number,
+  monthlyContribution: number,
+  hysaApyPercent: number,
+  years: number
+): {
+  hysaTotal: number;
+  hysaInterestEarned: number;
+  traditionalTotal: number;
+  traditionalInterestEarned: number;
+  extraEarnedWithHysa: number;
+} {
+  const months = Math.max(1, Math.round(years * 12));
+  const hysaMonthlyRate = hysaApyPercent / 100 / 12;
+  const tradMonthlyRate = 0.01 / 100 / 12;
+
+  let hysaBalance = initialDeposit;
+  let tradBalance = initialDeposit;
+  const totalPrincipal = initialDeposit + monthlyContribution * months;
+
+  for (let m = 0; m < months; m++) {
+    hysaBalance = (hysaBalance + monthlyContribution) * (1 + hysaMonthlyRate);
+    tradBalance = (tradBalance + monthlyContribution) * (1 + tradMonthlyRate);
+  }
+
+  const hysaTotal = Math.round(hysaBalance);
+  const traditionalTotal = Math.round(tradBalance);
+  const hysaInterestEarned = Math.max(0, hysaTotal - totalPrincipal);
+  const traditionalInterestEarned = Math.max(0, traditionalTotal - totalPrincipal);
+
+  return {
+    hysaTotal,
+    hysaInterestEarned,
+    traditionalTotal,
+    traditionalInterestEarned,
+    extraEarnedWithHysa: Math.max(0, hysaInterestEarned - traditionalInterestEarned),
+  };
+}
+
+/**
+ * Estimates credit score impact from utilization ratio.
+ */
+export function estimateUtilizationImpact(
+  creditLimit: number,
+  statementBalance: number
+): {
+  utilizationPercent: number;
+  tierLabel: string;
+  estimatedScoreImpact: string;
+  recommendation: string;
+} {
+  const safeLimit = Math.max(100, creditLimit);
+  const ratio = Math.min(100, Math.max(0, Math.round((statementBalance / safeLimit) * 100)));
+
+  if (ratio <= 9) {
+    return {
+      utilizationPercent: ratio,
+      tierLabel: 'Optimal Zone (1%–9%)',
+      estimatedScoreImpact: '+25 to +40 pts boost',
+      recommendation: 'Gold standard for FICO scoring. Paying down before the statement closing date locks in this tier.',
+    };
+  }
+  if (ratio <= 29) {
+    return {
+      utilizationPercent: ratio,
+      tierLabel: 'Healthy Zone (10%–29%)',
+      estimatedScoreImpact: '+5 to +15 pts steady',
+      recommendation: 'Solid standing, though dropping under 10% before statement close unlocks top-tier student card approvals.',
+    };
+  }
+  if (ratio <= 49) {
+    return {
+      utilizationPercent: ratio,
+      tierLabel: 'Elevated Caution (30%–49%)',
+      estimatedScoreImpact: '-15 to -30 pts drag',
+      recommendation: 'Scoring models begin penalizing balances above 30%. Make a mid-cycle payment before the statement closes.',
+    };
+  }
+  return {
+    utilizationPercent: ratio,
+    tierLabel: 'High Utilization Alert (50%+)',
+    estimatedScoreImpact: '-45 to -85 pts penalty',
+    recommendation: 'High utilization heavily suppresses your score even if you pay on time. Split payments twice a month.',
+  };
+}
+
+/**
+ * TOOLKIT #1: Ranks cards for a specific checkout purchase category & spend amount,
+ * prioritizing higher rate and breaking ties with pinned status.
+ */
+export function rankCardsForCheckout(
+  cards: CheckoutSwipeCardInput[],
+  pinnedCardIds: string[],
+  category: CheckoutCategoryKey,
+  spendAmount: number
+): {
+  bestPinnedCard: RankedCheckoutCard | null;
+  bestOverallCard: RankedCheckoutCard;
+  rankedList: RankedCheckoutCard[];
+} {
+  const pinnedSet = new Set(pinnedCardIds);
+  const safeSpend = Math.max(0, spendAmount);
+
+  const rankedList: RankedCheckoutCard[] = cards
+    .map((card) => {
+      const ratePercent = card.categoryRates[category] ?? 1;
+      const estimatedRewardDollars = Number(((safeSpend * ratePercent) / 100).toFixed(2));
+      return {
+        id: card.id,
+        name: card.name,
+        issuer: card.issuer,
+        isPinned: pinnedSet.has(card.id),
+        ratePercent,
+        estimatedRewardDollars,
+      };
+    })
+    .sort((a, b) => {
+      if (b.ratePercent !== a.ratePercent) {
+        return b.ratePercent - a.ratePercent;
+      }
+      return (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
+    });
+
+  const bestPinnedCard = rankedList.find((c) => c.isPinned) || null;
+  const bestOverallCard = rankedList[0];
+
+  return {
+    bestPinnedCard,
+    bestOverallCard,
+    rankedList,
+  };
+}
+
+/**
+ * TOOLKIT #2: Statement Closing Date "Utilization Shield" Countdown & Paydown Calculator
+ */
+export function calculateStatementShield(
+  statementClosingDay: number,
+  currentDayOfMonth: number,
+  currentBalance: number,
+  creditLimit: number
+): {
+  daysUntilSnapshot: number;
+  currentUtilizationPercent: number;
+  targetNinePercentBalance: number;
+  paydownNeededBeforeClose: number;
+  isUrgentWindow: boolean;
+  statusMessage: string;
+} {
+  const clampedStatementDay = Math.min(28, Math.max(1, statementClosingDay));
+  const clampedCurrentDay = Math.min(28, Math.max(1, currentDayOfMonth));
+
+  const daysUntilSnapshot =
+    clampedStatementDay >= clampedCurrentDay
+      ? clampedStatementDay - clampedCurrentDay
+      : 30 - clampedCurrentDay + clampedStatementDay;
+
+  const safeLimit = Math.max(100, creditLimit);
+  const currentUtilizationPercent = Math.round((currentBalance / safeLimit) * 100);
+  const targetNinePercentBalance = Math.floor(safeLimit * 0.09);
+  const paydownNeededBeforeClose = Math.max(0, Math.round(currentBalance - targetNinePercentBalance));
+  const isUrgentWindow = daysUntilSnapshot <= 3 && paydownNeededBeforeClose > 0;
+
+  const statusMessage =
+    paydownNeededBeforeClose === 0
+      ? `Shield Active! Your $${currentBalance} balance is already at ${currentUtilizationPercent}% (under the 9% FICO sweet spot).`
+      : `Pay $${paydownNeededBeforeClose.toLocaleString()} within the next ${daysUntilSnapshot} day${
+          daysUntilSnapshot === 1 ? '' : 's'
+        } (before Day ${clampedStatementDay}) so bureaus snapshot a $${targetNinePercentBalance} balance (9% utilization).`;
+
+  return {
+    daysUntilSnapshot,
+    currentUtilizationPercent,
+    targetNinePercentBalance,
+    paydownNeededBeforeClose,
+    isUrgentWindow,
+    statusMessage,
+  };
+}
+
+/**
+ * TOOLKIT #3: Study Abroad & Spring Break "Zero-Fee Travel Check"
+ */
+export function auditTravelReadiness(
+  pinnedCards: { id: string; name: string; foreignTxFee: string }[],
+  pinnedBanks: { id: string; name: string; atmAccess: string; studentPerkHighlight: string }[],
+  plannedInternationalSpend: number
+): {
+  zeroFeePinnedCards: string[];
+  feeChargingPinnedCards: string[];
+  travelFriendlyPinnedBanks: string[];
+  foreignFeeSavingsDollars: number;
+  isFullyTravelReady: boolean;
+} {
+  const zeroFeePinnedCards = pinnedCards
+    .filter((c) => c.foreignTxFee.includes('$0'))
+    .map((c) => c.name);
+  const feeChargingPinnedCards = pinnedCards
+    .filter((c) => !c.foreignTxFee.includes('$0'))
+    .map((c) => c.name);
+
+  const travelFriendlyPinnedBanks = pinnedBanks
+    .filter(
+      (b) =>
+        b.atmAccess.toLowerCase().includes('worldwide') ||
+        b.atmAccess.toLowerCase().includes('reimbursement') ||
+        b.studentPerkHighlight.toLowerCase().includes('foreign')
+    )
+    .map((b) => b.name);
+
+  const foreignFeeSavingsDollars = Math.round(Math.max(0, plannedInternationalSpend) * 0.03);
+  const isFullyTravelReady =
+    zeroFeePinnedCards.length > 0 && travelFriendlyPinnedBanks.length > 0;
+
+  return {
+    zeroFeePinnedCards,
+    feeChargingPinnedCards,
+    travelFriendlyPinnedBanks,
+    foreignFeeSavingsDollars,
+    isFullyTravelReady,
+  };
+}
+
+/**
+ * TOOLKIT #4: Free-Trial & Campus Subscription Sniper Summary
+ */
+export function calculateSubscriptionSniperSummary(
+  subscriptions: TrackedSubscriptionItem[]
+): {
+  activeMonthlyBurn: number;
+  activeAnnualBurn: number;
+  annualSavedFromCanceled: number;
+  urgentExpiringCount: number;
+} {
+  let activeMonthlyBurn = 0;
+  let canceledMonthlySaved = 0;
+  let urgentExpiringCount = 0;
+
+  for (const sub of subscriptions) {
+    if (sub.status === 'active') {
+      activeMonthlyBurn += sub.monthlyCost;
+      if (sub.daysUntilRenewal <= 5) {
+        urgentExpiringCount += 1;
+      }
+    } else {
+      canceledMonthlySaved += sub.monthlyCost;
+    }
+  }
+
+  return {
+    activeMonthlyBurn: Number(activeMonthlyBurn.toFixed(2)),
+    activeAnnualBurn: Math.round(activeMonthlyBurn * 12),
+    annualSavedFromCanceled: Math.round(canceledMonthlySaved * 12),
+    urgentExpiringCount,
+  };
+}
+
+/**
+ * TOOLKIT #5: Summer Internship Paycheck & Roth IRA Tax Estimator
+ */
+export function calculateInternshipAndRothProjection(
+  hourlyRate: number,
+  hoursPerWeek: number,
+  weeks: number,
+  effectiveTaxPercent: number,
+  rothContributionPercent: number,
+  yearsToCompound = 40
+): {
+  grossSummerPay: number;
+  estimatedTaxWithheld: number;
+  netTakeHomePay: number;
+  rothContributionDollars: number;
+  projectedTaxFreeRothAt60: number;
+  spendableAfterRoth: number;
+} {
+  const grossSummerPay = Math.round(Math.max(0, hourlyRate * hoursPerWeek * weeks));
+  const estimatedTaxWithheld = Math.round(grossSummerPay * (effectiveTaxPercent / 100));
+  const netTakeHomePay = Math.max(0, grossSummerPay - estimatedTaxWithheld);
+  const rothContributionDollars = Math.min(
+    7000,
+    Math.round(netTakeHomePay * (rothContributionPercent / 100))
+  );
+  // 8.5% historical nominal / real adjusted equity growth over 40 years
+  const projectedTaxFreeRothAt60 = Math.round(
+    rothContributionDollars * Math.pow(1.085, Math.max(1, yearsToCompound))
+  );
+  const spendableAfterRoth = Math.max(0, netTakeHomePay - rothContributionDollars);
+
+  return {
+    grossSummerPay,
+    estimatedTaxWithheld,
+    netTakeHomePay,
+    rothContributionDollars,
+    projectedTaxFreeRothAt60,
+    spendableAfterRoth,
+  };
+}

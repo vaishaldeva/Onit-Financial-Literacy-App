@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan to enable desktop iPhone View previewing for the Account Login screen, Post-Signup Intro Slides, and Settings modal strictly as a desktop testing tool without affecting real mobile app users.",
+  "updatedAt":  "2026-10-23T00:58:52.378261473Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

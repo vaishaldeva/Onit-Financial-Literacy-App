@@ -1,0 +1,6 @@
+{
+  "name": "Onit: Own Your Future",
+  "description": "Interactive financial literacy platform for everyone across all age ranges and life stages, featuring learning modules, smart banking search, upfront credit card perks, and 5-in-1 financial toolkit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
