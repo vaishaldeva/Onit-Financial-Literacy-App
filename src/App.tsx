@@ -32,6 +32,7 @@ import { ModulePlayerView } from './components/ModulePlayerView';
 import { VaultAndCompareView } from './components/VaultAndCompareView';
 import { PhysicalCardVisual } from './components/PhysicalCardVisual';
 import { SettingsModal } from './components/SettingsModal';
+import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallButton';
 
 type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
 
@@ -338,8 +339,10 @@ export default function App() {
             </button>
           </nav>
 
-          {/* Right Controls: Settings + iPhone App View Toggle */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          {/* Right Controls: Install App + Settings + iPhone App View Toggle */}
+          <div className="flex items-center gap-2 shrink-0">
+            <PWAInstallButton />
+
             <button
               type="button"
               onClick={() => setShowSettingsModal(true)}
@@ -398,7 +401,8 @@ export default function App() {
                 Onit: Own Your Future
               </button>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <PWAInstallButton compact />
                 {userProfile && (
                   <span className="font-mono-tabular text-[11px] font-bold text-amber-300 bg-amber-500/12 border border-amber-400/25 px-2 py-1 rounded-lg">
                     {totalXp} XP
@@ -1008,6 +1012,9 @@ export default function App() {
           isPhoneView={false}
         />
       )}
+
+      {/* Offline Mode Connectivity Banner */}
+      <OfflineIndicator />
     </div>
   );
 }
