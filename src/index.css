@@ -64,21 +64,173 @@
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Ensures the sticky top header sits cleanly below the iOS status bar / Dynamic Island on all phones */
+/* Ensures the sticky top header sits cleanly below the iOS status bar / Dynamic Island blur zone on all phones */
 .safe-top-header {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+@media (max-width: 768px) {
+  .safe-top-header {
+    padding-top: max(calc(env(safe-area-inset-top, 44px) + 0.85rem), 4.25rem);
+  }
+}
+
 @media (display-mode: standalone) and (max-width: 768px) {
   .safe-top-header {
-    padding-top: max(env(safe-area-inset-top, 0px), 3.65rem);
+    padding-top: max(calc(env(safe-area-inset-top, 48px) + 0.95rem), 4.5rem);
   }
 }
 
 .safe-top-standalone-fallback {
-  padding-top: max(env(safe-area-inset-top, 0px), 3.65rem);
+  padding-top: max(calc(env(safe-area-inset-top, 48px) + 0.95rem), 4.5rem);
 }
 
 .pb-safe {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
+
+/* Apple Liquid Glass Dock & Translucent Pill Slider */
+.liquid-glass-dock {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(15, 23, 42, 0.72) 100%
+  );
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.6),
+    inset 0 1px 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.liquid-glass-pill {
+  background: linear-gradient(
+    135deg,
+    rgba(52, 211, 153, 0.36) 0%,
+    rgba(34, 211, 238, 0.24) 55%,
+    rgba(16, 185, 129, 0.32) 100%
+  );
+  backdrop-filter: blur(16px) brightness(1.15);
+  -webkit-backdrop-filter: blur(16px) brightness(1.15);
+  box-shadow:
+    0 4px 20px rgba(16, 185, 129, 0.32),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.55),
+    inset 0 -1px 2px rgba(6, 182, 212, 0.3);
+  border: 1px solid rgba(110, 231, 183, 0.48);
+}
+
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.03);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 0.25;
+  }
+  100% {
+    transform: scale(0.88);
+    opacity: 0.65;
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverseSlow {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes pageEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes trophyPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) translateY(24px) rotate(-10deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) translateY(-6px) rotate(4deg);
+  }
+  80% {
+    transform: scale(0.96) translateY(2px) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translate3d(0, -40px, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--confetti-drift, 20px), 78vh, 0) rotate(720deg) scale(0.85);
+    opacity: 0;
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 3.2s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 2.6s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 14s linear infinite;
+}
+
+.animate-spin-reverse-slow {
+  animation: spinReverseSlow 18s linear infinite;
+}
+
+.animate-page-enter {
+  animation: pageEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-trophy-pop {
+  animation: trophyPop 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-confetti-fall {
+  animation: confettiFall var(--confetti-duration, 2.4s) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+

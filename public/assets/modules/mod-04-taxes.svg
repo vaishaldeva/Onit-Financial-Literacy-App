@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480" width="800" height="480" fill="none">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="800" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1A0B2E" />
+      <stop offset="55%" stop-color="#131836" />
+      <stop offset="100%" stop-color="#070B14" />
+    </linearGradient>
+    <radialGradient id="aura4" cx="50%" cy="50%" r="46%">
+      <stop offset="0%" stop-color="#8B5CF6" stop-opacity="0.38" />
+      <stop offset="60%" stop-color="#F43F5E" stop-opacity="0.14" />
+      <stop offset="100%" stop-color="#070B14" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="docGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#312E81" stop-opacity="0.75" />
+      <stop offset="100%" stop-color="#0F172A" stop-opacity="0.92" />
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="480" fill="url(#bg4)" />
+  <rect width="800" height="480" fill="url(#aura4)" />
+
+  <circle cx="400" cy="250" r="155" stroke="#A78BFA" stroke-opacity="0.14" stroke-width="1.5" />
+
+  <!-- Minimalist Tax Form & Paycheck Pie Graphic Art -->
+  <g transform="translate(400, 250)">
+    <!-- Document Base -->
+    <g transform="translate(-32, 0) rotate(-4)">
+      <rect x="-95" y="-115" width="190" height="230" rx="22" fill="url(#docGlass)" stroke="#C4B5FD" stroke-opacity="0.7" stroke-width="2.5" />
+      <!-- Minimalist Document Header & Lines -->
+      <rect x="-65" y="-82" width="76" height="14" rx="7" fill="#A78BFA" fill-opacity="0.6" />
+      <rect x="-65" y="-50" width="130" height="10" rx="5" fill="#94A3B8" fill-opacity="0.35" />
+      <rect x="-65" y="-30" width="110" height="10" rx="5" fill="#94A3B8" fill-opacity="0.35" />
+      <rect x="-65" y="-10" width="120" height="10" rx="5" fill="#94A3B8" fill-opacity="0.35" />
+      <!-- Three Ascending Bracket Bars at bottom of document -->
+      <rect x="-60" y="45" width="28" height="36" rx="6" fill="#34D399" fill-opacity="0.8" />
+      <rect x="-18" y="25" width="28" height="56" rx="6" fill="#38BDF8" fill-opacity="0.8" />
+      <rect x="24" y="2" width="28" height="79" rx="6" fill="#A78BFA" fill-opacity="0.9" />
+    </g>
+
+    <!-- Overlapping Glowing Take-Home Pay Badge -->
+    <g transform="translate(82, 34)">
+      <circle cx="0" cy="0" r="56" fill="#0F172A" stroke="#34D399" stroke-width="3" />
+      <circle cx="0" cy="0" r="44" fill="#10B981" fill-opacity="0.22" />
+      <path d="M-18 2 L-5 15 L22 -14" stroke="#6EE7B7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+  </g>
+</svg>

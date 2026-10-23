@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg7" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#081C24" />
+      <stop offset="50%" stop-color="#0E3442" />
+      <stop offset="100%" stop-color="#06141A" />
+    </linearGradient>
+    <radialGradient id="glow7" cx="50%" cy="50%" r="48%">
+      <stop offset="0%" stop-color="#06B6D4" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#06B6D4" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22D3EE" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#0284C7" stop-opacity="0.08" />
+    </linearGradient>
+    <linearGradient id="keyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="50%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#B45309" />
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="450" fill="url(#bg7)" />
+  <circle cx="400" cy="225" r="210" fill="url(#glow7)" />
+
+  <!-- Protective Security Shield (Center-Left) -->
+  <g transform="translate(275, 100)">
+    <path d="M105 15 L195 50 L195 135 C195 198, 152 242, 105 262 C58 242, 15 198, 15 135 L15 50 Z" fill="url(#shieldGrad)" stroke="#22D3EE" stroke-width="3.5" stroke-opacity="0.65" />
+    <path d="M105 35 L175 63 L175 132 C175 182, 140 218, 105 235 C70 218, 35 182, 35 132 L35 63 Z" fill="none" stroke="#67E8F9" stroke-width="1.5" stroke-opacity="0.3" />
+
+    <!-- Minimalist House Roof Silhouette Inside Shield -->
+    <path d="M68 135 L105 102 L142 135" fill="none" stroke="#67E8F9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" />
+    <path d="M80 130 L80 168 L130 168 L130 130" fill="none" stroke="#67E8F9" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity="0.65" />
+  </g>
+
+  <!-- Sleek Golden Key (Angled Foreground) -->
+  <g transform="translate(465, 165) rotate(35)">
+    <!-- Key Bow (Head) -->
+    <circle cx="45" cy="45" r="36" fill="none" stroke="url(#keyGrad)" stroke-width="12" />
+    <circle cx="45" cy="45" r="14" fill="none" stroke="#FEF3C7" stroke-width="2" opacity="0.6" />
+    <!-- Key Blade -->
+    <rect x="81" y="38" width="115" height="14" rx="7" fill="url(#keyGrad)" />
+    <!-- Key Teeth -->
+    <rect x="150" y="52" width="12" height="18" rx="3" fill="url(#keyGrad)" />
+    <rect x="172" y="52" width="14" height="24" rx="3" fill="url(#keyGrad)" />
+  </g>
+
+  <!-- Ambient Sparkles -->
+  <circle cx="240" cy="150" r="4" fill="#67E8F9" opacity="0.5" />
+  <circle cx="565" cy="135" r="5" fill="#FBBF24" opacity="0.6" />
+  <circle cx="545" cy="310" r="3.5" fill="#22D3EE" opacity="0.4" />
+</svg>

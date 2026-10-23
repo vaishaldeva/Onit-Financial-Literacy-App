@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   CreditCard,
@@ -27,7 +27,11 @@ import {
   getQuestionHistoryKey,
   type AnsweredQuestionRecord,
 } from './utils/logic';
-import { AuthAndIntroModal, type UserProfile } from './components/AuthAndIntroModal';
+import {
+  AuthAndIntroModal,
+  type UserProfile,
+  type OnboardingStage,
+} from './components/AuthAndIntroModal';
 import { ModulePlayerView } from './components/ModulePlayerView';
 import { VaultAndCompareView } from './components/VaultAndCompareView';
 import { PhysicalCardVisual } from './components/PhysicalCardVisual';
@@ -43,7 +47,7 @@ export default function App() {
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
     try {
-      const saved = localStorage.getItem('onit_profile_v2');
+      const saved = localStorage.getItem('onit_profile_v3');
       if (saved) return JSON.parse(saved);
     } catch {
       // ignore storage errors
@@ -58,18 +62,10 @@ export default function App() {
     return null;
   });
 
-  // Requirement #9: Intro slides appear AFTER creating an account
-  const [onboardingStage, setOnboardingStage] = useState<'none' | 'signup' | 'intro'>(() => {
+  // Always start with the animated logo splash screen on app launch (unless autostart=1)
+  const [onboardingStage, setOnboardingStage] = useState<OnboardingStage>(() => {
     if (isAutostart) return 'none';
-    try {
-      const hasProfile = localStorage.getItem('onit_profile_v2');
-      const hasFinishedIntro = localStorage.getItem('onit_intro_done_v2');
-      if (!hasProfile) return 'signup';
-      if (!hasFinishedIntro) return 'intro';
-    } catch {
-      return 'signup';
-    }
-    return 'none';
+    return 'splash';
   });
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -99,19 +95,26 @@ export default function App() {
     return () => mq.removeEventListener?.('change', checkStandalone);
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !mobilePhoneFrameMode) {
-      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-    }
-  }, [activeTab, mobilePhoneFrameMode]);
+  const mainContainerRef = useRef<HTMLElement | null>(null);
+  const navTrackRef = useRef<HTMLDivElement | null>(null);
+  const [navDragIndex, setNavDragIndex] = useState<number | null>(null);
 
   const [activeModuleId, setActiveModuleId] = useState<string>(LEARNING_MODULES[0].id);
-  const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>({
-    'mod-credit-mastery': 0,
-    'mod-smart-banking': 0,
-    'mod-investing-campus': 0,
-    'mod-budget-automation': 0,
-  });
+  const [moduleSlideIndices, setModuleSlideIndices] = useState<Record<string, number>>(() =>
+    Object.fromEntries(LEARNING_MODULES.map((m) => [m.id, 0]))
+  );
+
+  // Scroll to top whenever activeTab, activeModuleId, or current slide index changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [activeTab, activeModuleId, moduleSlideIndices, mobilePhoneFrameMode]);
 
   // Requirement #5: Persistent answered questions map so going Back NEVER re-gives a solved question
   const [answeredQuestions, setAnsweredQuestions] = useState<
@@ -178,38 +181,55 @@ export default function App() {
   const handleUpdateProfileFromSettings = (updatedProfile: UserProfile) => {
     setUserProfile(updatedProfile);
     try {
-      localStorage.setItem('onit_profile_v2', JSON.stringify(updatedProfile));
+      localStorage.setItem('onit_profile_v3', JSON.stringify(updatedProfile));
     } catch {
       // ignore
     }
+  };
+
+  const handleFinishSplash = () => {
+    setOnboardingStage((prev) => {
+      if (prev !== 'splash') return prev;
+      return userProfile ? 'none' : 'signup';
+    });
   };
 
   const handleCompleteSignup = (profile: UserProfile) => {
     setUserProfile(profile);
     try {
-      localStorage.setItem('onit_profile_v2', JSON.stringify(profile));
-    } catch {
-      // ignore
-    }
-    setOnboardingStage('intro');
-  };
-
-  const handleFinishIntro = () => {
-    try {
-      localStorage.setItem('onit_intro_done_v2', 'true');
+      localStorage.setItem('onit_profile_v3', JSON.stringify(profile));
+      localStorage.setItem('onit_intro_done_v3', 'true');
     } catch {
       // ignore
     }
     setOnboardingStage('none');
   };
 
-  const handleSignOut = () => {
+  const handleStartQuickDemo = () => {
+    setOnboardingStage('demo');
+  };
+
+  const handleReturnToSignup = () => {
+    setOnboardingStage('signup');
+  };
+
+  const handleFinishIntro = () => {
     try {
-      localStorage.removeItem('onit_profile_v2');
-      localStorage.removeItem('onit_intro_done_v2');
+      localStorage.setItem('onit_intro_done_v3', 'true');
     } catch {
       // ignore
     }
+    setOnboardingStage(userProfile ? 'none' : 'signup');
+  };
+
+  const handleSignOut = () => {
+    try {
+      localStorage.removeItem('onit_profile_v3');
+      localStorage.removeItem('onit_intro_done_v3');
+    } catch {
+      // ignore
+    }
+    setUserProfile(null);
     setOnboardingStage('signup');
   };
 
@@ -304,110 +324,117 @@ export default function App() {
         </button>
       </div>
 
-      {/* Top Navigation Bar — Respects iOS Status Bar / Dynamic Island Safe Area */}
-      <header
-        className={`sticky top-0 z-30 glass-panel border-b border-white/10 safe-top-header ${
-          isStandalonePWA ? 'safe-top-standalone-fallback' : ''
-        }`}
-      >
-        <div className="mx-auto max-w-7xl flex items-center justify-between gap-4 px-[22px] sm:px-7 min-h-[58px]">
-          {/* App Brand Wordmark */}
-          <a
-            href="#top"
-            onClick={(e) => {
-              e.preventDefault();
-              setActiveTab('home');
-            }}
-            className="text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0"
-          >
-            Onit: Own Your Future
-          </a>
+      {/* Top Navigation Bar — Solid on mobile to avoid iOS status bar blur bleed, with full safe-area clearance */}
+      {(onboardingStage === 'none' || mobilePhoneFrameMode) && (
+        <header
+          className={`sticky top-0 z-30 bg-[#070B14] md:bg-slate-950/90 md:backdrop-blur-xl border-b border-white/10 safe-top-header ${
+            isStandalonePWA ? 'safe-top-standalone-fallback' : ''
+          }`}
+        >
+          <div className="mx-auto max-w-7xl flex items-center justify-between gap-4 px-[22px] sm:px-7 min-h-[58px]">
+            {/* App Brand Wordmark */}
+            <a
+              href="#top"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onboardingStage === 'none') setActiveTab('home');
+              }}
+              className="text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0"
+            >
+              Onit: Own Your Future
+            </a>
 
-          {/* Core App Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300" aria-label="Main navigation">
-            <button
-              type="button"
-              onClick={() => setActiveTab('home')}
-              className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'home' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
-              }`}
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('modules')}
-              className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'modules' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
-              }`}
-            >
-              Modules
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('cards')}
-              className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'cards' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
-              }`}
-            >
-              Credit Cards
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('banks')}
-              className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'banks' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
-              }`}
-            >
-              Banks
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('compare')}
-              className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                activeTab === 'compare' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
-              }`}
-            >
-              Compare ({pinnedCardIds.length + pinnedBankIds.length})
-            </button>
-          </nav>
+            {/* Core App Navigation Links */}
+            {onboardingStage === 'none' && (
+              <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300" aria-label="Main navigation">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('home')}
+                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === 'home' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('modules')}
+                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === 'modules' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
+                  }`}
+                >
+                  Modules
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('cards')}
+                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === 'cards' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
+                  }`}
+                >
+                  Credit Cards
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('banks')}
+                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === 'banks' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
+                  }`}
+                >
+                  Banks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('compare')}
+                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                    activeTab === 'compare' ? 'text-emerald-400 font-semibold underline underline-offset-8' : ''
+                  }`}
+                >
+                  Compare ({pinnedCardIds.length + pinnedBankIds.length})
+                </button>
+              </nav>
+            )}
 
-          {/* Right Controls: Install App + Settings + iPhone App View Toggle */}
-          <div className="flex items-center gap-2 shrink-0">
-            <PWAInstallButton />
+            {/* Right Controls: Install App + Settings + iPhone App View Toggle */}
+            <div className="flex items-center gap-2 shrink-0">
+              <PWAInstallButton />
 
-            <button
-              type="button"
-              onClick={() => setShowSettingsModal(true)}
-              aria-label="Open Account Settings"
-              className="min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/8 hover:bg-white/15 border border-white/12 rounded-xl transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-            >
-              <Settings className="h-4 w-4 text-emerald-400" aria-hidden="true" />
-              <span className="hidden sm:inline">Settings</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setMobilePhoneFrameMode((prev) => !prev)}
-              className="hidden md:flex px-3.5 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-xl hover:brightness-110 transition-all items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
-            >
-              {mobilePhoneFrameMode ? (
-                <>
-                  <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Full View</span>
-                </>
-              ) : (
-                <>
-                  <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>iPhone View</span>
-                </>
+              {onboardingStage === 'none' && (
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(true)}
+                  aria-label="Open Account Settings"
+                  className="min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/8 hover:bg-white/15 border border-white/12 rounded-xl transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                >
+                  <Settings className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
               )}
-            </button>
+
+              <button
+                type="button"
+                onClick={() => setMobilePhoneFrameMode((prev) => !prev)}
+                className="hidden md:flex px-3.5 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-xl hover:brightness-110 transition-all items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+              >
+                {mobilePhoneFrameMode ? (
+                  <>
+                    <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>Full View</span>
+                  </>
+                ) : (
+                  <>
+                    <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>iPhone View</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* Main Content Container (Supports Full Responsive Canvas OR Centered iPhone 15 Pro App Shell) */}
+      {(onboardingStage === 'none' || mobilePhoneFrameMode) && (
       <div
         className={
           mobilePhoneFrameMode
@@ -425,50 +452,56 @@ export default function App() {
             </div>
 
             {/* Native Mobile Top Bar Inside iPhone View */}
-            <div className="px-4 py-2 flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab('home')}
-                className="text-sm font-bold text-white tracking-tight truncate cursor-pointer"
-              >
-                Onit: Own Your Future
-              </button>
+            {onboardingStage === 'none' && (
+              <div className="px-4 py-2 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('home')}
+                  className="text-sm font-bold text-white tracking-tight truncate cursor-pointer"
+                >
+                  Onit: Own Your Future
+                </button>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <PWAInstallButton compact />
-                {userProfile && (
-                  <span className="font-mono-tabular text-[11px] font-bold text-amber-300 bg-amber-500/12 border border-amber-400/25 px-2 py-1 rounded-lg">
-                    {totalXp} XP
-                  </span>
-                )}
-                {userProfile && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSettingsModal(true)}
-                    aria-label="Open Settings in iPhone View"
-                    className="min-h-[34px] min-w-[34px] rounded-xl bg-white/8 hover:bg-white/15 border border-white/12 flex items-center justify-center text-emerald-400 cursor-pointer"
-                  >
-                    <Settings className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <PWAInstallButton compact />
+                  {userProfile && (
+                    <span className="font-mono-tabular text-[11px] font-bold text-amber-300 bg-amber-500/12 border border-amber-400/25 px-2 py-1 rounded-lg">
+                      {totalXp} XP
+                    </span>
+                  )}
+                  {userProfile && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSettingsModal(true)}
+                      aria-label="Open Settings in iPhone View"
+                      className="min-h-[34px] min-w-[34px] rounded-xl bg-white/8 hover:bg-white/15 border border-white/12 flex items-center justify-center text-emerald-400 cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
-        {/* In-Frame Auth / Intro Slides when iPhone View is active */}
+        {/* In-Frame Splash / Auth / Demo / Intro Slides when iPhone View is active */}
         {onboardingStage !== 'none' && mobilePhoneFrameMode ? (
-          <div className="flex-1 overflow-y-auto w-full flex flex-col justify-center">
+          <div className="flex-1 overflow-hidden w-full flex flex-col justify-center">
             <AuthAndIntroModal
               mode={onboardingStage}
               userProfile={userProfile}
+              onFinishSplash={handleFinishSplash}
               onCompleteSignup={handleCompleteSignup}
+              onStartQuickDemo={handleStartQuickDemo}
+              onReturnToSignup={handleReturnToSignup}
               onFinishIntro={handleFinishIntro}
               isPhoneView={true}
             />
           </div>
         ) : (
           <main
+            ref={mainContainerRef}
             className={`relative z-10 mx-auto w-full ${
               mobilePhoneFrameMode
                 ? 'flex-1 overflow-y-auto max-w-full px-5 pt-4 pb-6 space-y-5'
@@ -506,7 +539,7 @@ export default function App() {
                     </h1>
 
                     <p className="text-xs sm:text-base text-slate-200 leading-relaxed max-w-2xl">
-                      Master credit scores, high-yield banking, investing, and automated budgeting through interactive modules—then search, pin, and compare top credit cards and banks side-by-side.
+                      Learn the fundamentals of managing money, credit, college finances, taxes, banking, and getting out of debt through 10 interactive modules—then search, pin, and compare top credit cards and banks side-by-side.
                     </p>
 
                     <div
@@ -518,7 +551,7 @@ export default function App() {
                     >
                       <button
                         type="button"
-                        onClick={() => handleOpenModule('mod-credit-mastery')}
+                        onClick={() => handleOpenModule(activeModuleId)}
                         className={`${
                           mobilePhoneFrameMode ? 'w-full justify-center' : ''
                         } min-h-[46px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer`}
@@ -745,6 +778,19 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* Original "About bank offers" Callout Banner */}
+                <div className="glass-panel rounded-2xl p-4 sm:p-5 border-l-4 border-l-emerald-400 border border-white/12 space-y-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-white">
+                    About bank offers
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    We only show credit cards with a $250 annual fee or less.
+                  </p>
+                  <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    All checking accounts listed in our offers are FDIC insured.
+                  </p>
+                </div>
               </section>
 
               {/* Featured Credit Cards & High-Yield Banks Preview */}
@@ -941,89 +987,117 @@ export default function App() {
           />
         )}
 
-        {/* Mobile Bottom Navigation Bar — Anchored inside iPhone Shell or Fixed on Mobile Devices */}
-        {onboardingStage === 'none' && (
-          <nav
-            aria-label="Mobile bottom navigation"
-            className={`${
-              mobilePhoneFrameMode
-                ? 'shrink-0 z-40 w-full bg-slate-950/96 backdrop-blur-2xl border-t border-white/15 pt-2 pb-3 px-2.5'
-                : 'md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/96 backdrop-blur-2xl border-t border-white/15 pt-2 pb-[max(0.85rem,env(safe-area-inset-bottom))] px-3 shadow-[0_-10px_30px_rgba(0,0,0,0.55)]'
-            }`}
-          >
-            <div className="grid grid-cols-5 items-center gap-1.5 min-h-[64px]">
-              <button
-                type="button"
-                onClick={() => setActiveTab('home')}
-                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
-                  activeTab === 'home'
-                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
-                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
-                }`}
-              >
-                <Compass className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="mt-1 leading-tight">Home</span>
-              </button>
+        {/* Mobile Bottom Navigation Bar — Apple Liquid Glass Translucent Sliding Pill Dock */}
+        {onboardingStage === 'none' && (() => {
+          const navItems: { id: MainTab; label: string; Icon: React.FC<{ className?: string }> }[] = [
+            { id: 'home', label: 'Home', Icon: Compass },
+            { id: 'modules', label: 'Modules', Icon: BookOpen },
+            { id: 'cards', label: 'Cards', Icon: CreditCard },
+            { id: 'banks', label: 'Banks', Icon: Building2 },
+            { id: 'compare', label: 'Compare', Icon: Scale },
+          ];
+          const activeIdx = Math.max(
+            0,
+            navItems.findIndex((item) => item.id === activeTab)
+          );
+          const displayIdx = navDragIndex !== null ? navDragIndex : activeIdx;
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('modules')}
-                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
-                  activeTab === 'modules'
-                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
-                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
-                }`}
-              >
-                <BookOpen className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="mt-1 leading-tight">Modules</span>
-              </button>
+          const updateTabFromClientX = (clientX: number, commitOnly = false) => {
+            if (!navTrackRef.current) return;
+            const rect = navTrackRef.current.getBoundingClientRect();
+            const relX = Math.max(0, Math.min(rect.width - 1, clientX - rect.left));
+            const rawFloat = (relX / rect.width) * navItems.length - 0.5;
+            const clampedFloat = Math.max(0, Math.min(navItems.length - 1, rawFloat));
+            const snappedIdx = Math.min(
+              navItems.length - 1,
+              Math.max(0, Math.floor((relX / rect.width) * navItems.length))
+            );
+            if (!commitOnly) {
+              setNavDragIndex(clampedFloat);
+            }
+            const nextTab = navItems[snappedIdx]?.id;
+            if (nextTab && nextTab !== activeTab) {
+              setActiveTab(nextTab);
+            }
+          };
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('cards')}
-                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
-                  activeTab === 'cards'
-                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
-                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
-                }`}
+          return (
+            <nav
+              aria-label="Mobile bottom navigation"
+              className={`${
+                mobilePhoneFrameMode
+                  ? 'shrink-0 z-40 w-full px-3 pt-1.5 pb-2.5 bg-gradient-to-t from-[#070B14] via-[#070B14]/90 to-transparent'
+                  : 'md:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 pt-2 pb-[max(0.9rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-[#070B14] via-[#070B14]/85 to-transparent pointer-events-none'
+              }`}
+            >
+              <div
+                ref={navTrackRef}
+                onTouchStart={(e) => {
+                  if (e.touches[0]) {
+                    updateTabFromClientX(e.touches[0].clientX);
+                  }
+                }}
+                onTouchMove={(e) => {
+                  if (e.touches[0]) {
+                    updateTabFromClientX(e.touches[0].clientX);
+                  }
+                }}
+                onTouchEnd={() => setNavDragIndex(null)}
+                onTouchCancel={() => setNavDragIndex(null)}
+                className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-[28px] p-1.5 select-none touch-pan-y"
               >
-                <CreditCard className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="mt-1 leading-tight">Cards</span>
-              </button>
+                {/* Dynamic Translucent Liquid Glass Active Pill Slider */}
+                <div
+                  aria-hidden="true"
+                  className={`liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] ${
+                    navDragIndex !== null
+                      ? 'transition-none scale-[1.04]'
+                      : 'transition-transform duration-300 ease-out scale-100'
+                  }`}
+                  style={{
+                    width: 'calc((100% - 12px) / 5)',
+                    transform: `translate3d(${displayIdx * 100}%, 0, 0)`,
+                  }}
+                />
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('banks')}
-                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
-                  activeTab === 'banks'
-                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
-                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
-                }`}
-              >
-                <Building2 className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="mt-1 leading-tight">Banks</span>
-              </button>
+                <div className="relative z-10 grid grid-cols-5 items-center min-h-[58px]">
+                  {navItems.map(({ id, label, Icon }) => {
+                    const isActive = activeTab === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setNavDragIndex(null);
+                          setActiveTab(id);
+                        }}
+                        className={`flex flex-col items-center justify-center min-h-[54px] py-1.5 px-1 rounded-[22px] text-[11px] transition-colors cursor-pointer ${
+                          isActive
+                            ? 'text-white font-bold drop-shadow-[0_1px_6px_rgba(52,211,153,0.45)]'
+                            : 'text-slate-300/90 hover:text-white font-semibold'
+                        }`}
+                      >
+                        <Icon
+                          className={`h-5 w-5 shrink-0 transition-transform duration-200 ${
+                            isActive ? 'text-emerald-300 scale-110' : 'text-slate-300'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className="mt-1 leading-tight">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setActiveTab('compare')}
-                className={`flex flex-col items-center justify-center min-h-[56px] py-1.5 px-1 rounded-2xl text-xs transition-all cursor-pointer ${
-                  activeTab === 'compare'
-                    ? 'bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 font-bold shadow-sm'
-                    : 'text-slate-300 hover:text-white border border-transparent font-semibold'
-                }`}
-              >
-                <Scale className="h-6 w-6 shrink-0" aria-hidden="true" />
-                <span className="mt-1 leading-tight">Compare</span>
-              </button>
-            </div>
-
-            {mobilePhoneFrameMode && (
-              <div className="w-32 h-1 bg-white/25 rounded-full mx-auto mt-1.5" />
-            )}
-          </nav>
-        )}
+              {mobilePhoneFrameMode && (
+                <div className="w-32 h-1 bg-white/25 rounded-full mx-auto mt-2" />
+              )}
+            </nav>
+          );
+        })()}
       </div>
+      )}
 
       {/* Account & App Settings Modal (when in standard full desktop or mobile viewport) */}
       {showSettingsModal && !mobilePhoneFrameMode && (
@@ -1045,12 +1119,15 @@ export default function App() {
         />
       )}
 
-      {/* Post-Account-Creation Onboarding & Intro Slides Modal (when in standard full desktop or mobile viewport) */}
+      {/* Standalone Static Splash / Create Account / Quick Demo / Intro Page (when in full mobile/desktop viewport) */}
       {onboardingStage !== 'none' && !mobilePhoneFrameMode && (
         <AuthAndIntroModal
           mode={onboardingStage}
           userProfile={userProfile}
+          onFinishSplash={handleFinishSplash}
           onCompleteSignup={handleCompleteSignup}
+          onStartQuickDemo={handleStartQuickDemo}
+          onReturnToSignup={handleReturnToSignup}
           onFinishIntro={handleFinishIntro}
           isPhoneView={false}
         />

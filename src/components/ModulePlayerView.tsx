@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -65,6 +65,28 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const [simDeposit, setSimDeposit] = useState(3000);
   const [simMonthlyContribution, setSimMonthlyContribution] = useState(200);
   const [simIncome, setSimIncome] = useState(3600);
+  const [simInvestMonthly, setSimInvestMonthly] = useState(200);
+  const [simInvestYears, setSimInvestYears] = useState(20);
+
+  const [showCelebration, setShowCelebration] = useState(false);
+  const playerTopRef = useRef<HTMLDivElement | null>(null);
+
+  // Always scroll back to the top of the slide when clicking Next Slide, Previous, or switching modules
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+    const scrollableMain = playerTopRef.current?.closest('main');
+    if (scrollableMain) {
+      scrollableMain.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  }, [slideIndex, module.id]);
+
+  useEffect(() => {
+    setShowCelebration(false);
+  }, [module.id]);
 
   useEffect(() => {
     setValidationMessage('');
@@ -100,6 +122,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const utilSim = estimateUtilizationImpact(simLimit, simBalance);
   const hysaSim = calculateHysaComparison(simDeposit, simMonthlyContribution, 4.5, 3);
 
+  const monthlyGrowthRate = 0.08 / 12;
+  const totalMonthsInvested = simInvestYears * 12;
+  const compoundTotal = Math.round(
+    simInvestMonthly * ((Math.pow(1 + monthlyGrowthRate, totalMonthsInvested) - 1) / monthlyGrowthRate)
+  );
+  const compoundPrincipal = simInvestMonthly * totalMonthsInvested;
+  const compoundGains = Math.max(0, compoundTotal - compoundPrincipal);
+
   const toneCardStyles = {
     emerald: 'from-emerald-500/20 via-teal-500/10 to-slate-900/90 border-emerald-400/35 text-emerald-300',
     cyan: 'from-cyan-500/20 via-sky-500/10 to-slate-900/90 border-cyan-400/35 text-cyan-300',
@@ -109,7 +139,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div ref={playerTopRef} className="space-y-4 sm:space-y-6 relative">
       {/* Top Module Navigation Bar — Mobile-First so Slide Pills Never Clip */}
       <div className="glass-panel rounded-2xl p-3.5 sm:p-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
@@ -157,13 +187,13 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           </div>
         </div>
 
-        <div className="pt-1 border-t border-white/8">
+        <div className="pt-2 border-t border-white/8">
           <div className="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs text-slate-300">
             <span className="font-mono-tabular font-bold text-emerald-400">
               {module.numberLabel}
             </span>
             <span aria-hidden="true">·</span>
-            <span>{module.category}</span>
+            <span className="truncate">{module.category}</span>
           </div>
           <h1 className="text-base sm:text-lg font-bold text-white leading-snug mt-0.5">
             {module.title}
@@ -513,6 +543,86 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               </div>
             )}
 
+            {/* Embedded Interactive Simulator #4: Compound Growth & Index Fund Simulator */}
+            {slide.interactiveWidget === 'compound-sim' && (
+              <div className="rounded-2xl bg-slate-950/90 border border-violet-400/30 p-4 sm:p-6 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-violet-300">
+                    <Sliders className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span className="text-xs font-bold uppercase tracking-wider">
+                      Index Fund Compound Growth Simulator (8% Avg Return)
+                    </span>
+                  </div>
+                  <span className="font-mono-tabular text-xs sm:text-sm font-bold text-emerald-300">
+                    Total: ${compoundTotal.toLocaleString()}
+                  </span>
+                </div>
+
+                <div
+                  className={`grid grid-cols-1 ${
+                    isPhoneView ? '' : 'sm:grid-cols-2'
+                  } gap-4`}
+                >
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-300 mb-1.5">
+                      <label htmlFor="sim-invest-monthly">Monthly Investment</label>
+                      <span className="font-mono-tabular font-bold text-white">
+                        ${simInvestMonthly}/mo
+                      </span>
+                    </div>
+                    <input
+                      id="sim-invest-monthly"
+                      type="range"
+                      min={25}
+                      max={1500}
+                      step={25}
+                      value={simInvestMonthly}
+                      onChange={(e) => setSimInvestMonthly(Number(e.target.value))}
+                      className="w-full accent-violet-400 cursor-pointer"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between text-xs text-slate-300 mb-1.5">
+                      <label htmlFor="sim-invest-years">Investment Time Horizon</label>
+                      <span className="font-mono-tabular font-bold text-white">
+                        {simInvestYears} Years
+                      </span>
+                    </div>
+                    <input
+                      id="sim-invest-years"
+                      type="range"
+                      min={5}
+                      max={40}
+                      step={5}
+                      value={simInvestYears}
+                      onChange={(e) => setSimInvestYears(Number(e.target.value))}
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={`grid grid-cols-1 ${
+                    isPhoneView ? '' : 'sm:grid-cols-2'
+                  } gap-3 pt-1`}
+                >
+                  <div className="rounded-xl bg-white/[0.05] border border-white/10 p-3">
+                    <span className="text-xs text-slate-300 block">Total You Invested (Principal)</span>
+                    <span className="font-mono-tabular text-base sm:text-lg font-bold text-white">
+                      ${compoundPrincipal.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/30 p-3">
+                    <span className="text-xs text-emerald-200 block">Compound Investment Growth</span>
+                    <span className="font-mono-tabular text-base sm:text-lg font-bold text-emerald-300">
+                      +${compoundGains.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Pro Tip Footer */}
             {slide.proTip && (
               <div className="rounded-2xl bg-amber-500/12 border border-amber-400/30 p-3.5 sm:p-4 flex items-start gap-2.5">
@@ -734,7 +844,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           ) : (
             <button
               type="button"
-              onClick={() => onCompleteModule(module.id)}
+              onClick={() => setShowCelebration(true)}
               className="min-h-[44px] px-3 sm:px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
               <Trophy className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -743,6 +853,90 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Confetti & Trophy Celebration Overlay when "Complete" is clicked */}
+      {showCelebration && (
+        <div
+          className={`${
+            isPhoneView ? 'fixed inset-0' : 'fixed inset-0'
+          } z-[100] flex items-center justify-center bg-[#060911]/90 backdrop-blur-xl px-6 overflow-hidden`}
+        >
+          {/* Confetti Particles */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {Array.from({ length: 42 }).map((_, i) => {
+              const colors = [
+                '#34D399',
+                '#22D3EE',
+                '#FBBF24',
+                '#A78BFA',
+                '#FB7185',
+                '#6EE7B7',
+              ];
+              const leftPct = (i * 2.45) % 100;
+              const delaySec = (i % 9) * 0.08;
+              const durationSec = 1.9 + (i % 5) * 0.25;
+              const driftPx = ((i % 7) - 3) * 28;
+              const isCircle = i % 3 === 0;
+              return (
+                <span
+                  key={i}
+                  className={`absolute top-0 animate-confetti-fall ${
+                    isCircle ? 'h-2.5 w-2.5 rounded-full' : 'h-3.5 w-2 rounded-xs'
+                  }`}
+                  style={
+                    {
+                      left: `${leftPct}%`,
+                      backgroundColor: colors[i % colors.length],
+                      animationDelay: `${delaySec}s`,
+                      '--confetti-duration': `${durationSec}s`,
+                      '--confetti-drift': `${driftPx}px`,
+                    } as React.CSSProperties
+                  }
+                />
+              );
+            })}
+          </div>
+
+          {/* Celebration Trophy Card */}
+          <div className="relative z-10 w-full max-w-sm rounded-3xl bg-[#0D1526] border border-amber-400/40 p-6 sm:p-7 text-center shadow-2xl shadow-amber-500/20 animate-trophy-pop">
+            {/* Glowing Trophy Emblem */}
+            <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-amber-400/35 via-emerald-400/25 to-cyan-400/25 blur-xl animate-pulse-ring" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 shadow-xl shadow-amber-500/30 border-2 border-amber-200">
+                <Trophy className="h-10 w-10 stroke-[2.2]" aria-hidden="true" />
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs font-bold tracking-widest uppercase text-amber-300">
+              Module Completed!
+            </p>
+            <h3 className="mt-1 text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              {module.title}
+            </h3>
+
+            <div className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 px-4 py-2 text-sm font-mono-tabular font-bold text-emerald-300">
+              <Sparkles className="h-4 w-4 text-amber-300" aria-hidden="true" />
+              <span>+{module.xpReward} XP Earned</span>
+            </div>
+
+            <p className="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Great job mastering {module.category.toLowerCase()}. Your XP and progress have been saved to your profile.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowCelebration(false);
+                onCompleteModule(module.id);
+              }}
+              className="mt-5 w-full min-h-[48px] rounded-2xl bg-gradient-to-r from-amber-400 via-emerald-400 to-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-emerald-500/25 hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>Continue to Dashboard</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
