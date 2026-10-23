@@ -13,7 +13,12 @@ import type { UserProfile } from './AuthAndIntroModal';
 
 interface SettingsModalProps {
   userProfile: UserProfile | null;
+  totalXp: number;
+  maxPossibleXp: number;
+  completedModulesCount: number;
+  totalModulesCount: number;
   solvedQuizzesCount: number;
+  totalQuizzesCount: number;
   pinnedCardsCount: number;
   pinnedBanksCount: number;
   onUpdateProfile: (profile: UserProfile) => void;
@@ -27,7 +32,12 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
   userProfile,
+  totalXp,
+  maxPossibleXp,
+  completedModulesCount,
+  totalModulesCount,
   solvedQuizzesCount,
+  totalQuizzesCount,
   pinnedCardsCount,
   pinnedBanksCount,
   onUpdateProfile,
@@ -41,6 +51,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [name, setName] = useState(userProfile?.name || 'Alex Morgan');
   const [email, setEmail] = useState(userProfile?.email || 'alex.morgan@onitfinance.com');
   const [savedBanner, setSavedBanner] = useState(false);
+  const [resetBanner, setResetBanner] = useState(false);
+
+  const progressPercent =
+    totalModulesCount > 0
+      ? Math.round((completedModulesCount / totalModulesCount) * 100)
+      : 0;
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +67,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     });
     setSavedBanner(true);
     setTimeout(() => setSavedBanner(false), 2500);
+  };
+
+  const handleResetXpAndQuestionsClick = () => {
+    onResetQuizzes();
+    setResetBanner(true);
+    setTimeout(() => setResetBanner(false), 3000);
   };
 
   return (
@@ -127,10 +149,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
+          {/* At-a-Glance Account Progress Bar directly under Full Name & Account Email */}
+          <div className="rounded-2xl bg-slate-950/90 border border-white/12 p-3.5 space-y-2">
+            <div className="flex items-center justify-between gap-2 text-xs">
+              <span className="font-semibold text-slate-200">
+                Learning Progress ({completedModulesCount}/{totalModulesCount} Modules)
+              </span>
+              <span className="font-mono-tabular font-bold text-emerald-300">
+                {totalXp}/{maxPossibleXp} XP · {progressPercent}%
+              </span>
+            </div>
+
+            <div
+              role="progressbar"
+              aria-valuenow={progressPercent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label="Account learning progress"
+              className="h-2.5 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
+            >
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 shadow-[0_0_10px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
+                style={{ width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono-tabular">
+              <span>{solvedQuizzesCount}/{totalQuizzesCount} Solved Questions</span>
+              <span>{totalXp} XP Earned</span>
+            </div>
+          </div>
+
           {savedBanner && (
             <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/40 px-4 py-2.5 text-xs font-semibold text-emerald-200 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
               <span>Your Onit profile has been saved!</span>
+            </div>
+          )}
+
+          {resetBanner && (
+            <div className="rounded-xl bg-amber-500/15 border border-amber-400/40 px-4 py-2.5 text-xs font-semibold text-amber-200 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-amber-300 shrink-0" />
+              <span>XP and solved questions have been reset to 0!</span>
             </div>
           )}
 
@@ -173,15 +233,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <button
               type="button"
-              onClick={onResetQuizzes}
-              className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-white/12 text-xs font-semibold text-amber-300 flex items-center justify-between gap-2 cursor-pointer"
+              onClick={handleResetXpAndQuestionsClick}
+              className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-white/12 text-xs font-semibold text-amber-300 flex items-center justify-between gap-2 cursor-pointer"
             >
-              <span className="flex items-center gap-2">
-                <RotateCcw className="h-3.5 w-3.5" />
-                <span>Reset Solved Quizzes</span>
+              <span className="flex items-center gap-2 text-left">
+                <RotateCcw className="h-3.5 w-3.5 shrink-0" />
+                <span>Reset XP and Solved Questions</span>
               </span>
-              <span className="font-mono-tabular text-[11px] text-slate-400">
-                {solvedQuizzesCount} Solved
+              <span className="font-mono-tabular text-[11px] text-slate-400 shrink-0">
+                {totalXp} XP · {solvedQuizzesCount}
               </span>
             </button>
 

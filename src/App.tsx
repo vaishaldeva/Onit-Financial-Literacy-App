@@ -420,12 +420,49 @@ export default function App() {
     setActiveTab('home');
   };
 
+  const handleResetXpAndSolvedQuestions = () => {
+    const fresh = createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE);
+    setAnsweredQuestions({});
+    setCompletedModuleIds([]);
+    setModuleSlideIndices(fresh.moduleSlideIndices);
+    setViewedSlideIds(fresh.viewedSlideIds);
+    setHasStartedLearning(false);
+    setActiveModuleId(LEARNING_MODULES[0].id);
+
+    if (userProfile?.email) {
+      try {
+        const updatedAccountData: PerAccountProgressData = {
+          answeredQuestions: {},
+          completedModuleIds: [],
+          pinnedCardIds,
+          pinnedBankIds,
+          moduleSlideIndices: fresh.moduleSlideIndices,
+          viewedSlideIds: fresh.viewedSlideIds,
+          hasStartedLearning: false,
+        };
+        localStorage.setItem(
+          getAccountProgressStorageKey(userProfile.email),
+          JSON.stringify(updatedAccountData)
+        );
+      } catch {
+        // ignore storage errors
+      }
+    }
+  };
+
   // Calculate total XP strictly from the set xpReward of completed modules (no individual quiz XP)
   const uniqueCompletedModuleIds = Array.from(new Set(completedModuleIds));
   const totalXp = uniqueCompletedModuleIds.reduce((sum, id) => {
     const m = LEARNING_MODULES.find((mod) => mod.id === id);
     return sum + (m ? m.xpReward : 0);
   }, 0);
+  const maxPossibleXp = LEARNING_MODULES.reduce((sum, mod) => sum + mod.xpReward, 0);
+  const totalModulesCount = LEARNING_MODULES.length;
+  const completedModulesCount = uniqueCompletedModuleIds.length;
+  const overallProgressPercent =
+    totalModulesCount > 0
+      ? Math.round((completedModulesCount / totalModulesCount) * 100)
+      : 0;
 
   const activeModule =
     LEARNING_MODULES.find((m) => m.id === activeModuleId) || LEARNING_MODULES[0];
@@ -758,6 +795,36 @@ export default function App() {
                         </p>
                       </div>
                       <Award className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-400 shrink-0" aria-hidden="true" />
+                    </div>
+
+                    {/* At-a-Glance Curriculum Progress Bar */}
+                    <div className="space-y-1.5 pt-0.5">
+                      <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                        <span className="font-semibold text-slate-300">
+                          {completedModulesCount}/{totalModulesCount} Modules Completed
+                        </span>
+                        <span className="font-mono-tabular font-bold text-emerald-300">
+                          {totalXp}/{maxPossibleXp} XP · {overallProgressPercent}%
+                        </span>
+                      </div>
+                      <div
+                        role="progressbar"
+                        aria-valuenow={overallProgressPercent}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label="Overall module completion progress"
+                        className="h-2.5 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
+                      >
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 shadow-[0_0_12px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
+                          style={{
+                            width: `${Math.max(
+                              overallProgressPercent,
+                              overallProgressPercent > 0 ? 4 : 0
+                            )}%`,
+                          }}
+                        />
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2 text-center">
@@ -1126,8 +1193,40 @@ export default function App() {
              ========================================================= */}
           {activeTab === 'modules' && (
             <div className="space-y-4 sm:space-y-5">
-              {/* Keyword Search Bar inside Modules Section */}
+              {/* At-a-Glance Curriculum Progress Bar + Keyword Search in Modules Tab */}
               <div className="space-y-2.5">
+                <div className="rounded-2xl bg-slate-950/85 border border-white/12 px-3.5 py-2.5 sm:px-4 sm:py-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 text-[11px] sm:text-xs">
+                    <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                      <Award className="h-3.5 w-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
+                      <span>
+                        Curriculum Progress: {completedModulesCount}/{totalModulesCount} Modules
+                      </span>
+                    </span>
+                    <span className="font-mono-tabular font-bold text-emerald-300 shrink-0">
+                      {totalXp}/{maxPossibleXp} XP · {overallProgressPercent}%
+                    </span>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={overallProgressPercent}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Modules tab curriculum progress"
+                    className="h-2 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
+                  >
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 shadow-[0_0_10px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
+                      style={{
+                        width: `${Math.max(
+                          overallProgressPercent,
+                          overallProgressPercent > 0 ? 4 : 0
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
                 <div className="relative">
                   <Search
                     className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-400"
@@ -1236,6 +1335,7 @@ export default function App() {
                 onResetSingleQuestion={handleResetSingleQuestion}
                 onBackToDashboard={() => setActiveTab('home')}
                 onCompleteModule={handleCompleteModule}
+                isModuleCompleted={completedModuleIds.includes(activeModule.id)}
                 isPhoneView={mobilePhoneFrameMode}
               />
             </div>
@@ -1266,12 +1366,17 @@ export default function App() {
         {showSettingsModal && mobilePhoneFrameMode && (
           <SettingsModal
             userProfile={userProfile}
+            totalXp={totalXp}
+            maxPossibleXp={maxPossibleXp}
+            completedModulesCount={completedModulesCount}
+            totalModulesCount={totalModulesCount}
             solvedQuizzesCount={solvedQuizzesCount}
+            totalQuizzesCount={totalQuizzesCount}
             pinnedCardsCount={pinnedCardIds.length}
             pinnedBanksCount={pinnedBankIds.length}
             onUpdateProfile={handleUpdateProfileFromSettings}
             onReplayIntro={() => setOnboardingStage('intro')}
-            onResetQuizzes={() => setAnsweredQuestions({})}
+            onResetQuizzes={handleResetXpAndSolvedQuestions}
             onResetPins={() => {
               setPinnedCardIds([]);
               setPinnedBankIds([]);
@@ -1398,12 +1503,17 @@ export default function App() {
       {showSettingsModal && !mobilePhoneFrameMode && (
         <SettingsModal
           userProfile={userProfile}
+          totalXp={totalXp}
+          maxPossibleXp={maxPossibleXp}
+          completedModulesCount={completedModulesCount}
+          totalModulesCount={totalModulesCount}
           solvedQuizzesCount={solvedQuizzesCount}
+          totalQuizzesCount={totalQuizzesCount}
           pinnedCardsCount={pinnedCardIds.length}
           pinnedBanksCount={pinnedBankIds.length}
           onUpdateProfile={handleUpdateProfileFromSettings}
           onReplayIntro={() => setOnboardingStage('intro')}
-          onResetQuizzes={() => setAnsweredQuestions({})}
+          onResetQuizzes={handleResetXpAndSolvedQuestions}
           onResetPins={() => {
             setPinnedCardIds([]);
             setPinnedBankIds([]);

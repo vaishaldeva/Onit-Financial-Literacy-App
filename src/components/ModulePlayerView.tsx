@@ -36,6 +36,7 @@ interface ModulePlayerViewProps {
   onResetSingleQuestion: (moduleId: string, slideId: string) => void;
   onBackToDashboard: () => void;
   onCompleteModule: (moduleId: string) => void;
+  isModuleCompleted?: boolean;
   isPhoneView?: boolean;
 }
 
@@ -49,6 +50,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   onResetSingleQuestion,
   onBackToDashboard,
   onCompleteModule,
+  isModuleCompleted = false,
   isPhoneView = false,
 }) => {
   const slide: ModuleSlide = module.slides[slideIndex] || module.slides[0];
@@ -108,8 +110,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       setSelectedIds(existingRecord.selectedOptionIds);
     } else {
       setSelectedIds([]);
+      setRevealedSolutionSlides((prev) => {
+        if (!prev[historyKey]) return prev;
+        const next = { ...prev };
+        delete next[historyKey];
+        return next;
+      });
     }
-  }, [slide.id, existingRecord]);
+  }, [slide.id, existingRecord, historyKey]);
 
   const handleToggleOption = (optionId: string) => {
     setValidationMessage('');
@@ -933,7 +941,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         })()}
 
         {/* Module Completion Requirement Callout on Final Slide when not yet unlocked */}
-        {isLastSlide && !completionGate.canComplete && (
+        {isLastSlide && !isModuleCompleted && !completionGate.canComplete && (
           <div className="mt-5 rounded-2xl bg-amber-500/12 border border-amber-400/35 p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-2.5">
               <Lock className="h-4 w-4 text-amber-300 shrink-0 mt-0.5" aria-hidden="true" />
@@ -1000,6 +1008,16 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             >
               <span>Next Slide</span>
               <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </button>
+          ) : isModuleCompleted ? (
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="min-h-[44px] px-4 sm:px-6 py-2.5 rounded-xl bg-slate-800/70 border border-white/10 text-slate-400 opacity-55 text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 whitespace-nowrap cursor-not-allowed select-none"
+            >
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+              <span>Completed</span>
             </button>
           ) : (
             <button
