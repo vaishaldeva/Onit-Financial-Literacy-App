@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Pin,
@@ -13,6 +13,8 @@ import {
   Check,
   ExternalLink,
   ShieldCheck,
+  Clock,
+  Trash2,
 } from 'lucide-react';
 import {
   BANKS_DATA,
@@ -23,8 +25,13 @@ import {
 import {
   filterAndSortWithPinnedFirst,
   getPinnedComparableItems,
+  addSearchHistoryEntry,
+  removeSearchHistoryEntry,
 } from '../utils/logic';
 import { PhysicalCardVisual } from './PhysicalCardVisual';
+
+const CARD_SEARCH_HISTORY_STORAGE_KEY = 'onit_card_search_history_v1';
+const DEFAULT_CARD_SEARCH_HISTORY = ['3% Groceries', 'No Annual Fee', 'Dining', 'Gas'];
 
 interface VaultAndCompareViewProps {
   activeSubTab: 'cards' | 'banks' | 'compare';
@@ -49,6 +56,41 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
   const [bankCategory, setBankCategory] = useState('all');
   const [cardSearch, setCardSearch] = useState('');
   const [cardCategory, setCardCategory] = useState('all');
+  const [cardSearchHistory, setCardSearchHistory] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CARD_SEARCH_HISTORY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch {
+      // ignore storage errors
+    }
+    return DEFAULT_CARD_SEARCH_HISTORY;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        CARD_SEARCH_HISTORY_STORAGE_KEY,
+        JSON.stringify(cardSearchHistory)
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [cardSearchHistory]);
+
+  const recordCardSearchTerm = (term: string) => {
+    setCardSearchHistory((prev) => addSearchHistoryEntry(prev, term, 8));
+  };
+
+  const handleRemoveCardSearchTerm = (term: string) => {
+    setCardSearchHistory((prev) => removeSearchHistoryEntry(prev, term));
+  };
+
+  const handleClearCardSearchHistory = () => {
+    setCardSearchHistory([]);
+  };
 
   const [selectedCardDetail, setSelectedCardDetail] = useState<CreditCardItem | null>(null);
   const [selectedBankDetail, setSelectedBankDetail] = useState<BankItem | null>(null);
@@ -70,6 +112,16 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
     cardSearch,
     cardCategory
   );
+
+  // Automatically record meaningful searches after the user pauses typing for 900ms
+  useEffect(() => {
+    const trimmed = cardSearch.trim();
+    if (trimmed.length < 2 || sortedCards.length === 0) return;
+    const timer = setTimeout(() => {
+      setCardSearchHistory((prev) => addSearchHistoryEntry(prev, trimmed, 8));
+    }, 900);
+    return () => clearTimeout(timer);
+  }, [cardSearch, sortedCards.length]);
 
   const pinnedCardsList = getPinnedComparableItems(CREDIT_CARDS_DATA, pinnedCardIds);
   const pinnedBanksList = getPinnedComparableItems(BANKS_DATA, pinnedBankIds);
@@ -193,18 +245,132 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
          ========================================================= */}
       {activeSubTab === 'cards' && (
         <div className="space-y-4 sm:space-y-6">
-          {/* Search & Swipeable Category Filter Bar */}
+          {/* Search, Search History & Swipeable Category Filter Bar */}
           <div className="glass-panel rounded-2xl p-3.5 sm:p-4 space-y-3">
-            <div className="relative w-full">
-              <Search className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" aria-hidden="true" />
-              <input
-                type="search"
-                aria-label="Search credit cards by reward category, issuer, or perk"
-                value={cardSearch}
-                onChange={(e) => setCardSearch(e.target.value)}
-                placeholder="Search cards (e.g., '3% Groceries', 'Gas', 'Online', 'Dining')..."
-                className="w-full rounded-xl bg-slate-950/90 border border-white/12 pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
-              />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                recordCardSearchTerm(cardSearch);
+              }}
+              className="relative w-full flex items-center gap-2"
+            >
+              <div className="relative flex-1">
+                <Search
+                  className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  aria-hidden="true"
+                />
+                <input
+                  type="text"
+                  aria-label="Search credit cards by reward category, issuer, or perk"
+                  value={cardSearch}
+                  onChange={(e) => setCardSearch(e.target.value)}
+                  onBlur={() => {
+                    if (cardSearch.trim().length >= 2) {
+                      recordCardSearchTerm(cardSearch);
+                    }
+                  }}
+                  placeholder="Search cards (e.g., '3% Groceries', 'Gas', 'Online', 'Dining')..."
+                  className="w-full rounded-xl bg-slate-950/90 border border-white/12 pl-10 pr-9 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
+                />
+                {cardSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCardSearch('')}
+                    aria-label="Clear card search input"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-lg bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+
+              {cardSearch.trim().length >= 2 && (
+                <button
+                  type="submit"
+                  className="min-h-[40px] px-3.5 py-2 rounded-xl bg-emerald-400/15 hover:bg-emerald-400/25 border border-emerald-400/35 text-xs font-bold text-emerald-300 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+                >
+                  Save Search
+                </button>
+              )}
+            </form>
+
+            {/* Card Search History Bar */}
+            <div className="rounded-xl bg-slate-950/65 border border-white/8 px-3 py-2 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-300">
+                  <Clock className="h-3.5 w-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
+                  <span>Recent Searches</span>
+                  <span className="font-mono-tabular text-slate-400">
+                    ({cardSearchHistory.length})
+                  </span>
+                </div>
+
+                {cardSearchHistory.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleClearCardSearchHistory}
+                    className="text-[11px] font-semibold text-slate-400 hover:text-rose-300 flex items-center gap-1 transition-colors whitespace-nowrap cursor-pointer"
+                  >
+                    <Trash2 className="h-3 w-3" aria-hidden="true" />
+                    <span>Clear History</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCardSearchHistory(DEFAULT_CARD_SEARCH_HISTORY)}
+                    className="text-[11px] font-semibold text-emerald-400 hover:text-emerald-300 transition-colors whitespace-nowrap cursor-pointer"
+                  >
+                    Restore Popular Searches
+                  </button>
+                )}
+              </div>
+
+              {cardSearchHistory.length > 0 ? (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+                  {cardSearchHistory.map((term) => {
+                    const isActiveTerm =
+                      cardSearch.trim().toLowerCase() === term.toLowerCase();
+                    return (
+                      <div
+                        key={term}
+                        className={`inline-flex items-center rounded-xl border text-xs transition-all shrink-0 ${
+                          isActiveTerm
+                            ? 'bg-emerald-400/20 border-emerald-400/50 text-emerald-200 font-bold'
+                            : 'bg-white/6 hover:bg-white/12 border-white/10 text-slate-200 font-medium'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (isActiveTerm) {
+                              setCardSearch('');
+                            } else {
+                              setCardSearch(term);
+                              recordCardSearchTerm(term);
+                            }
+                          }}
+                          className="min-h-[32px] pl-2.5 pr-1.5 py-1 flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                        >
+                          <Clock className="h-3 w-3 text-emerald-400 shrink-0" aria-hidden="true" />
+                          <span>{term}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCardSearchTerm(term)}
+                          aria-label={`Remove ${term} from search history`}
+                          className="min-h-[32px] px-1.5 text-slate-400 hover:text-rose-300 flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <X className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-400">
+                  No recent card searches saved. Type a card name, issuer, or reward category above and press Enter.
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
@@ -235,6 +401,27 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               ))}
             </div>
           </div>
+
+          {sortedCards.length === 0 && (
+            <div className="glass-panel rounded-3xl p-6 text-center space-y-3 border border-white/12">
+              <p className="text-sm font-bold text-white">
+                No credit cards matched &ldquo;{cardSearch}&rdquo;
+              </p>
+              <p className="text-xs text-slate-300 max-w-md mx-auto">
+                Try searching for a category like &ldquo;3% Groceries&rdquo;, &ldquo;Dining&rdquo;, &ldquo;Gas&rdquo;, &ldquo;No Annual Fee&rdquo;, or an issuer like &ldquo;Capital One&rdquo; or &ldquo;Amex&rdquo;.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCardSearch('');
+                  setCardCategory('all');
+                }}
+                className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-bold hover:brightness-110 transition-all cursor-pointer"
+              >
+                Reset Card Filters
+              </button>
+            </div>
+          )}
 
           {/* Credit Cards Grid */}
           <div

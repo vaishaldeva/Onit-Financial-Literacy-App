@@ -569,3 +569,35 @@ export function calculateInternshipAndRothProjection(
     spendableAfterRoth,
   };
 }
+
+/**
+ * Adds a search query to the recent search history list (deduplicated case-insensitively,
+ * trimmed, most recent first, capped at maxItems).
+ */
+export function addSearchHistoryEntry(
+  history: string[],
+  rawQuery: string,
+  maxItems = 8
+): string[] {
+  const trimmed = rawQuery.trim();
+  if (trimmed.length < 2) {
+    return history;
+  }
+  const filtered = history.filter(
+    (entry) => entry.toLowerCase() !== trimmed.toLowerCase()
+  );
+  return [trimmed, ...filtered].slice(0, maxItems);
+}
+
+/**
+ * Removes a specific search query from the recent search history list.
+ */
+export function removeSearchHistoryEntry(
+  history: string[],
+  queryToRemove: string
+): string[] {
+  return history.filter(
+    (entry) => entry.toLowerCase() !== queryToRemove.toLowerCase()
+  );
+}
+
