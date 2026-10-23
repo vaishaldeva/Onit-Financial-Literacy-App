@@ -82,6 +82,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const [simInvestYears, setSimInvestYears] = useState(20);
 
   const [showCelebration, setShowCelebration] = useState(false);
+  const [revealedSolutionSlides, setRevealedSolutionSlides] = useState<Record<string, boolean>>({});
   const playerTopRef = useRef<HTMLDivElement | null>(null);
 
   // Always scroll back to the top of the slide when clicking Next Slide, Previous, or switching modules
@@ -310,13 +311,13 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 {slide.takeawayCards.map((card, idx) => (
                   <div
                     key={idx}
-                    className={`rounded-2xl bg-gradient-to-br ${toneCardStyles[card.tone]} border p-4 sm:p-5`}
+                    className={`rounded-2xl bg-gradient-to-br ${toneCardStyles[card.tone]} border p-4 sm:p-5 overflow-hidden`}
                   >
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white/85">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                      <span className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-white/85 min-w-0">
                         {card.label}
                       </span>
-                      <span className="font-mono-tabular text-xl sm:text-2xl font-bold text-white shrink-0">
+                      <span className="font-mono-tabular text-base sm:text-xl font-bold text-white break-words min-w-0">
                         {card.metric}
                       </span>
                     </div>
@@ -675,188 +676,261 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         )}
 
         {/* =========================================================
-            QUIZ SLIDE VIEW
+            QUIZ SLIDE VIEW (2 Tries Before Offering Solution on 3rd Time)
            ========================================================= */}
-        {slide.type !== 'content' && slide.options && (
-          <div className="mt-5 space-y-4">
-            {existingRecord && (
-              <div
-                className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col ${
-                  isPhoneView ? '' : 'sm:flex-row sm:items-center'
-                } justify-between gap-3 ${
-                  existingRecord.evaluation.isFullyCorrect
-                    ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
-                    : 'bg-amber-500/15 border-amber-400/40 text-amber-100'
-                }`}
-              >
-                <div className="flex items-start gap-2.5">
-                  {existingRecord.evaluation.isFullyCorrect ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
-                  )}
-                  <div className="text-xs sm:text-sm">
-                    <p className="font-bold text-white">
-                      {existingRecord.evaluation.isFullyCorrect
-                        ? 'Completed (+50 XP Earned)'
-                        : `Score Breakdown: ${existingRecord.evaluation.correctSelectedCount} of ${existingRecord.evaluation.totalCorrectRequired} correct choices selected (${existingRecord.evaluation.wrongSelectedCount} incorrect).`}
-                    </p>
-                    <p className="text-slate-200 mt-0.5">
-                      {existingRecord.evaluation.isFullyCorrect
-                        ? 'Review the explanations below, or continue to the next slide anytime.'
-                        : 'Check the highlighted feedback on each choice below, adjust your selection, and tap Re-Check Answer.'}
-                    </p>
+        {slide.type !== 'content' && slide.options && (() => {
+          const attemptsCount = existingRecord?.attemptsCount || 0;
+          const isFullyCorrect = Boolean(existingRecord?.evaluation.isFullyCorrect);
+          // Solution is only offered after 2 wrong attempts (for the 3rd try), and revealed if clicked or after 3rd attempt
+          const canOfferSolution = Boolean(existingRecord && !isFullyCorrect && attemptsCount >= 2);
+          const isSolutionRevealed =
+            isFullyCorrect ||
+            Boolean(revealedSolutionSlides[historyKey]) ||
+            attemptsCount >= 3;
+
+          const handleApplySolution = () => {
+            if (!slide.options) return;
+            const correctIds = slide.options.filter((o) => o.isCorrect).map((o) => o.id);
+            setSelectedIds(correctIds);
+            setRevealedSolutionSlides((prev) => ({ ...prev, [historyKey]: true }));
+            onSubmitAnswer(module.id, slide.id, correctIds);
+          };
+
+          return (
+            <div className="mt-5 space-y-4">
+              {existingRecord && (
+                <div
+                  className={`rounded-2xl border p-3.5 sm:p-4 flex flex-col ${
+                    isPhoneView ? '' : 'sm:flex-row sm:items-center'
+                  } justify-between gap-3 ${
+                    isFullyCorrect
+                      ? 'bg-emerald-500/15 border-emerald-400/40 text-emerald-100'
+                      : 'bg-amber-500/15 border-amber-400/40 text-amber-100'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    {isFullyCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="h-5 w-5 text-amber-300 shrink-0 mt-0.5" />
+                    )}
+                    <div className="text-xs sm:text-sm">
+                      <p className="font-bold text-white">
+                        {isFullyCorrect
+                          ? 'Quiz Completed — 100% Correct!'
+                          : attemptsCount === 1
+                          ? `Not Quite Right — Try Once More! (1st of 2 Tries Used)`
+                          : !isSolutionRevealed
+                          ? `2nd Try Used — Ready for Your 3rd Try or View Solution`
+                          : `Solution Revealed (${existingRecord.evaluation.correctSelectedCount} of ${existingRecord.evaluation.totalCorrectRequired} correct selected)`}
+                      </p>
+                      <p className="text-slate-200 mt-0.5">
+                        {isFullyCorrect
+                          ? 'Review the explanations below, or continue to the next slide anytime.'
+                          : attemptsCount === 1
+                          ? `You got ${existingRecord.evaluation.correctSelectedCount} of ${existingRecord.evaluation.totalCorrectRequired} right${
+                              existingRecord.evaluation.wrongSelectedCount > 0
+                                ? ` (${existingRecord.evaluation.wrongSelectedCount} incorrect pick${
+                                    existingRecord.evaluation.wrongSelectedCount > 1 ? 's' : ''
+                                  })`
+                                : ''
+                            }. Give it one more try before the solution is offered!`
+                          : !isSolutionRevealed
+                          ? 'You have tried twice. You can now tap "Show Solution" to see the right answers, or try a 3rd time below.'
+                          : 'Check the highlighted solution badges below, select the correct options, and tap Check Answer (or tap Apply Solution).'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    {canOfferSolution && !isSolutionRevealed && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRevealedSolutionSlides((prev) => ({
+                            ...prev,
+                            [historyKey]: true,
+                          }))
+                        }
+                        className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-md"
+                      >
+                        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Show Solution</span>
+                      </button>
+                    )}
+
+                    {!isFullyCorrect && isSolutionRevealed && (
+                      <button
+                        type="button"
+                        onClick={handleApplySolution}
+                        className="min-h-[40px] px-3.5 py-1.5 rounded-xl bg-emerald-400 hover:bg-emerald-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-md"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Apply Solution</span>
+                      </button>
+                    )}
+
+                    {(isFullyCorrect || isSolutionRevealed) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRevealedSolutionSlides((prev) => {
+                            const next = { ...prev };
+                            delete next[historyKey];
+                            return next;
+                          });
+                          onResetSingleQuestion(module.id, slide.id);
+                        }}
+                        className="min-h-[40px] px-3 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-950 border border-white/15 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                        <span>Reset Question</span>
+                      </button>
+                    )}
                   </div>
                 </div>
+              )}
 
-                <button
-                  type="button"
-                  onClick={() => onResetSingleQuestion(module.id, slide.id)}
-                  className="min-h-[40px] px-3 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-950 border border-white/15 text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Reset Question</span>
-                </button>
+              <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-3.5 sm:p-5">
+                <p className="text-sm sm:text-base font-bold text-white">
+                  {slide.questionPrompt}
+                </p>
+                <p className="text-xs text-cyan-300 mt-1 font-medium">
+                  {slide.helperInstruction}
+                </p>
               </div>
-            )}
 
-            <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-3.5 sm:p-5">
-              <p className="text-sm sm:text-base font-bold text-white">
-                {slide.questionPrompt}
-              </p>
-              <p className="text-xs text-cyan-300 mt-1 font-medium">
-                {slide.helperInstruction}
-              </p>
-            </div>
+              {/* Option Cards: Per-option right/wrong/missed solution is hidden on 1st wrong try and only shown if correct or on 3rd try / Show Solution */}
+              <div className="space-y-3" role="group" aria-label={slide.questionPrompt}>
+                {slide.options.map((option) => {
+                  const isSelected = selectedIds.includes(option.id);
+                  const breakdownItem = existingRecord?.evaluation.optionBreakdown.find(
+                    (b) => b.optionId === option.id
+                  );
+                  const feedbackStatus = breakdownItem?.status;
 
-            {/* Option Cards with Mobile-Friendly Per-Option Right/Wrong/Missed Feedback */}
-            <div className="space-y-3" role="group" aria-label={slide.questionPrompt}>
-              {slide.options.map((option) => {
-                const isSelected = selectedIds.includes(option.id);
-                const breakdownItem = existingRecord?.evaluation.optionBreakdown.find(
-                  (b) => b.optionId === option.id
-                );
-                const feedbackStatus = breakdownItem?.status;
+                  let cardStyle =
+                    'bg-slate-900/80 border-white/12 hover:border-white/30 text-slate-100';
+                  let statusBadge: React.ReactNode = null;
 
-                let cardStyle =
-                  'bg-slate-900/80 border-white/12 hover:border-white/30 text-slate-100';
-                let statusBadge: React.ReactNode = null;
-
-                if (existingRecord && feedbackStatus) {
-                  if (feedbackStatus === 'correct-selected') {
-                    cardStyle =
-                      'bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-500/10';
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300">
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>✓ Correct Selection</span>
-                      </span>
-                    );
-                  } else if (feedbackStatus === 'wrong-selected') {
-                    cardStyle =
-                      'bg-rose-500/20 border-rose-400 text-white shadow-lg shadow-rose-500/10';
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-300">
-                        <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>✕ Incorrect Selection (Uncheck)</span>
-                      </span>
-                    );
-                  } else if (feedbackStatus === 'missed-correct') {
-                    cardStyle =
-                      'bg-amber-500/15 border-amber-400/80 border-dashed text-white';
-                    statusBadge = (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300">
-                        <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                        <span>• Correct Answer (Missed — Select This)</span>
-                      </span>
-                    );
-                  } else {
-                    cardStyle = 'bg-slate-950/50 border-white/8 text-slate-400';
-                  }
-                } else if (isSelected) {
-                  cardStyle =
-                    'bg-cyan-500/20 border-cyan-400 text-white shadow-md shadow-cyan-500/10';
-                }
-
-                return (
-                  <div
-                    key={option.id}
-                    onClick={() => handleToggleOption(option.id)}
-                    role={slide.type === 'select-all' ? 'checkbox' : 'radio'}
-                    aria-checked={isSelected}
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleToggleOption(option.id);
-                      }
-                    }}
-                    className={`rounded-2xl border p-3.5 sm:p-5 transition-all cursor-pointer select-none ${cardStyle}`}
-                  >
-                    <div
-                      className={`flex flex-col ${
-                        isPhoneView ? '' : 'sm:flex-row sm:items-start'
-                      } justify-between gap-2`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div
-                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-                            isSelected
-                              ? 'bg-emerald-400 border-emerald-400 text-slate-950'
-                              : 'border-white/30 bg-slate-950'
-                          }`}
-                        >
-                          {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                        </div>
-                        <span className="text-xs sm:text-base font-medium leading-snug">
-                          {option.label}
+                  if (existingRecord && isSolutionRevealed && feedbackStatus) {
+                    if (feedbackStatus === 'correct-selected') {
+                      cardStyle =
+                        'bg-emerald-500/20 border-emerald-400 text-white shadow-lg shadow-emerald-500/10';
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-300">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span>✓ Correct Selection</span>
                         </span>
+                      );
+                    } else if (feedbackStatus === 'wrong-selected') {
+                      cardStyle =
+                        'bg-rose-500/20 border-rose-400 text-white shadow-lg shadow-rose-500/10';
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-rose-300">
+                          <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span>✕ Incorrect Selection (Uncheck)</span>
+                        </span>
+                      );
+                    } else if (feedbackStatus === 'missed-correct') {
+                      cardStyle =
+                        'bg-amber-500/15 border-amber-400/80 border-dashed text-white';
+                      statusBadge = (
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-300">
+                          <AlertCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span>• Correct Answer (Missed — Select This)</span>
+                        </span>
+                      );
+                    } else {
+                      cardStyle = 'bg-slate-950/50 border-white/8 text-slate-400';
+                    }
+                  } else if (isSelected) {
+                    cardStyle =
+                      'bg-cyan-500/20 border-cyan-400 text-white shadow-md shadow-cyan-500/10';
+                  }
+
+                  return (
+                    <div
+                      key={option.id}
+                      onClick={() => handleToggleOption(option.id)}
+                      role={slide.type === 'select-all' ? 'checkbox' : 'radio'}
+                      aria-checked={isSelected}
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleToggleOption(option.id);
+                        }
+                      }}
+                      className={`rounded-2xl border p-3.5 sm:p-5 transition-all cursor-pointer select-none ${cardStyle}`}
+                    >
+                      <div
+                        className={`flex flex-col ${
+                          isPhoneView ? '' : 'sm:flex-row sm:items-start'
+                        } justify-between gap-2`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                              isSelected
+                                ? 'bg-emerald-400 border-emerald-400 text-slate-950'
+                                : 'border-white/30 bg-slate-950'
+                            }`}
+                          >
+                            {isSelected && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                          </div>
+                          <span className="text-xs sm:text-base font-medium leading-snug">
+                            {option.label}
+                          </span>
+                        </div>
+
+                        {statusBadge && (
+                          <div className={`${isPhoneView ? 'pl-8' : 'pl-8 sm:pl-0'} shrink-0`}>
+                            {statusBadge}
+                          </div>
+                        )}
                       </div>
 
-                      {statusBadge && (
-                        <div className={`${isPhoneView ? 'pl-8' : 'pl-8 sm:pl-0'} shrink-0`}>
-                          {statusBadge}
+                      {existingRecord && isSolutionRevealed && (
+                        <div className="mt-2.5 pl-8 text-xs text-slate-200 border-t border-white/10 pt-2">
+                          {option.explanation}
                         </div>
                       )}
                     </div>
-
-                    {existingRecord && (
-                      <div className="mt-2.5 pl-8 text-xs text-slate-200 border-t border-white/10 pt-2">
-                        {option.explanation}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {validationMessage && (
-              <div role="alert" className="rounded-xl bg-rose-500/15 border border-rose-400/40 px-4 py-2.5 text-xs font-medium text-rose-200">
-                {validationMessage}
+                  );
+                })}
               </div>
-            )}
 
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-              <button
-                type="button"
-                onClick={handleCheckAnswer}
-                className="w-full sm:w-auto min-h-[46px] px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all cursor-pointer"
-              >
-                {existingRecord
-                  ? existingRecord.evaluation.isFullyCorrect
-                    ? 'Update / Re-Verify Answer'
-                    : 'Re-Check Adjusted Selection'
-                  : 'Check Answer'}
-              </button>
-
-              {existingRecord && slide.overallTakeaway && (
-                <p className="text-xs sm:text-sm text-emerald-300 font-medium flex-1">
-                  <strong>Key Takeaway:</strong> {slide.overallTakeaway}
-                </p>
+              {validationMessage && (
+                <div role="alert" className="rounded-xl bg-rose-500/15 border border-rose-400/40 px-4 py-2.5 text-xs font-medium text-rose-200">
+                  {validationMessage}
+                </div>
               )}
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCheckAnswer}
+                  className="w-full sm:w-auto min-h-[46px] px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all cursor-pointer"
+                >
+                  {!existingRecord
+                    ? 'Check Answer'
+                    : isFullyCorrect
+                    ? 'Update / Re-Verify Answer'
+                    : attemptsCount === 1
+                    ? 'Submit 2nd Try'
+                    : 'Submit 3rd Try'}
+                </button>
+
+                {existingRecord && isSolutionRevealed && slide.overallTakeaway && (
+                  <p className="text-xs sm:text-sm text-emerald-300 font-medium flex-1">
+                    <strong>Key Takeaway:</strong> {slide.overallTakeaway}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Module Completion Requirement Callout on Final Slide when not yet unlocked */}
         {isLastSlide && !completionGate.canComplete && (

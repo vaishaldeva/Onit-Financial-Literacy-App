@@ -420,16 +420,12 @@ export default function App() {
     setActiveTab('home');
   };
 
-  // Calculate total XP strictly from the current user's answered questions and completed modules (starts at 0 XP)
-  const earnedQuestionXp = Object.values(answeredQuestions).reduce(
-    (sum, rec) => sum + rec.evaluation.scoreDelta,
-    0
-  );
-  const earnedModuleXp = completedModuleIds.reduce((sum, id) => {
+  // Calculate total XP strictly from the set xpReward of completed modules (no individual quiz XP)
+  const uniqueCompletedModuleIds = Array.from(new Set(completedModuleIds));
+  const totalXp = uniqueCompletedModuleIds.reduce((sum, id) => {
     const m = LEARNING_MODULES.find((mod) => mod.id === id);
     return sum + (m ? m.xpReward : 0);
   }, 0);
-  const totalXp = earnedQuestionXp + earnedModuleXp;
 
   const activeModule =
     LEARNING_MODULES.find((m) => m.id === activeModuleId) || LEARNING_MODULES[0];

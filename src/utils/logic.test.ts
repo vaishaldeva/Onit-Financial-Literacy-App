@@ -70,21 +70,35 @@ test('Select All That Apply: marks fully correct when all right options and zero
   assert.equal(result.missedCorrectCount, 0);
 });
 
-test('Back navigation persistence: answered questions remain stored in history by moduleId:slideId', () => {
+test('Back navigation & attempt tracking: answered questions track attemptsCount and award 0 individual XP', () => {
   const history = {};
-  const updated = recordAnsweredQuestion(
+  const attempt1 = recordAnsweredQuestion(
     history,
     'mod-credit',
     'slide-q1',
-    ['opt-1', 'opt-2'],
+    ['opt-1'],
     sampleOptions,
     1700000000000
   );
 
   const key = getQuestionHistoryKey('mod-credit', 'slide-q1');
-  assert.ok(updated[key]);
-  assert.deepEqual(updated[key].selectedOptionIds, ['opt-1', 'opt-2']);
-  assert.equal(updated[key].evaluation.isFullyCorrect, true);
+  assert.ok(attempt1[key]);
+  assert.equal(attempt1[key].attemptsCount, 1);
+  assert.equal(attempt1[key].evaluation.isFullyCorrect, false);
+  assert.equal(attempt1[key].evaluation.scoreDelta, 0);
+
+  const attempt2 = recordAnsweredQuestion(
+    attempt1,
+    'mod-credit',
+    'slide-q1',
+    ['opt-1', 'opt-2'],
+    sampleOptions,
+    1700000005000
+  );
+  assert.equal(attempt2[key].attemptsCount, 2);
+  assert.deepEqual(attempt2[key].selectedOptionIds, ['opt-1', 'opt-2']);
+  assert.equal(attempt2[key].evaluation.isFullyCorrect, true);
+  assert.equal(attempt2[key].evaluation.scoreDelta, 0);
 });
 
 test('Pinning & Search: pinned items always stay at the top before filtering and searching', () => {

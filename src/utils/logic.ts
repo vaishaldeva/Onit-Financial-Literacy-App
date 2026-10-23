@@ -38,6 +38,7 @@ export interface AnsweredQuestionRecord {
   slideId: string;
   selectedOptionIds: string[];
   evaluation: QuestionEvaluationResult;
+  attemptsCount: number;
   answeredAt: number;
 }
 
@@ -142,9 +143,8 @@ export function evaluateQuestionSelection(
     correctSelectedCount === totalCorrectRequired &&
     totalCorrectRequired > 0;
 
-  const scoreDelta = isFullyCorrect
-    ? 50
-    : Math.max(15, correctSelectedCount * 15);
+  // XP is awarded strictly at the module level upon module completion
+  const scoreDelta = 0;
 
   let summaryMessage = '';
   if (isFullyCorrect) {
@@ -160,7 +160,7 @@ export function evaluateQuestionSelection(
     if (missedCorrectCount > 0) {
       parts.push(`${missedCorrectCount} missed right answer${missedCorrectCount > 1 ? 's' : ''}`);
     }
-    summaryMessage = `Breakdown: ${parts.join(' · ')}. Check the highlighted badges below so you never have to guess.`;
+    summaryMessage = `Breakdown: ${parts.join(' · ')}.`;
   }
 
   return {
@@ -192,6 +192,8 @@ export function recordAnsweredQuestion(
   timestamp = Date.now()
 ): Record<string, AnsweredQuestionRecord> {
   const key = getQuestionHistoryKey(moduleId, slideId);
+  const prevRecord = history[key];
+  const attemptsCount = (prevRecord?.attemptsCount || 0) + 1;
   const evaluation = evaluateQuestionSelection(options, selectedOptionIds);
   return {
     ...history,
@@ -201,6 +203,7 @@ export function recordAnsweredQuestion(
       slideId,
       selectedOptionIds: [...selectedOptionIds],
       evaluation,
+      attemptsCount,
       answeredAt: timestamp,
     },
   };

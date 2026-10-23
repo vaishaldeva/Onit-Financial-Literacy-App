@@ -1476,8 +1476,8 @@ export const LEARNING_MODULES: LearningModule[] = [
           },
           {
             label: 'Credit Bureaus',
-            metric: 'Experian · Equifax · TransUnion',
-            detail: 'The 3 agencies that track your credit report. You can check and freeze your credit with all 3 for $0.',
+            metric: '3 Major Bureaus',
+            detail: 'Experian, Equifax, and TransUnion are the 3 agencies that track your credit report. You can check and freeze your credit with all 3 for $0.',
             tone: 'amber',
           },
         ],
