@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Search,
   Pin,
@@ -63,6 +63,16 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
 
   const [selectedCardDetail, setSelectedCardDetail] = useState<CreditCardItem | null>(null);
   const [selectedBankDetail, setSelectedBankDetail] = useState<BankItem | null>(null);
+
+  useEffect(() => {
+    if (selectedCardDetail || selectedBankDetail) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [selectedCardDetail, selectedBankDetail]);
 
   const [compareMode, setCompareMode] = useState<'cards' | 'banks'>('cards');
   const [selectedCompareCardIds, setSelectedCompareCardIds] = useState<string[]>([]);
@@ -931,18 +941,19 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           aria-modal="true"
           aria-label={`${selectedCardDetail.name} details`}
           onClick={() => setSelectedCardDetail(null)}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-8 pb-8 space-y-4 sm:space-y-5 shadow-2xl"
+            className="w-full max-w-2xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
           >
-            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
+            {/* Fixed Non-Overlapping Header */}
+            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-400">
                   {selectedCardDetail.issuer} · {selectedCardDetail.network} · {selectedCardDetail.officialDomain}
                 </p>
-                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5 leading-snug">
                   {selectedCardDetail.name}
                 </h3>
               </div>
@@ -956,84 +967,87 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               </button>
             </div>
 
-            <div className="max-w-xs mx-auto">
-              <PhysicalCardVisual card={selectedCardDetail} />
-            </div>
+            {/* Dedicated Scrollable Body */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-8 sm:pt-5 sm:pb-8 space-y-4 sm:space-y-5">
+              <div className="max-w-xs mx-auto">
+                <PhysicalCardVisual card={selectedCardDetail} />
+              </div>
 
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-              {selectedCardDetail.description}
-            </p>
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {selectedCardDetail.description}
+              </p>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {selectedCardDetail.upfrontBenefits.map((b, i) => (
-                <div key={i} className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                  <span className="font-mono-tabular text-lg sm:text-xl font-bold text-emerald-300 block">
-                    {b.rate}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {selectedCardDetail.upfrontBenefits.map((b, i) => (
+                  <div key={i} className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                    <span className="font-mono-tabular text-lg sm:text-xl font-bold text-emerald-300 block">
+                      {b.rate}
+                    </span>
+                    <span className="text-xs font-semibold text-white block mt-0.5">
+                      {b.category}
+                    </span>
+                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                      {b.detail}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-4 space-y-2 text-xs text-slate-200">
+                <p>
+                  <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
+                  {selectedCardDetail.welcomeBonus}
+                </p>
+                <p>
+                  <strong className="text-emerald-300">Fees & APR:</strong>{' '}
+                  {selectedCardDetail.annualFee} Annual Fee · {selectedCardDetail.foreignTxFee} Foreign Fee · {selectedCardDetail.introApr} ({selectedCardDetail.regularApr})
+                </p>
+                <p>
+                  <strong className="text-amber-300">Best For:</strong>{' '}
+                  {selectedCardDetail.bestForWho}
+                </p>
+                <p className="pt-1 text-slate-300 flex items-start gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>
+                    <strong className="text-white">Pre-Approval Note:</strong>{' '}
+                    {selectedCardDetail.preApprovalNote}
                   </span>
-                  <span className="text-xs font-semibold text-white block mt-0.5">
-                    {b.category}
-                  </span>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    {b.detail}
-                  </span>
-                </div>
-              ))}
-            </div>
+                </p>
+              </div>
 
-            <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-4 space-y-2 text-xs text-slate-200">
-              <p>
-                <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
-                {selectedCardDetail.welcomeBonus}
-              </p>
-              <p>
-                <strong className="text-emerald-300">Fees & APR:</strong>{' '}
-                {selectedCardDetail.annualFee} Annual Fee · {selectedCardDetail.foreignTxFee} Foreign Fee · {selectedCardDetail.introApr} ({selectedCardDetail.regularApr})
-              </p>
-              <p>
-                <strong className="text-amber-300">Best For:</strong>{' '}
-                {selectedCardDetail.bestForWho}
-              </p>
-              <p className="pt-1 text-slate-300 flex items-start gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-white">Pre-Approval Note:</strong>{' '}
-                  {selectedCardDetail.preApprovalNote}
-                </span>
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:flex sm:items-center justify-between gap-2.5 pt-3 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onTogglePinCard(selectedCardDetail.id)}
-                className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Pin className="h-4 w-4" />
-                <span>
-                  {pinnedCardIds.includes(selectedCardDetail.id)
-                    ? 'Pinned to Top & Compare'
-                    : 'Pin This Card'}
-                </span>
-              </button>
-
-              <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
-                <a
-                  href={selectedCardDetail.applyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                >
-                  <span>Apply on Bank Website</span>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                </a>
-
+              <div className="grid grid-cols-1 sm:flex sm:items-center justify-between gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => setSelectedCardDetail(null)}
-                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  onClick={() => onTogglePinCard(selectedCardDetail.id)}
+                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  Done
+                  <Pin className="h-4 w-4" />
+                  <span>
+                    {pinnedCardIds.includes(selectedCardDetail.id)
+                      ? 'Pinned to Top & Compare'
+                      : 'Pin This Card'}
+                  </span>
                 </button>
+
+                <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
+                  <a
+                    href={selectedCardDetail.applyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>Apply on Bank Website</span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCardDetail(null)}
+                    className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1047,18 +1061,19 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           aria-modal="true"
           aria-label={`${selectedBankDetail.name} details`}
           onClick={() => setSelectedBankDetail(null)}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-8 pb-8 space-y-4 sm:space-y-5 shadow-2xl"
+            className="w-full max-w-2xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
           >
-            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
+            {/* Fixed Non-Overlapping Header */}
+            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-cyan-400">
                   {selectedBankDetail.institutionType} · {selectedBankDetail.fdicInsured} · {selectedBankDetail.officialDomain}
                 </p>
-                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5 leading-snug">
                   {selectedBankDetail.name}
                 </h3>
               </div>
@@ -1072,99 +1087,102 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-xs text-slate-400 block">Savings APY</span>
-                <span className="font-mono-tabular text-base sm:text-lg font-bold text-emerald-300">
-                  {selectedBankDetail.savingsApy}
-                </span>
+            {/* Dedicated Scrollable Body (Unclipped top APY cards matching IMG_4159.PNG) */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-8 sm:pt-5 sm:pb-8 space-y-4 sm:space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-xs text-slate-400 block">Savings APY</span>
+                  <span className="font-mono-tabular text-base sm:text-lg font-bold text-emerald-300">
+                    {selectedBankDetail.savingsApy}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-xs text-slate-400 block">Checking APY</span>
+                  <span className="font-mono-tabular text-base sm:text-lg font-bold text-cyan-300">
+                    {selectedBankDetail.checkingApy}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-xs text-slate-400 block">Monthly Fee</span>
+                  <span className="font-mono-tabular text-sm sm:text-base font-bold text-white">
+                    {selectedBankDetail.monthlyFee}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-xs text-slate-400 block">Zelle®</span>
+                  <span className="text-xs font-bold text-white">
+                    {selectedBankDetail.zelleSupport}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-xs text-slate-400 block">Checking APY</span>
-                <span className="font-mono-tabular text-base sm:text-lg font-bold text-cyan-300">
-                  {selectedBankDetail.checkingApy}
-                </span>
-              </div>
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-xs text-slate-400 block">Monthly Fee</span>
-                <span className="font-mono-tabular text-sm sm:text-base font-bold text-white">
-                  {selectedBankDetail.monthlyFee}
-                </span>
-              </div>
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-xs text-slate-400 block">Zelle®</span>
-                <span className="text-xs font-bold text-white">
-                  {selectedBankDetail.zelleSupport}
-                </span>
-              </div>
-            </div>
 
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-              {selectedBankDetail.description}
-            </p>
-
-            <ul className="space-y-1.5">
-              {selectedBankDetail.topFeatures.map((feat, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-xs text-slate-200">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>{feat}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-4 space-y-2.5 text-xs text-slate-200">
-              <div>
-                <strong className="text-emerald-300 flex items-center gap-1.5 mb-0.5">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>Onit Verdict:</span>
-                </strong>
-                {selectedBankDetail.verdict}
-              </div>
-              <div className="pt-2 border-t border-white/10">
-                <strong className="text-amber-300 flex items-center gap-1.5 mb-0.5">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  <span>Fine Print Watch-Out:</span>
-                </strong>
-                {selectedBankDetail.watchOutFor}
-              </div>
-              <p className="pt-2 border-t border-white/10 text-slate-300 flex items-start gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
-                <span>{selectedBankDetail.preApprovalNote}</span>
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {selectedBankDetail.description}
               </p>
-            </div>
 
-            <div className="grid grid-cols-1 sm:flex sm:items-center justify-between gap-2.5 pt-3 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onTogglePinBank(selectedBankDetail.id)}
-                className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Pin className="h-4 w-4" />
-                <span>
-                  {pinnedBankIds.includes(selectedBankDetail.id)
-                    ? 'Pinned to Top & Compare'
-                    : 'Pin This Bank'}
-                </span>
-              </button>
+              <ul className="space-y-1.5">
+                {selectedBankDetail.topFeatures.map((feat, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-xs text-slate-200">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" aria-hidden="true" />
+                    <span>{feat}</span>
+                  </li>
+                ))}
+              </ul>
 
-              <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
-                <a
-                  href={selectedBankDetail.applyUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
-                >
-                  <span>Apply on Bank Website</span>
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                </a>
+              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-4 space-y-2.5 text-xs text-slate-200">
+                <div>
+                  <strong className="text-emerald-300 flex items-center gap-1.5 mb-0.5">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Onit Verdict:</span>
+                  </strong>
+                  {selectedBankDetail.verdict}
+                </div>
+                <div className="pt-2 border-t border-white/10">
+                  <strong className="text-amber-300 flex items-center gap-1.5 mb-0.5">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    <span>Fine Print Watch-Out:</span>
+                  </strong>
+                  {selectedBankDetail.watchOutFor}
+                </div>
+                <p className="pt-2 border-t border-white/10 text-slate-300 flex items-start gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>{selectedBankDetail.preApprovalNote}</span>
+                </p>
+              </div>
 
+              <div className="grid grid-cols-1 sm:flex sm:items-center justify-between gap-2.5 pt-3 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => setSelectedBankDetail(null)}
-                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  onClick={() => onTogglePinBank(selectedBankDetail.id)}
+                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  Done
+                  <Pin className="h-4 w-4" />
+                  <span>
+                    {pinnedBankIds.includes(selectedBankDetail.id)
+                      ? 'Pinned to Top & Compare'
+                      : 'Pin This Bank'}
+                  </span>
                 </button>
+
+                <div className="grid grid-cols-2 sm:flex items-center gap-2.5">
+                  <a
+                    href={selectedBankDetail.applyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  >
+                    <span>Apply on Bank Website</span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBankDetail(null)}
+                    className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -164,6 +164,10 @@ export default function App() {
   }, []);
 
   const mainContainerRef = useRef<HTMLElement | null>(null);
+  const navTrackRef = useRef<HTMLDivElement | null>(null);
+  const [navDragIndex, setNavDragIndex] = useState<number | null>(null);
+  const navTouchStartXRef = useRef<number | null>(null);
+  const isDraggingNavRef = useRef<boolean>(false);
 
   const [activeModuleId, setActiveModuleId] = useState<string>(LEARNING_MODULES[0].id);
 
@@ -956,7 +960,7 @@ export default function App() {
             />
           )}
 
-          {/* Mobile Bottom Navigation Bar — Instant Tap Response with Smooth Pill Indicator */}
+          {/* Mobile Bottom Navigation Bar — Smooth Touch-and-Drag Pill + Instant Tap */}
           {onboardingStage === 'none' && (() => {
             const navItems: { id: MainTab; label: string; Icon: React.FC<{ className?: string }> }[] = [
               { id: 'home', label: 'Home', Icon: Compass },
@@ -969,6 +973,39 @@ export default function App() {
               0,
               navItems.findIndex((item) => item.id === activeTab)
             );
+            const pillPosition = navDragIndex !== null ? navDragIndex : activeIdx;
+            const highlightedIdx =
+              navDragIndex !== null
+                ? Math.min(navItems.length - 1, Math.max(0, Math.round(navDragIndex)))
+                : activeIdx;
+
+            const getClampedIndexFromClientX = (clientX: number): number | null => {
+              const el = navTrackRef.current;
+              if (!el) return null;
+              const rect = el.getBoundingClientRect();
+              if (rect.width <= 0) return null;
+              const relX = clientX - rect.left;
+              const ratio = Math.max(0, Math.min(0.9999, relX / rect.width));
+              const rawFloat = ratio * navItems.length - 0.5;
+              return Math.max(0, Math.min(navItems.length - 1, rawFloat));
+            };
+
+            const finishNavTouch = () => {
+              if (isDraggingNavRef.current && navDragIndex !== null) {
+                const targetIdx = Math.min(
+                  navItems.length - 1,
+                  Math.max(0, Math.round(navDragIndex))
+                );
+                const nextTab = navItems[targetIdx]?.id;
+                if (nextTab) {
+                  if (nextTab === 'modules') setModulesScreenMode('list');
+                  setActiveTab(nextTab);
+                }
+              }
+              setNavDragIndex(null);
+              navTouchStartXRef.current = null;
+              isDraggingNavRef.current = false;
+            };
 
             return (
               <nav
@@ -979,24 +1016,56 @@ export default function App() {
                     : 'md:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 pt-2 pb-[max(0.9rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-[#070B14] via-[#070B14]/85 to-transparent pointer-events-none'
                 }`}
               >
-                <div className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-[28px] p-1.5 select-none">
+                <div
+                  ref={navTrackRef}
+                  onTouchStart={(e) => {
+                    if (e.touches.length === 1) {
+                      navTouchStartXRef.current = e.touches[0].clientX;
+                      isDraggingNavRef.current = false;
+                    }
+                  }}
+                  onTouchMove={(e) => {
+                    if (e.touches.length === 1) {
+                      const clientX = e.touches[0].clientX;
+                      const startX = navTouchStartXRef.current ?? clientX;
+                      if (!isDraggingNavRef.current && Math.abs(clientX - startX) > 5) {
+                        isDraggingNavRef.current = true;
+                      }
+                      if (isDraggingNavRef.current) {
+                        const clamped = getClampedIndexFromClientX(clientX);
+                        if (clamped !== null) {
+                          setNavDragIndex(clamped);
+                        }
+                      }
+                    }
+                  }}
+                  onTouchEnd={finishNavTouch}
+                  onTouchCancel={finishNavTouch}
+                  className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-[28px] p-1.5 select-none touch-pan-x"
+                >
                   <div
                     aria-hidden="true"
-                    className="liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] transition-transform duration-200 ease-out"
+                    className={`liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] ${
+                      navDragIndex !== null
+                        ? 'transition-none scale-[1.04]'
+                        : 'transition-transform duration-200 ease-out'
+                    }`}
                     style={{
                       width: 'calc((100% - 12px) / 5)',
-                      transform: `translate3d(${activeIdx * 100}%, 0, 0)`,
+                      transform: `translate3d(${pillPosition * 100}%, 0, 0)`,
                     }}
                   />
 
                   <div className="relative z-10 grid grid-cols-5 items-center min-h-[58px]">
-                    {navItems.map(({ id, label, Icon }) => {
-                      const isActive = activeTab === id;
+                    {navItems.map(({ id, label, Icon }, idx) => {
+                      const isActive = idx === highlightedIdx;
                       return (
                         <button
                           key={id}
                           type="button"
                           onClick={() => {
+                            setNavDragIndex(null);
+                            isDraggingNavRef.current = false;
                             if (id === 'modules') setModulesScreenMode('list');
                             setActiveTab(id);
                           }}

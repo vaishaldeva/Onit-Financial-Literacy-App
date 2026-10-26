@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Play,
   Sliders,
@@ -92,6 +92,16 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   const [inspectBank, setInspectBank] = useState<BankItem | null>(null);
   const [inspectCard, setInspectCard] = useState<CreditCardItem | null>(null);
+
+  useEffect(() => {
+    if (inspectBank || inspectCard) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [inspectBank, inspectCard]);
 
   const utilSim = estimateUtilizationImpact(simLimit, simBalance);
   const hysaSim = calculateHysaComparison(simDeposit, simMonthlySave, 4.5, 3);
@@ -995,18 +1005,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           aria-modal="true"
           aria-label={`${inspectBank.name} details`}
           onClick={() => setInspectBank(null)}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-7 pb-8 space-y-4 shadow-2xl"
+            className="w-full max-w-xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
           >
-            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-7 sm:-mt-7 sm:px-7 sm:pt-6 sm:pb-3.5 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
+            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-cyan-400">
                   {inspectBank.institutionType} · {inspectBank.fdicInsured}
                 </p>
-                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5 leading-snug">
                   {inspectBank.name}
                 </h3>
               </div>
@@ -1020,60 +1030,62 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-[11px] text-slate-400 block">Savings APY</span>
-                <span className="font-mono-tabular text-base font-bold text-emerald-300">
-                  {inspectBank.savingsApy}
-                </span>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-7 sm:pt-5 sm:pb-7 space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-[11px] text-slate-400 block">Savings APY</span>
+                  <span className="font-mono-tabular text-base font-bold text-emerald-300">
+                    {inspectBank.savingsApy}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-[11px] text-slate-400 block">Monthly Fee</span>
+                  <span className="font-mono-tabular text-base font-bold text-white">
+                    {inspectBank.monthlyFee}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+                  <span className="text-[11px] text-slate-400 block">ATM Access</span>
+                  <span className="text-xs font-bold text-cyan-300">
+                    {inspectBank.atmAccess}
+                  </span>
+                </div>
               </div>
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-[11px] text-slate-400 block">Monthly Fee</span>
-                <span className="font-mono-tabular text-base font-bold text-white">
-                  {inspectBank.monthlyFee}
-                </span>
-              </div>
-              <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                <span className="text-[11px] text-slate-400 block">ATM Access</span>
-                <span className="text-xs font-bold text-cyan-300">
-                  {inspectBank.atmAccess}
-                </span>
-              </div>
-            </div>
 
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-              {inspectBank.description}
-            </p>
-
-            <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-3.5 space-y-1.5 text-xs text-slate-200">
-              <p>
-                <strong className="text-emerald-300">Onit Verdict:</strong>{' '}
-                {inspectBank.verdict}
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {inspectBank.description}
               </p>
-              <p className="text-amber-200">
-                <strong className="text-amber-300">Watch Out For:</strong>{' '}
-                {inspectBank.watchOutFor}
-              </p>
-            </div>
 
-            <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onTogglePinBank(inspectBank.id)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <Pin className="h-3.5 w-3.5" />
-                <span>
-                  {pinnedBankIds.includes(inspectBank.id) ? 'Pinned' : 'Pin This Bank'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setInspectBank(null)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-3.5 space-y-1.5 text-xs text-slate-200">
+                <p>
+                  <strong className="text-emerald-300">Onit Verdict:</strong>{' '}
+                  {inspectBank.verdict}
+                </p>
+                <p className="text-amber-200">
+                  <strong className="text-amber-300">Watch Out For:</strong>{' '}
+                  {inspectBank.watchOutFor}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => onTogglePinBank(inspectBank.id)}
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Pin className="h-3.5 w-3.5" />
+                  <span>
+                    {pinnedBankIds.includes(inspectBank.id) ? 'Pinned' : 'Pin This Bank'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInspectBank(null)}
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1086,18 +1098,18 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           aria-modal="true"
           aria-label={`${inspectCard.name} details`}
           onClick={() => setInspectCard(null)}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-7 pb-8 space-y-4 shadow-2xl"
+            className="w-full max-w-xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
           >
-            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-7 sm:-mt-7 sm:px-7 sm:pt-6 sm:pb-3.5 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
+            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-400">
                   {inspectCard.issuer} · {inspectCard.annualFee} Annual Fee
                 </p>
-                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5 leading-snug">
                   {inspectCard.name}
                 </h3>
               </div>
@@ -1111,47 +1123,49 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               </button>
             </div>
 
-            <div className="max-w-xs mx-auto">
-              <PhysicalCardVisual card={inspectCard} compact />
-            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-7 sm:pt-5 sm:pb-7 space-y-4">
+              <div className="max-w-xs mx-auto">
+                <PhysicalCardVisual card={inspectCard} compact />
+              </div>
 
-            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-              {inspectCard.description}
-            </p>
+              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+                {inspectCard.description}
+              </p>
 
-            <div className="rounded-2xl bg-slate-950/85 border border-white/10 p-3.5 space-y-1.5 text-xs text-slate-200">
-              <p>
-                <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
-                {inspectCard.welcomeBonus}
-              </p>
-              <p>
-                <strong className="text-amber-300">Best For:</strong>{' '}
-                {inspectCard.bestForWho}
-              </p>
-              <p className="flex items-start gap-1.5 text-slate-300 pt-1">
-                <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span>{inspectCard.preApprovalNote}</span>
-              </p>
-            </div>
+              <div className="rounded-2xl bg-slate-950/85 border border-white/10 p-3.5 space-y-1.5 text-xs text-slate-200">
+                <p>
+                  <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
+                  {inspectCard.welcomeBonus}
+                </p>
+                <p>
+                  <strong className="text-amber-300">Best For:</strong>{' '}
+                  {inspectCard.bestForWho}
+                </p>
+                <p className="flex items-start gap-1.5 text-slate-300 pt-1">
+                  <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <span>{inspectCard.preApprovalNote}</span>
+                </p>
+              </div>
 
-            <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-              <button
-                type="button"
-                onClick={() => onTogglePinCard(inspectCard.id)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-              >
-                <Pin className="h-3.5 w-3.5" />
-                <span>
-                  {pinnedCardIds.includes(inspectCard.id) ? 'Pinned' : 'Pin This Card'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setInspectCard(null)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
-              >
-                Close
-              </button>
+              <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => onTogglePinCard(inspectCard.id)}
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Pin className="h-3.5 w-3.5" />
+                  <span>
+                    {pinnedCardIds.includes(inspectCard.id) ? 'Pinned' : 'Pin This Card'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInspectCard(null)}
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>
