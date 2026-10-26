@@ -994,15 +994,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`${inspectBank.name} details`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3.5 sm:p-4 overflow-y-auto"
+          onClick={() => setInspectBank(null)}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
         >
-          <div className="glass-panel-elevated w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-white/15 my-auto space-y-4">
-            <div className="flex items-start justify-between gap-3">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-7 pb-8 space-y-4 shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-7 sm:-mt-7 sm:px-7 sm:pt-6 sm:pb-3.5 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-cyan-400">
                   {inspectBank.institutionType} · {inspectBank.fdicInsured}
                 </p>
-                <h3 className="text-xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5">
                   {inspectBank.name}
                 </h3>
               </div>
@@ -1010,7 +1014,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 type="button"
                 onClick={() => setInspectBank(null)}
                 aria-label="Close bank details"
-                className="min-h-[38px] min-w-[38px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+                className="touch-manipulation min-h-[38px] min-w-[38px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1056,7 +1060,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinBank(inspectBank.id)}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Pin className="h-3.5 w-3.5" />
                 <span>
@@ -1066,7 +1070,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectBank(null)}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
               >
                 Close
               </button>
@@ -1081,15 +1085,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`${inspectCard.name} details`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3.5 sm:p-4 overflow-y-auto"
+          onClick={() => setInspectCard(null)}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
         >
-          <div className="glass-panel-elevated w-full max-w-xl rounded-3xl p-5 sm:p-7 border border-white/15 my-auto space-y-4">
-            <div className="flex items-start justify-between gap-3">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-7 pb-8 space-y-4 shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-7 sm:-mt-7 sm:px-7 sm:pt-6 sm:pb-3.5 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-400">
                   {inspectCard.issuer} · {inspectCard.annualFee} Annual Fee
                 </p>
-                <h3 className="text-xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-xl font-bold text-white mt-0.5">
                   {inspectCard.name}
                 </h3>
               </div>
@@ -1097,7 +1105,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 type="button"
                 onClick={() => setInspectCard(null)}
                 aria-label="Close card details"
-                className="min-h-[38px] min-w-[38px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+                className="touch-manipulation min-h-[38px] min-w-[38px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1130,7 +1138,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinCard(inspectCard.id)}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
               >
                 <Pin className="h-3.5 w-3.5" />
                 <span>
@@ -1140,7 +1148,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => setInspectCard(null)}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
               >
                 Close
               </button>

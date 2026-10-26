@@ -164,8 +164,6 @@ export default function App() {
   }, []);
 
   const mainContainerRef = useRef<HTMLElement | null>(null);
-  const navTrackRef = useRef<HTMLDivElement | null>(null);
-  const [navDragIndex, setNavDragIndex] = useState<number | null>(null);
 
   const [activeModuleId, setActiveModuleId] = useState<string>(LEARNING_MODULES[0].id);
 
@@ -690,7 +688,7 @@ export default function App() {
           ) : (
             <main
               ref={mainContainerRef}
-              className={`relative z-10 mx-auto w-full ${
+              className={`relative mx-auto w-full ${
                 mobilePhoneFrameMode
                   ? 'flex-1 overflow-y-auto max-w-full px-5 pt-4 pb-6 space-y-5'
                   : 'max-w-7xl px-[22px] sm:px-7 pt-5 sm:pt-6 pb-8 space-y-6 sm:space-y-8'
@@ -958,7 +956,7 @@ export default function App() {
             />
           )}
 
-          {/* Mobile Bottom Navigation Bar — Apple Liquid Glass Translucent Sliding Pill Dock */}
+          {/* Mobile Bottom Navigation Bar — Instant Tap Response with Smooth Pill Indicator */}
           {onboardingStage === 'none' && (() => {
             const navItems: { id: MainTab; label: string; Icon: React.FC<{ className?: string }> }[] = [
               { id: 'home', label: 'Home', Icon: Compass },
@@ -971,27 +969,6 @@ export default function App() {
               0,
               navItems.findIndex((item) => item.id === activeTab)
             );
-            const displayIdx = navDragIndex !== null ? navDragIndex : activeIdx;
-
-            const updateTabFromClientX = (clientX: number, commitOnly = false) => {
-              if (!navTrackRef.current) return;
-              const rect = navTrackRef.current.getBoundingClientRect();
-              const relX = Math.max(0, Math.min(rect.width - 1, clientX - rect.left));
-              const rawFloat = (relX / rect.width) * navItems.length - 0.5;
-              const clampedFloat = Math.max(0, Math.min(navItems.length - 1, rawFloat));
-              const snappedIdx = Math.min(
-                navItems.length - 1,
-                Math.max(0, Math.floor((relX / rect.width) * navItems.length))
-              );
-              if (!commitOnly) {
-                setNavDragIndex(clampedFloat);
-              }
-              const nextTab = navItems[snappedIdx]?.id;
-              if (nextTab && nextTab !== activeTab) {
-                if (nextTab === 'modules') setModulesScreenMode('list');
-                setActiveTab(nextTab);
-              }
-            };
 
             return (
               <nav
@@ -1002,32 +979,13 @@ export default function App() {
                     : 'md:hidden fixed bottom-0 left-0 right-0 z-40 px-3.5 pt-2 pb-[max(0.9rem,env(safe-area-inset-bottom))] bg-gradient-to-t from-[#070B14] via-[#070B14]/85 to-transparent pointer-events-none'
                 }`}
               >
-                <div
-                  ref={navTrackRef}
-                  onTouchStart={(e) => {
-                    if (e.touches[0]) {
-                      updateTabFromClientX(e.touches[0].clientX);
-                    }
-                  }}
-                  onTouchMove={(e) => {
-                    if (e.touches[0]) {
-                      updateTabFromClientX(e.touches[0].clientX);
-                    }
-                  }}
-                  onTouchEnd={() => setNavDragIndex(null)}
-                  onTouchCancel={() => setNavDragIndex(null)}
-                  className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-[28px] p-1.5 select-none touch-pan-y"
-                >
+                <div className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-[28px] p-1.5 select-none">
                   <div
                     aria-hidden="true"
-                    className={`liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] ${
-                      navDragIndex !== null
-                        ? 'transition-none scale-[1.04]'
-                        : 'transition-transform duration-300 ease-out scale-100'
-                    }`}
+                    className="liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-[22px] transition-transform duration-200 ease-out"
                     style={{
                       width: 'calc((100% - 12px) / 5)',
-                      transform: `translate3d(${displayIdx * 100}%, 0, 0)`,
+                      transform: `translate3d(${activeIdx * 100}%, 0, 0)`,
                     }}
                   />
 
@@ -1039,18 +997,17 @@ export default function App() {
                           key={id}
                           type="button"
                           onClick={() => {
-                            setNavDragIndex(null);
                             if (id === 'modules') setModulesScreenMode('list');
                             setActiveTab(id);
                           }}
-                          className={`flex flex-col items-center justify-center min-h-[54px] py-1.5 px-1 rounded-[22px] text-[11px] transition-colors cursor-pointer ${
+                          className={`touch-manipulation flex flex-col items-center justify-center min-h-[54px] py-1.5 px-1 rounded-[22px] text-[11px] transition-colors cursor-pointer ${
                             isActive
                               ? 'text-white font-bold drop-shadow-[0_1px_6px_rgba(52,211,153,0.45)]'
                               : 'text-slate-300/90 hover:text-white font-semibold'
                           }`}
                         >
                           <Icon
-                            className={`h-5 w-5 shrink-0 transition-transform duration-200 ${
+                            className={`h-5 w-5 shrink-0 transition-transform duration-150 ${
                               isActive ? 'text-emerald-300 scale-110' : 'text-slate-300'
                             }`}
                             aria-hidden="true"

@@ -930,15 +930,19 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`${selectedCardDetail.name} details`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3.5 sm:p-4 overflow-y-auto"
+          onClick={() => setSelectedCardDetail(null)}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
         >
-          <div className="glass-panel-elevated w-full max-w-2xl rounded-3xl p-5 sm:p-8 border border-white/15 my-auto space-y-4 sm:space-y-5">
-            <div className="flex items-start justify-between gap-3">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-8 pb-8 space-y-4 sm:space-y-5 shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-400">
                   {selectedCardDetail.issuer} · {selectedCardDetail.network} · {selectedCardDetail.officialDomain}
                 </p>
-                <h3 className="text-xl sm:text-2xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
                   {selectedCardDetail.name}
                 </h3>
               </div>
@@ -946,7 +950,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 type="button"
                 onClick={() => setSelectedCardDetail(null)}
                 aria-label="Close card details"
-                className="min-h-[40px] min-w-[40px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
+                className="touch-manipulation min-h-[40px] min-w-[40px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1002,7 +1006,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinCard(selectedCardDetail.id)}
-                className="min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Pin className="h-4 w-4" />
                 <span>
@@ -1017,7 +1021,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   href={selectedCardDetail.applyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <span>Apply on Bank Website</span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -1026,7 +1030,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedCardDetail(null)}
-                  className="min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
                 >
                   Done
                 </button>
@@ -1042,15 +1046,19 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           role="dialog"
           aria-modal="true"
           aria-label={`${selectedBankDetail.name} details`}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3.5 sm:p-4 overflow-y-auto"
+          onClick={() => setSelectedBankDetail(null)}
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-sm p-2.5 sm:p-4"
         >
-          <div className="glass-panel-elevated w-full max-w-2xl rounded-3xl p-5 sm:p-8 border border-white/15 my-auto space-y-4 sm:space-y-5">
-            <div className="flex items-start justify-between gap-3">
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[86dvh] sm:max-h-[85vh] overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] rounded-3xl bg-slate-900 border border-white/15 p-5 sm:p-8 pb-8 space-y-4 sm:space-y-5 shadow-2xl"
+          >
+            <div className="sticky top-0 z-10 -mx-5 -mt-5 px-5 pt-5 pb-3 sm:-mx-8 sm:-mt-8 sm:px-8 sm:pt-6 sm:pb-4 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-cyan-400">
                   {selectedBankDetail.institutionType} · {selectedBankDetail.fdicInsured} · {selectedBankDetail.officialDomain}
                 </p>
-                <h3 className="text-xl sm:text-2xl font-bold text-white mt-0.5">
+                <h3 className="text-lg sm:text-2xl font-bold text-white mt-0.5">
                   {selectedBankDetail.name}
                 </h3>
               </div>
@@ -1058,7 +1066,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 type="button"
                 onClick={() => setSelectedBankDetail(null)}
                 aria-label="Close bank details"
-                className="min-h-[40px] min-w-[40px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
+                className="touch-manipulation min-h-[40px] min-w-[40px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1129,7 +1137,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinBank(selectedBankDetail.id)}
-                className="min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Pin className="h-4 w-4" />
                 <span>
@@ -1144,7 +1152,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   href={selectedBankDetail.applyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
+                  className="touch-manipulation min-h-[44px] px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-bold shadow-lg shadow-cyan-500/20 hover:brightness-110 transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <span>Apply on Bank Website</span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -1153,7 +1161,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedBankDetail(null)}
-                  className="min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
                 >
                   Done
                 </button>
