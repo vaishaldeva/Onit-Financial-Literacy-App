@@ -220,6 +220,7 @@ export function filterAndSortWithPinnedFirst<T extends PinnableItem>(
 ): T[] {
   const pinnedSet = new Set(pinnedIds);
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const normalizedCat = categoryFilter.trim().toLowerCase();
 
   // Step 1: Order with pinned items at the very top first (preserving original relative order)
   const orderedWithPinnedTop = [...items].sort((a, b) => {
@@ -230,10 +231,13 @@ export function filterAndSortWithPinnedFirst<T extends PinnableItem>(
 
   // Step 2: Apply category and search filters while keeping pinned items at the top
   return orderedWithPinnedTop.filter((item) => {
+    const itemKeywords = (item.searchKeywords || []).map((k) => k.toLowerCase());
     const matchesCategory =
-      categoryFilter === 'all' ||
-      (categoryFilter === 'pinned' && pinnedSet.has(item.id)) ||
-      item.category.toLowerCase() === categoryFilter.toLowerCase();
+      normalizedCat === 'all' ||
+      (normalizedCat === 'pinned' && pinnedSet.has(item.id)) ||
+      item.category.toLowerCase() === normalizedCat ||
+      item.category.toLowerCase().includes(normalizedCat) ||
+      itemKeywords.some((kw) => kw === normalizedCat || kw.includes(normalizedCat));
 
     if (!matchesCategory) return false;
     if (!normalizedQuery) return true;

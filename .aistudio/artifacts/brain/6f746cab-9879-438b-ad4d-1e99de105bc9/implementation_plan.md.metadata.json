@@ -1,6 +1,6 @@
 {
-  "summary":  "Implementation plan to enable desktop iPhone View previewing for the Account Login screen, Post-Signup Intro Slides, and Settings modal strictly as a desktop testing tool without affecting real mobile app users.",
-  "updatedAt":  "2026-10-23T00:58:52.378261473Z",
+  "summary":  "Comprehensive redesign plan to align Onit with the end user's feedback and attached curriculum PDF: (1) Replace the Home tab with an interactive Bank & Card Recommendation Survey plus interactive financial calculators, (2) Overhaul Modules into a 1-column high-level list -> Lesson selector -> bite-sized 1-line slide player using the exact C/P slides and question types (MC, T/F, SA, MT, DD, and timed Module 2 Badge Battle) from the attached PDF, and (3) Declutter Credit Cards and Banks with click-first category buttons and progressive disclosure (high-level cards first, full details on click).",
+  "updatedAt":  "2026-10-26T20:26:11.518608600Z",
   "requestFeedback":  true,
   "userFacing":  true
 }
