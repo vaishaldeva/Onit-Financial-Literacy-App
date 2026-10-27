@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,6 +28,7 @@ import type {
 import {
   getQuestionHistoryKey,
   calculateModuleCompletionGate,
+  evaluateQuestionSelection,
   type AnsweredQuestionRecord,
 } from '../utils/logic';
 
@@ -48,6 +50,126 @@ interface ModulePlayerViewProps {
   isPhoneView?: boolean;
   initialSubView?: 'lessons' | 'player';
 }
+
+const CONFETTI_COLORS = [
+  '#34D399', // emerald-400
+  '#22D3EE', // cyan-400
+  '#6EE7B7', // emerald-300
+  '#38BDF8', // sky-400
+  '#FBBF24', // amber-400
+  '#A7F3D0', // emerald-200
+];
+
+const SmoothConfettiBreeze: React.FC<{ burstKey: number }> = ({ burstKey }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const width = Math.max(window.innerWidth, 320);
+    const height = Math.max(window.innerHeight, 480);
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Spawn sleek paper ribbons that gently blow across the visible screen
+    const particles = Array.from({ length: 70 }, (_, i) => {
+      const fromLeftWave = i % 2 === 0;
+      const startX = fromLeftWave
+        ? width * (0.15 + Math.random() * 0.45)
+        : width * (0.3 + Math.random() * 0.4);
+      const startY = fromLeftWave
+        ? height * (0.25 + Math.random() * 0.35)
+        : height * (0.45 + Math.random() * 0.25);
+
+      const angle = -Math.PI * 0.38 + (Math.random() - 0.5) * 1.1;
+      const speed = 5.5 + Math.random() * 8.5;
+
+      return {
+        x: startX,
+        y: startY,
+        vx: Math.cos(angle) * speed + 1.8 + Math.random() * 2.4,
+        vy: Math.sin(angle) * speed - 1.5 - Math.random() * 2.5,
+        w: 8 + Math.random() * 5,
+        h: 4 + Math.random() * 3,
+        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.14,
+        tilt: Math.random() * Math.PI * 2,
+        tiltSpeed: 0.08 + Math.random() * 0.09,
+        windX: 0.06 + Math.random() * 0.06,
+      };
+    });
+
+    const durationMs = 2000;
+    const startTime = performance.now();
+    let rafId = 0;
+
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      if (elapsed >= durationMs) {
+        ctx.clearRect(0, 0, width, height);
+        return;
+      }
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Smooth ease-out fade during the last 650ms of the 2-second breeze
+      const fadeProgress =
+        elapsed > 1350 ? Math.max(0, 1 - (elapsed - 1350) / 650) : 1;
+      const alpha = fadeProgress * fadeProgress;
+
+      for (const p of particles) {
+        p.vx = p.vx * 0.985 + p.windX;
+        p.vy = p.vy * 0.985 + 0.16; // soft air resistance + gentle gravity
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rotation += p.rotationSpeed;
+        p.tilt += p.tiltSpeed;
+
+        const scaleY = Math.max(0.2, Math.abs(Math.cos(p.tilt)));
+
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.94;
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.scale(1, scaleY);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+
+      rafId = window.requestAnimationFrame(animate);
+    };
+
+    rafId = window.requestAnimationFrame(animate);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [burstKey]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 99999,
+      }}
+    />,
+    document.body
+  );
+};
 
 export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   module,
@@ -138,7 +260,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   );
   const [battleSaPicks, setBattleSaPicks] = useState<number[]>([]);
   const [battleCompleted, setBattleCompleted] = useState(false);
-  const [showSubmitConfetti, setShowSubmitConfetti] = useState(false);
+  const [confettiBurstKey, setConfettiBurstKey] = useState(0);
 
   // Calculate regular lesson completion percentage for the 70% Badge Battle unlock rule
   const regularLessons = module.lessons.filter((l) => !l.isBadgeBattle);
@@ -201,6 +323,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   // Sync problem interactive states when changing slides
   useEffect(() => {
     setValidationMessage('');
+    setConfettiBurstKey(0);
     if (existingRecord) {
       setSelectedIds(existingRecord.selectedOptionIds);
     } else {
@@ -421,6 +544,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setSelectedIds(updatedOptionIds);
   };
 
+  const triggerConfettiBreeze = () => {
+    const nextKey = Date.now();
+    setConfettiBurstKey(nextKey);
+    window.setTimeout(() => {
+      setConfettiBurstKey((curr) => (curr === nextKey ? 0 : curr));
+    }, 2000);
+  };
+
   const handleCheckAnswer = () => {
     if (slide.problemFormat === 'tf' && slide.tfStatements) {
       if (selectedIds.length < slide.tfStatements.length) {
@@ -455,19 +586,18 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setValidationMessage('');
     onSubmitAnswer(module.id, slide.id, selectedIds);
 
-    // Check if the submitted selection matches all correct options to trigger feel-good confetti
+    // Check if the submitted selection is fully correct to trigger the 2-second confetti breeze
     if (slide.options) {
-      const correctOptionIds = slide.options
-        .filter((o) => o.isCorrect)
-        .map((o) => o.id)
-        .sort();
-      const pickedSorted = [...selectedIds].sort();
-      const gotItRight =
-        correctOptionIds.length === pickedSorted.length &&
-        correctOptionIds.every((id, idx) => id === pickedSorted[idx]);
-      if (gotItRight) {
-        setShowSubmitConfetti(true);
-        window.setTimeout(() => setShowSubmitConfetti(false), 1800);
+      const evalResult = evaluateQuestionSelection(slide.options, selectedIds);
+      if (evalResult.isFullyCorrect) {
+        // Hide any open side solution hints once solved
+        setRevealedSolutionSlides((prev) => {
+          if (!prev[historyKey]) return prev;
+          const next = { ...prev };
+          delete next[historyKey];
+          return next;
+        });
+        triggerConfettiBreeze();
       }
     }
   };
@@ -676,6 +806,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
   return (
     <div ref={playerTopRef} className="space-y-4 relative">
+      {confettiBurstKey > 0 && <SmoothConfettiBreeze burstKey={confettiBurstKey} />}
       {/* Compact Lesson Bar */}
       <div className="glass-panel rounded-2xl p-3 sm:p-4 space-y-2.5 border border-white/12">
         <div className="flex items-center justify-between gap-2">
@@ -955,13 +1086,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             const isFullyCorrect = Boolean(
               existingRecord?.evaluation.isFullyCorrect
             );
+            // Only show the side answers AFTER the user clicks "Show Solution" and BEFORE they fill/solve it
+            const isShowingSolution =
+              !isFullyCorrect && Boolean(revealedSolutionSlides[historyKey]);
             const canOfferSolution = Boolean(
-              existingRecord && !isFullyCorrect && attemptsCount >= 2
+              existingRecord &&
+                !isFullyCorrect &&
+                attemptsCount >= 2 &&
+                !isShowingSolution
             );
-            const isSolutionRevealed =
-              isFullyCorrect ||
-              Boolean(revealedSolutionSlides[historyKey]) ||
-              attemptsCount >= 3;
 
             const handleApplySolution = () => {
               if (!slide.options) return;
@@ -969,10 +1102,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 .filter((o) => o.isCorrect)
                 .map((o) => o.id);
               setSelectedIds(correctIds);
-              setRevealedSolutionSlides((prev) => ({
-                ...prev,
-                [historyKey]: true,
-              }));
+              // Clear the side solution state so the side answers disappear once filled in
+              setRevealedSolutionSlides((prev) => {
+                const next = { ...prev };
+                delete next[historyKey];
+                return next;
+              });
 
               if (slide.problemFormat === 'mt' && slide.matchingPairs) {
                 const solvedMt: Record<string, string> = {};
@@ -996,6 +1131,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 );
               }
               onSubmitAnswer(module.id, slide.id, correctIds);
+              triggerConfettiBreeze();
             };
 
             const pFormat = slide.problemFormat || 'mc';
@@ -1011,17 +1147,17 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   </p>
                 </div>
 
-                {/* Subtle Non-Exam Helper Actions (No 'Correct!' or 'Incorrect' exam banners) */}
-                {existingRecord && (!isFullyCorrect || isSolutionRevealed) && (
+                {/* Subtle Non-Exam Helper Actions */}
+                {existingRecord && (!isFullyCorrect || isShowingSolution) && (
                   <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
                     <span className="text-xs font-normal text-slate-300">
-                      {!isFullyCorrect && !isSolutionRevealed
-                        ? 'Give another option a try whenever you’re ready.'
-                        : 'Solution highlighted below.'}
+                      {isShowingSolution
+                        ? 'Right answers shown on the side — tap Fill Solution to fill them in.'
+                        : 'Give another option a try whenever you’re ready.'}
                     </span>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {canOfferSolution && !isSolutionRevealed && (
+                      {canOfferSolution && (
                         <button
                           type="button"
                           onClick={() =>
@@ -1037,7 +1173,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                         </button>
                       )}
 
-                      {!isFullyCorrect && isSolutionRevealed && (
+                      {isShowingSolution && (
                         <button
                           type="button"
                           onClick={handleApplySolution}
@@ -1081,10 +1217,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                           key={st.id}
                           className="rounded-2xl bg-slate-950/85 border border-white/12 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                         >
-                          <div className="space-y-1">
+                          <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0">
                             <p className="text-xs sm:text-sm font-normal text-slate-100">
                               {st.text}
                             </p>
+                            {isShowingSolution && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                                → {st.isTrue ? 'True' : 'False'}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
@@ -1148,6 +1289,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                             <span className="text-xs sm:text-sm font-normal text-emerald-300">
                               {pair.left}
                             </span>
+                            {isShowingSolution && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300">
+                                → {pair.right}
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {allRights.map((rText, rIdx) => {
@@ -1192,10 +1338,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                           key={item.id}
                           className="rounded-2xl bg-slate-950/85 border border-white/12 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                         >
-                          <div>
+                          <div className="flex items-center justify-between sm:justify-start gap-2.5">
                             <p className="text-xs sm:text-sm font-normal text-slate-100">
                               {item.label}
                             </p>
+                            {isShowingSolution && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                                → {item.correctCategory}
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 shrink-0">
                             {slide.ddBucketConfig!.categories.map((cat) => {
@@ -1247,10 +1398,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                             <span className="h-7 w-7 rounded-lg bg-emerald-500/20 border border-emerald-400/30 font-mono-tabular text-xs font-medium text-emerald-300 flex items-center justify-center shrink-0">
                               {idx + 1}
                             </span>
-                            <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 min-w-0">
                               <p className="text-xs sm:text-sm font-normal text-slate-100">
                                 {item.label}
                               </p>
+                              {isShowingSolution && (
+                                <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                                  → Step #{item.correctPosition + 1}
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -1285,28 +1441,16 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   <div className="space-y-2.5">
                     {slide.options.map((option) => {
                       const isSelected = selectedIds.includes(option.id);
-                      const breakdownItem =
-                        existingRecord?.evaluation.optionBreakdown.find(
-                          (b) => b.optionId === option.id
-                        );
-                      const feedbackStatus = breakdownItem?.status;
 
                       let cardStyle =
                         'bg-slate-900/80 border-white/12 hover:border-white/30 text-slate-100';
-                      if (existingRecord && isSolutionRevealed && feedbackStatus) {
-                        if (feedbackStatus === 'correct-selected') {
-                          cardStyle =
-                            'bg-emerald-500/20 border-emerald-400 text-white';
-                        } else if (feedbackStatus === 'wrong-selected') {
-                          cardStyle =
-                            'bg-rose-500/20 border-rose-400 text-white';
-                        } else if (feedbackStatus === 'missed-correct') {
-                          cardStyle =
-                            'bg-amber-500/15 border-amber-400 border-dashed text-white';
-                        }
-                      } else if (isSelected) {
+                      if (isShowingSolution && option.isCorrect) {
                         cardStyle =
-                          'bg-cyan-500/20 border-cyan-400 text-white';
+                          'bg-amber-500/15 border-amber-400 text-white';
+                      } else if (isSelected) {
+                        cardStyle = isFullyCorrect
+                          ? 'bg-emerald-500/20 border-emerald-400 text-white'
+                          : 'bg-cyan-500/20 border-cyan-400 text-white';
                       }
 
                       return (
@@ -1326,21 +1470,29 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                           }}
                           className={`rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer select-none ${cardStyle}`}
                         >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
-                                isSelected
-                                  ? 'bg-emerald-400 border-emerald-400 text-slate-950'
-                                  : 'border-white/30 bg-slate-950'
-                              }`}
-                            >
-                              {isSelected && (
-                                <Check className="h-3.5 w-3.5 stroke-[3]" />
-                              )}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div
+                                className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                                  isSelected
+                                    ? 'bg-emerald-400 border-emerald-400 text-slate-950'
+                                    : 'border-white/30 bg-slate-950'
+                                }`}
+                              >
+                                {isSelected && (
+                                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                )}
+                              </div>
+                              <span className="text-xs sm:text-sm font-normal leading-relaxed">
+                                {option.label}
+                              </span>
                             </div>
-                            <span className="text-xs sm:text-sm font-normal leading-relaxed">
-                              {option.label}
-                            </span>
+
+                            {isShowingSolution && option.isCorrect && (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                                ← Solution
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -1358,18 +1510,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 )}
 
                 <div className="pt-1 relative inline-block w-full sm:w-auto">
-                  {/* Feel-Good Confetti Burst Around Submit Button */}
-                  {(showSubmitConfetti || isFullyCorrect) && (
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -top-3 left-1/2 -translate-x-1/2 flex items-center gap-2"
-                    >
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                      <span className="text-xs">✨🎉✨</span>
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
-                    </div>
-                  )}
-
                   <button
                     type="button"
                     onClick={handleCheckAnswer}
@@ -1379,7 +1519,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                         : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md hover:brightness-110'
                     }`}
                   >
-                    {isFullyCorrect ? 'Got it! ✨' : 'Submit'}
+                    {isFullyCorrect ? 'Got it!' : 'Submit'}
                   </button>
                 </div>
               </div>
