@@ -1,121 +1,86 @@
-# Onit Redesign: Bite-Sized Curriculum, Click-First Discovery & Interactive Home Hub
+# Owner Feedback Refinements Plan
 
-This plan restructures **Onit: Own Your Future** around the end user's core product vision: eliminating overwhelming walls of text, restoring the exact one-line-per-slide lesson pacing from the curriculum document, simplifying Credit Cards and Banks to high-level scannable cards with click-first category buttons, and transforming the Home tab into an interactive financial calculator and bank recommendation hub.
-
----
+This plan implements every change requested by the app owner to make the credit card browsing more compact, add a dedicated Checking account filter, lock the Badge Battle behind 70% lesson progression upfront, replace exam-like quiz grading with a feel-good green border glow and button confetti, and switch slides and cards to smaller, non-bold typography.
 
 ## User Review & Critical Decisions
 
 > [!IMPORTANT]
-> All product decisions below incorporate your confirmed preferences from our clarification step and every point from the end user's feedback.
+> All three product clarifications were confirmed and are reflected below. No existing features will be removed outside of the specific adjustments requested by the owner.
 
-- **Confirmed Decision 1 — New Home Tab Purpose**: Replace the old Home page (which duplicated module and card lists) with an interactive **Bank & Card Recommendation Survey** (filtering by location/branch preference, current offer priority, and financial goal) paired with the **Interactive Financial Calculators Hub** (Credit Utilization, High-Yield Savings APY, 50/30/20 Budget, and Compound Growth sliders).
-- **Confirmed Decision 2 — Three-Step Progressive Module Navigation**: Replace the 2-column text-heavy module cards with a **1-column high-level Module list** (search bar at top, zero paragraph clutter) $\to$ **Lesson list** for the selected module $\to$ **Bite-sized 1-line Slide Player** where each `C` slide is a single digestible thought and each `P` slide is an interactive question.
-- **Confirmed Decision 3 — Full Curriculum Restoration + Timed Badge Battle**: Load the complete curriculum from the attached document (`Modules 1–9`, all lessons, all `C` content slides and `P` problem types: Multiple Choice `[MC]`, multi-statement True/False `[T/F]`, Select All `[SA]`, Matching `[MT]`, Drag/Sort/Order `[DD]`, plus the timed **Module 2 Badge Battle & Final Boss**).
-- **Confirmed Decision 4 — Click-First Card Categories & High-Level Overviews**: Replace the Credit Card search bar with simple 1-tap reward category buttons (`Groceries`, `Gas`, `Dining`, `Travel`, `Online Shopping`, `Entertainment`, `Student / Starter`, `No Fee`), keep the clean search bar for Banks without cash-back category clutter, and strip paragraph descriptions from the main Cards/Banks feeds so full descriptions only appear when the user taps to inspect a card or bank.
+- **Confirmed Decision 1 — Checking Account Filter Placement**: Add a dedicated **Checking** filter pill inside the **Banks** tab (`All`, `Pinned`, `Checking`, `HYSA`, `Hybrid`, `Traditional`) so users can filter specifically for checking accounts.
+- **Confirmed Decision 2 — Realistic Credit Card Visuals Only on Click**: Remove the credit card preview image from the Cards list items so more cards are visible at once, and display realistic card face artwork (with authentic issuer emblems, metallic textures, and layout geometry) inside the card detail popup when clicked.
+- **Confirmed Decision 3 — Smaller, Non-Bold Typography**: Keep the dark theme while changing module slide text, quiz prompts, and card copy to smaller, regular-weight (`font-normal`) text and toning down heavy game-style display labels so text feels light and effortless to read.
 
 ---
 
 ## 1. Overview & Core Concept
 
-- **What It Does**: Delivers a fast, zero-friction mobile financial literacy and banking discovery app where young users learn through 1-sentence slides, test their instincts on interactive mini-problems, play with live financial sliders, and find/compare the best student cards and high-yield banks with simple taps.
-- **Target Audience / Persona**: Gen-Z / young adult mobile users (ages 16–24) with short attention spans who want immediate clarity, zero textbook walls of text, and effortless tap-based navigation.
-- **Key Value**: High retention and organic word-of-mouth growth driven by conversational 1-line pacing, progressive disclosure (high-level overview first, details on click), and practical decision tools.
+- **What It Does**: Refines the Credit Cards tab, Banks tab, and Modules player based directly on the app owner's walkthrough feedback.
+- **Target Audience / Persona**: Gen-Z / young users who want fast, low-friction visual scanning without feeling like they are reading a textbook or taking a school exam.
+- **Key Value**:
+  1. **Compact Credit Card List + Realistic Card Art on Click**: Users see more credit cards on screen at a glance, and see a realistic visual of the physical card face when they tap into a card's details.
+  2. **1-Click Checking Filter**: Users looking specifically to open a checking account can filter for checking accounts with a single tap in the Banks tab.
+  3. **Upfront 70% Lock on Badge Battle + Youth-Friendly Wording**: The Module 2 Badge Battle starts locked in the lesson list until 70% of the module's lessons are completed, and uses clear terms like **"time penalty"** instead of "stall".
+  4. **Feel-Good Quiz Acknowledgement (No Exam Labels)**: Removes "Correct!" / "Incorrect" / "Correct answer:" exam grading when answering module questions; instead, getting a question right lights up the slide border in emerald green and bursts confetti around the submit button.
+  5. **Lighter, Smaller Typography**: Replaces bulky, large bold slide text with smaller, regular-weight (`font-normal`) text that is easy on the eyes.
 
 ---
 
 ## 2. User Experience & Visual Design
 
-### Key User Flows
-
-1. **Home Tab (Interactive Survey + Calculators Hub)**:
-   - **Top At-a-Glance Progress Bar**: Compact greeting, current XP, overall curriculum progress bar, and a 1-tap **"Resume Lesson"** button.
-   - **Interactive "Find Your Ideal Bank & Card" Survey**: A 3-question tap-only matcher:
-     1. *How do you want to bank?* (In-person branches & cash deposits / 100% Online for max APY / Hybrid campus & ATM access)
-     2. *What current offer matters most?* (Highest Savings APY / $0-Fee Student Checking / Cash Back & Welcome Bonus)
-     3. *What is your main goal right now?* (Build Emergency Savings / Everyday Spending & Bills / Build Credit Score Safely)
-     - Immediately outputs personalized Bank and Card matches with 1-tap **Pin** and **View Details** actions.
-   - **Interactive Financial Calculators**: Tabbed slider playground featuring **Credit Utilization Impact**, **High-Yield Savings vs. Traditional Bank**, **50/30/20 Monthly Budget**, and **Compound Interest Growth**.
-
-2. **Modules Tab (1-Column List $\to$ Lessons $\to$ 1-Line Slide Player)**:
-   - **View A — Single-Column Modules List**:
-     - Top curriculum progress bar + keyword search bar.
-     - Single-column vertical stack of modules. Each module row displays **only** the Module Number, Title, Lesson Count, XP Badge, and Completion Checkmark—**no summary paragraphs or skill tag clutter**.
-   - **View B — Module Overview & Lesson List**:
-     - Tapping a module reveals a brief 1-sentence intro and the vertical list of all **Lessons** inside that module (plus the **Badge Battle & Final Boss** in Module 2).
-     - Each lesson row shows Lesson Number, Title, Slide count, and status (`Start`, `Resume`, or `Completed`).
-   - **View C — Bite-Sized 1-Line Slide Player**:
-     - Renders one `C` (Content) or `P` (Problem) slide at a time from the curriculum document.
-     - Content slides feature a clean centered layout with 1–2 conversational sentences in large, scannable typography (`18px–22px`).
-     - Problem slides support:
-       - **Multiple Choice (`[MC]`)**: Single-select option buttons.
-       - **Multi-Statement True/False (`[T/F]`)**: Clean row of statements where the user taps `True` or `False` for each statement.
-       - **Select All That Apply (`[SA]`)**: Multi-select checklist cards.
-       - **Match Terms (`[MT]`)**: Tap-to-pair interactive matching cards.
-       - **Sort / Order (`[DD]`)**: Two-bucket category sorting (e.g., *Good when borrowing* vs. *Good when saving*) or numbered sequence ordering (e.g., *First 90 days with a card*).
-     - **Module 2 Badge Battle**: Timed challenge where wrong answers trigger a brief stall shake and rotate to the back of the queue until the user clears all questions within the timer, followed by the Final Boss matching round.
-
-3. **Cards & Banks Tabs (Progressive Disclosure & Click-First Filters)**:
-   - **Credit Cards Tab**:
-     - **Click-Only Category Selector**: One-tap filter buttons (`All`, `Pinned`, `Groceries`, `Gas`, `Dining`, `Online Shopping`, `Travel`, `Entertainment`, `Student / Starter`).
-     - **Scannable Card Tile**: Shows only the card artwork, card name, annual fee, and top reward rate badges. All long descriptions, pros/cons, and "Best For" paragraphs are hidden until the user taps **Details**.
-   - **Banks Tab**:
-     - **Clean Search Bar**: Simple search input at the top without cash-back category pills.
-     - **Scannable Bank Tile**: Shows only the bank badge, name, 1-line tagline, Savings APY, Monthly Fee, and ATM network. Long descriptions, bullet lists, and fine-print callouts only appear inside the **Details** modal on click.
-
-### Visual Identity & Theme
-- **Aesthetic Direction**: Clean, high-contrast dark fintech mobile interface (`#070B14` canvas) with generous whitespace, zero text clutter, and tactile thumb-zone ergonomics.
-- **Color Palette & Mood**: Deep Obsidian (`#070B14`) primary canvas, Slate glass surfaces (`rgba(15, 23, 42, 0.85)`), Emerald (`#34D399`) and Cyan (`#22D3EE`) action accents, Amber (`#FBBF24`) XP and achievement highlights.
-- **Typography & Hierarchy**: `Plus Jakarta Sans` / system geometric sans for punchy, high-legibility 1-line lesson slides (`text-lg sm:text-xl font-semibold leading-relaxed`), paired with `tabular-nums` monospace for APY rates, XP counters, and calculator outputs.
+- **Key User Flows**:
+  1. **Credit Cards List → Realistic Card Modal**:
+     - In the **Cards** tab, each card row displays the issuer, annual fee, card name, 2×2 reward rate chips, and action buttons—without the large card graphic taking up vertical space.
+     - Tapping a card opens the detail modal showcasing a realistic card face design tailored to that specific card (Amex Blue Cash Everyday centurion wave, Discover Chrome brushed metallic, Capital One Savor concentric copper rings, Chase Freedom Unlimited navy emblem, and Bilt obsidian metal).
+  2. **Banks Tab → Checking Filter**:
+     - Tapping the **Checking** filter button in the Banks tab filters the list to accounts offering checking features and highlights their checking APY/perks.
+  3. **Module Lesson List → Locked Badge Battle (Until 70% Lessons Completed)**:
+     - When opening Module 2, the Badge Battle item in the lesson list shows a lock icon and `Locked (X% / 70% lessons completed)` until the user completes at least 70% of the regular lessons in the module.
+     - Trying to advance from Lesson 12 into the Badge Battle before reaching 70% lesson completion keeps the user gated with a clear progress indicator rather than letting them play first and seeing `Locked (3% / 70%)` afterward.
+  4. **Module Slide Player → Green Border Glow + Submit Button Confetti**:
+     - Content slides and quiz prompts render in smaller, non-bold (`font-normal`, `text-base sm:text-lg`) typography.
+     - When a user gets a quiz question wrong, the app does not flash "Incorrect" or reveal the "Correct answer:" right away—it simply prompts them to try again (and offers `Show Solution` on the 3rd attempt).
+     - When a user gets a quiz question right, the slide card border glows emerald green and a particle confetti burst animates directly around the submit button.
 
 ---
 
 ## 3. Key Product Decisions & Trade-Offs
 
-- **Decision 1: Progressive Disclosure Over Upfront Descriptions**
-  - *Chosen Approach*: Hide module summaries, card paragraphs, and bank essays from list views; show them only after the user clicks into a module, card, or bank.
-  - *Why*: Directly solves the end user's biggest complaint ("wayyy too much text at any given point... scaring the user"). Users scan titles in seconds and only read details they care about.
-- **Decision 2: Exact 1-Line Slide Granularity (`C` and `P` Slides)**
-  - *Chosen Approach*: Structure each module into its constituent **Lessons**, and each lesson into individual 1-line `C` slides interleaved with `P` quiz slides exactly as written in the attached curriculum PDF.
-  - *Why*: Preserves the author's conversational pacing ("one concept at a time... you don't even realize how much you end up reading") rather than dumping multiple paragraphs onto a single slide.
-- **Decision 3: Click-First Category Filtering on Credit Cards**
-  - *Chosen Approach*: Replace the Credit Card search bar and search history box with direct 1-tap category buttons (`Groceries`, `Gas`, `Dining`, `Travel`, `Student`, etc.).
-  - *Why*: Young users often don't know what card name or keyword to type; tapping a spending category like `Groceries` or `Dining` is instant and foolproof.
+- **Decision 1: Upfront 70% Lesson Progression Gate for Badge Battle**
+  - *Chosen Approach*: Calculate the percentage of regular lessons completed in the module (`completedRegularLessons / totalRegularLessons * 100`). Lock the Badge Battle lesson row in the Lesson Selector (and the "Next Lesson" transition into Badge Battle) until that percentage reaches at least 70%.
+  - *Why*: Matches the owner's exact expectation that users must earn access to the Badge Battle by completing 70% of the lessons first, rather than playing the battle at 3% and only seeing a lock message at the end.
+- **Decision 2: Non-Exam Quiz Feedback (Border Glow + Micro-Confetti)**
+  - *Chosen Approach*: Remove the status banner with "Correct!" / "Not quite" and per-row "Correct answer:" labels on wrong tries. On a right answer, animate the slide container border to glowing emerald (`border-emerald-400 ring-2 ring-emerald-400/40 shadow-[0_0_25px_rgba(52,211,153,0.3)]`) and spawn a lightweight CSS/SVG confetti burst anchored to the submit button.
+  - *Why*: Eliminates the feeling of being graded on a test while still giving an immediate, rewarding dopamine hit when solved.
 
 ---
 
 ## 4. Technical Architecture & Data Strategy *(Technical Reference)*
 
-### Architecture & Component Diagram
-
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                        App Shell & Per-Account State                    │
-│     (Splash -> Auth Gate -> Main Mobile/Desktop Shell + Glass Dock)     │
-└───────┬────────────────────────┬──────────────────────┬─────────────────┘
-        │                        │                      │
-        ▼                        ▼                      ▼
-┌───────────────────┐  ┌──────────────────────┐  ┌────────────────────────┐
-│   Home Tab View   │  │   Modules Tab View   │  │ Cards / Banks / Compare│
-│                   │  │                      │  │                        │
-│ • At-a-Glance Bar │  │ • 1-Col Module List  │  │ • Cards: 1-Tap Category│
-│ • 3-Step Bank &   │  │   (Title + XP only)  │  │   Buttons + Compact    │
-│   Card Matcher    │  │          │           │  │   Tile -> Detail Modal │
-│ • 4 Interactive   │  │          ▼           │  │ • Banks: Search Bar +  │
-│   Slider          │  │ • Module Lesson List │  │   Compact Tile ->      │
-│   Calculators     │  │   (Lessons 1..N)     │  │   Detail Modal         │
-│                   │  │          │           │  │ • Compare: Side-by-Side│
-│                   │  │          ▼           │  │   Pinned Matrix        │
-│                   │  │ • 1-Line C/P Slide   │  │                        │
-│                   │  │   Player + Timed     │  │                        │
-│                   │  │   Badge Battle       │  │                        │
-└───────────────────┘  └──────────────────────┘  └────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                              Application State                           │
+│   completedModuleIds · answeredQuestions · viewedSlideIds · pinnedIds    │
+└───────────────────┬──────────────────────────────────┬───────────────────┘
+                    │                                  │
+                    ▼                                  ▼
+┌───────────────────────────────────────┐  ┌───────────────────────────────┐
+│        VaultAndCompareView            │  │       ModulePlayerView        │
+│ ───────────────────────────────────── │  │ ───────────────────────────── │
+│ • Cards List: Compact (No Card Image) │  │ • Typography: Smaller,        │
+│ • Card Detail Modal: Realistic        │  │   regular weight (font-normal)│
+│   PhysicalCardVisual per card ID      │  │ • Lesson List: Badge Battle   │
+│ • Banks Filter Bar: Adds "Checking"   │  │   locked until ≥70% lessons   │
+│   category filter                     │  │ • Badge Battle: Reworded      │
+│                                       │  │   "stall" → "time penalty"    │
+│                                       │  │ • Quiz Submit: Green border   │
+│                                       │  │   glow + button confetti, no  │
+│                                       │  │   exam "Correct/Incorrect" UI │
+└───────────────────────────────────────┘  └───────────────────────────────┘
 ```
 
-### Data Model & State
-- **Hierarchical Curriculum Schema (`LearningModule` $\to$ `ModuleLesson` $\to$ `LessonSlide`)**:
-  - `LearningModule`: `id`, `numberLabel`, `title`, `category`, `xpReward`, `shortOverview` (shown only after clicking the module), `lessons: ModuleLesson[]`, and optional `badgeBattle`.
-  - `ModuleLesson`: `id`, `numberLabel`, `title`, `slides: ModuleSlide[]`.
-  - `ModuleSlide`: Supports `content` (1-line conversational text), `mc` (Multiple Choice), `tf` (Multi-statement True/False), `sa` (Select All That Apply), `mt` (Matching pairs), and `dd` (Category Sort or Sequence Order).
-- **Per-Account Progress Persistence**:
-  - Tracks viewed slides, answered problem records (with 2-try retry before solution reveal), completed lessons, and completed modules (requiring all lessons in the module to be completed with $\ge 70\%$ quiz accuracy before claiming module XP).
+- **Interactive Component & State Mapping**:
+  - **Credit Cards List & Detail Modal**: Remove `<PhysicalCardVisual />` from the list card grid so cards stack compactly; upgrade `<PhysicalCardVisual />` inside the detail modal with card-specific SVG artwork, realistic EMV chip detailing, network logos (Visa, Mastercard, Amex, Discover), and authentic card face typography.
+  - **Banks Filter Logic**: Add `'Checking'` to the Banks category filter bar and update `filterAndSortWithPinnedFirst` so `'Checking'` matches banks with checking accounts.
+  - **Badge Battle Gate & Wording**: Compute `lessonCompletionPercent` across non-battle lessons in the module; disable clicking the Badge Battle lesson card when `lessonCompletionPercent < 70` (showing `Locked · X%/70% lessons done`), and replace all instances of `"stall"` / `"Stalling"` with `"time penalty"` / `"Time penalty"`.
+  - **Quiz Feedback & Typography**: Replace bold/oversized slide text (`text-xl sm:text-3xl font-bold`) with `text-base sm:text-lg font-normal text-slate-100`, remove "Correct!" / "Correct answer:" labels when wrong, and add an emerald border highlight on the slide container plus a confetti particle burst around the submit button upon solving.

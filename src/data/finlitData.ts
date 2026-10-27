@@ -209,7 +209,7 @@ export const BANKS_DATA: BankItem[] = [
     applyUrl: 'https://www.sofi.com/banking/',
     officialDomain: 'sofi.com',
     preApprovalNote: 'Opens online in 3 mins · No credit score impact.',
-    searchKeywords: ['sofi', '4.50%', 'hysa', 'vaults', 'direct deposit', 'allpoint', 'no fee', 'early paycheck'],
+    searchKeywords: ['checking', 'sofi', '4.50%', 'hysa', 'vaults', 'direct deposit', 'allpoint', 'no fee', 'early paycheck'],
   },
   {
     id: 'bank-ally',
@@ -283,7 +283,7 @@ export const BANKS_DATA: BankItem[] = [
     applyUrl: 'https://www.capitalone.com/bank/',
     officialDomain: 'capitalone.com',
     preApprovalNote: 'Pairs in one app with Capital One Savor & Quicksilver cards.',
-    searchKeywords: ['capital one', '360', '4.10%', 'cvs', 'cash deposit', 'international', 'no foreign fee', 'hybrid'],
+    searchKeywords: ['checking', 'capital one', '360', '4.10%', 'cvs', 'cash deposit', 'international', 'no foreign fee', 'hybrid'],
   },
   {
     id: 'bank-chase',
@@ -320,7 +320,7 @@ export const BANKS_DATA: BankItem[] = [
     applyUrl: 'https://www.chase.com/personal/checking',
     officialDomain: 'chase.com',
     preApprovalNote: 'Open online in 5 mins or at any Chase branch.',
-    searchKeywords: ['chase', 'college checking', 'total checking', 'branches', 'cash deposit', 'zelle', 'bonus', 'traditional'],
+    searchKeywords: ['checking', 'chase', 'college checking', 'total checking', 'branches', 'cash deposit', 'zelle', 'bonus', 'traditional'],
   },
   {
     id: 'bank-schwab',
@@ -357,7 +357,7 @@ export const BANKS_DATA: BankItem[] = [
     applyUrl: 'https://www.schwab.com/checking',
     officialDomain: 'schwab.com',
     preApprovalNote: 'Includes a linked $0-fee Schwab brokerage account.',
-    searchKeywords: ['schwab', 'investor checking', 'international', 'atm rebate', 'travel', 'study abroad', 'roth ira'],
+    searchKeywords: ['checking', 'schwab', 'investor checking', 'international', 'atm rebate', 'travel', 'study abroad', 'roth ira'],
   },
   {
     id: 'bank-discover',
@@ -394,7 +394,7 @@ export const BANKS_DATA: BankItem[] = [
     applyUrl: 'https://www.discover.com/online-banking/',
     officialDomain: 'discover.com',
     preApprovalNote: '$0 minimum deposit + 24/7 U.S. support.',
-    searchKeywords: ['discover', '4.10%', 'cashback debit', 'hysa', 'no fee', 'online savings'],
+    searchKeywords: ['checking', 'discover', '4.10%', 'cashback debit', 'hysa', 'no fee', 'online savings'],
   },
 ];
 

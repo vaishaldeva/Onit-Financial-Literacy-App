@@ -1,6 +1,6 @@
 {
-  "summary":  "Comprehensive redesign plan to align Onit with the end user's feedback and attached curriculum PDF: (1) Replace the Home tab with an interactive Bank & Card Recommendation Survey plus interactive financial calculators, (2) Overhaul Modules into a 1-column high-level list -> Lesson selector -> bite-sized 1-line slide player using the exact C/P slides and question types (MC, T/F, SA, MT, DD, and timed Module 2 Badge Battle) from the attached PDF, and (3) Declutter Credit Cards and Banks with click-first category buttons and progressive disclosure (high-level cards first, full details on click).",
-  "updatedAt":  "2026-10-26T20:26:11.518608600Z",
+  "summary":  "Implementation plan covering all 7 owner-requested changes: hiding credit card previews in the list view until clicked, rendering realistic card face designs in the detail modal, adding a Checking filter in the Banks tab, rewording 'stall' to 'time penalty' in Badge Battle, locking the Badge Battle upfront until 70% of module lessons are completed, replacing exam-like Correct/Incorrect labels with a green screen border glow and submit-button confetti, and switching module/card text to smaller regular-weight typography.",
+  "updatedAt":  "2026-10-27T17:36:29.277279678Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -930,7 +930,7 @@ export const CURRICULUM_MODULES_1_TO_5: LearningModule[] = [
           C(
             'm2-l13-c1',
             'BADGE BATTLE',
-            'Ready for the Module 2 Badge Battle? Answer all 17 lightning questions before the timer runs out — missed questions trigger a brief stall and cycle back to the end of the queue!'
+            'Ready for the Module 2 Badge Battle? Answer all 17 lightning questions before the timer runs out — missed questions add a brief time penalty and cycle back to the end of the queue!'
           ),
           MT('m2-l13-final-boss', 'FINAL BOSS', 'Final Boss — Match the credit term to what it actually means:', [
             { left: 'Statement balance', right: 'How much you currently owe' },
