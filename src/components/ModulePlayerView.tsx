@@ -268,6 +268,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const [battleSaPicks, setBattleSaPicks] = useState<number[]>([]);
   const [battleCompleted, setBattleCompleted] = useState(false);
   const [confettiBurstKey, setConfettiBurstKey] = useState(0);
+  const [wrongShakeActive, setWrongShakeActive] = useState(false);
+  const [wrongGlowActive, setWrongGlowActive] = useState(false);
 
   // Calculate regular lesson completion percentage for the 70% Badge Battle unlock rule
   const regularLessons = module.lessons.filter((l) => !l.isBadgeBattle);
@@ -327,9 +329,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setShowCelebration(false);
   }, [module.id]);
 
-  // Reset confetti only when navigating to a different slide or module
+  // Reset confetti and wrong-answer glow when navigating to a different slide or module
   useEffect(() => {
     setConfettiBurstKey(0);
+    setWrongShakeActive(false);
+    setWrongGlowActive(false);
   }, [slide.id, module.id]);
 
   // Sync problem interactive states ONLY when navigating to a different slide
@@ -489,6 +493,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
   const handleToggleOption = (optionId: string) => {
     setValidationMessage('');
+    setWrongGlowActive(false);
     if (slide.type === 'single-choice') {
       setSelectedIds([optionId]);
       return;
@@ -507,6 +512,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     pickTrue: boolean
   ) => {
     setValidationMessage('');
+    setWrongGlowActive(false);
     const chosenId = pickTrue ? trueOptionId : falseOptionId;
     setSelectedIds((prev) => {
       const filtered = prev.filter(
@@ -524,6 +530,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     wrongOptionId: string
   ) => {
     setValidationMessage('');
+    setWrongGlowActive(false);
     setMtSelections((prev) => {
       const updated = { ...prev, [pairId]: chosenRight };
       savedMtBySlideRef.current[historyKey] = updated;
@@ -547,6 +554,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     wrongOptionId: string
   ) => {
     setValidationMessage('');
+    setWrongGlowActive(false);
     setDdBucketSelections((prev) => {
       const updated = { ...prev, [itemId]: chosenCategory };
       savedBucketBySlideRef.current[historyKey] = updated;
@@ -567,6 +575,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     const targetIndex = index + direction;
     if (targetIndex < 0 || targetIndex >= ddOrderedIds.length) return;
     setValidationMessage('');
+    setWrongGlowActive(false);
     const nextOrder = [...ddOrderedIds];
     const temp = nextOrder[index];
     nextOrder[index] = nextOrder[targetIndex];
@@ -626,10 +635,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setValidationMessage('');
     onSubmitAnswer(module.id, slide.id, selectedIds);
 
-    // Check if the submitted selection is fully correct to trigger the 2-second confetti breeze
+    // Check if the submitted selection is fully correct to trigger the 2-second confetti breeze or subtle wrong shake/red glow
     if (slide.options) {
       const evalResult = evaluateQuestionSelection(slide.options, selectedIds);
       if (evalResult.isFullyCorrect) {
+        setWrongGlowActive(false);
+        setWrongShakeActive(false);
         // Hide any open side solution hints once solved
         setRevealedSolutionSlides((prev) => {
           if (!prev[historyKey]) return prev;
@@ -638,6 +649,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           return next;
         });
         triggerConfettiBreeze();
+      } else {
+        setWrongGlowActive(true);
+        setWrongShakeActive(false);
+        window.requestAnimationFrame(() => {
+          setWrongShakeActive(true);
+        });
+        window.setTimeout(() => {
+          setWrongShakeActive(false);
+        }, 460);
       }
     }
   };
@@ -904,13 +924,15 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         </div>
       </div>
 
-      {/* Main Slide Card (Glows emerald green when question is answered right) */}
+      {/* Main Slide Card (Glows emerald green when right, subtle red glow + gentle shake when wrong) */}
       <div
         className={`glass-panel-elevated rounded-3xl border transition-all duration-300 ${
           !isContentSlide && existingRecord?.evaluation.isFullyCorrect
             ? 'border-emerald-400 ring-2 ring-emerald-400/40 shadow-[0_0_32px_rgba(16,185,129,0.25)]'
+            : !isContentSlide && wrongGlowActive
+            ? 'border-rose-400/75 ring-1 ring-rose-400/35 shadow-[0_0_24px_rgba(244,63,94,0.22)]'
             : 'border-white/15'
-        } ${
+        } ${wrongShakeActive ? 'animate-subtle-shake' : ''} ${
           isPhoneView ? 'p-5' : 'p-6 sm:p-8'
         } min-h-[240px] flex flex-col justify-between`}
       >
@@ -1191,23 +1213,36 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
                 {/* Subtle Non-Exam Helper Actions */}
                 {existingRecord && (!isFullyCorrect || isShowingSolution) && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-                    <span className="text-xs font-normal text-slate-300">
+                  <div
+                    className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-colors ${
+                      wrongGlowActive && !isShowingSolution
+                        ? 'bg-rose-500/12 border-rose-400/35'
+                        : 'bg-white/5 border-white/10'
+                    }`}
+                  >
+                    <span
+                      className={`text-xs font-normal ${
+                        wrongGlowActive && !isShowingSolution
+                          ? 'text-rose-200'
+                          : 'text-slate-300'
+                      }`}
+                    >
                       {isShowingSolution
                         ? 'Right answers shown on the side — tap Fill Solution to fill them in.'
-                        : 'Give another option a try whenever you’re ready.'}
+                        : 'That’s not quite right — please select another.'}
                     </span>
 
                     <div className="flex flex-wrap items-center gap-2 shrink-0">
                       {canOfferSolution && (
                         <button
                           type="button"
-                          onClick={() =>
+                          onClick={() => {
+                            setWrongGlowActive(false);
                             setRevealedSolutionSlides((prev) => ({
                               ...prev,
                               [historyKey]: true,
-                            }))
-                          }
+                            }));
+                          }}
                           className="min-h-[32px] px-2.5 py-1 rounded-lg bg-amber-400/90 text-slate-950 text-xs font-medium flex items-center gap-1 cursor-pointer"
                         >
                           <Sparkles className="h-3.5 w-3.5" />
@@ -1218,7 +1253,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       {isShowingSolution && (
                         <button
                           type="button"
-                          onClick={handleApplySolution}
+                          onClick={() => {
+                            setWrongGlowActive(false);
+                            handleApplySolution();
+                          }}
                           className="min-h-[32px] px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-medium flex items-center gap-1 cursor-pointer"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -1235,6 +1273,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                           setSelectedIds([]);
                           setMtSelections({});
                           setDdBucketSelections({});
+                          setWrongGlowActive(false);
                           setRevealedSolutionSlides((prev) => {
                             const next = { ...prev };
                             delete next[historyKey];
