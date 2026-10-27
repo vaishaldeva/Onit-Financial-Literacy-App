@@ -320,10 +320,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setShowCelebration(false);
   }, [module.id]);
 
+  // Reset confetti only when navigating to a different slide or module
+  useEffect(() => {
+    setConfettiBurstKey(0);
+  }, [slide.id, module.id]);
+
   // Sync problem interactive states when changing slides
   useEffect(() => {
     setValidationMessage('');
-    setConfettiBurstKey(0);
     if (existingRecord) {
       setSelectedIds(existingRecord.selectedOptionIds);
     } else {
