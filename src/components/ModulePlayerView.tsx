@@ -250,6 +250,13 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   >({});
   const [ddOrderedIds, setDdOrderedIds] = useState<string[]>([]);
 
+  // Persist user's exact in-progress selections per slide so submitting a wrong answer or switching slides never erases selected choices
+  const savedMtBySlideRef = useRef<Record<string, Record<string, string>>>({});
+  const savedBucketBySlideRef = useRef<Record<string, Record<string, string>>>(
+    {}
+  );
+  const savedOrderBySlideRef = useRef<Record<string, string[]>>({});
+
   // Timed Badge Battle state (Module 2 Lesson 13)
   const [battleActive, setBattleActive] = useState(false);
   const [battleQueue, setBattleQueue] = useState<BadgeBattleQuestion[]>([]);
@@ -325,7 +332,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setConfettiBurstKey(0);
   }, [slide.id, module.id]);
 
-  // Sync problem interactive states when changing slides
+  // Sync problem interactive states ONLY when navigating to a different slide
   useEffect(() => {
     setValidationMessage('');
     if (existingRecord) {
@@ -342,38 +349,57 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
     // Initialize Matching (MT)
     if (slide.problemFormat === 'mt' && slide.matchingPairs) {
-      const nextMt: Record<string, string> = {};
-      if (existingRecord) {
-        slide.matchingPairs.forEach((p) => {
-          if (existingRecord.selectedOptionIds.includes(p.correctOptionId)) {
-            nextMt[p.id] = p.right;
-          }
-        });
+      const savedMt = savedMtBySlideRef.current[historyKey];
+      if (savedMt && Object.keys(savedMt).length > 0 && existingRecord) {
+        setMtSelections(savedMt);
+      } else {
+        const nextMt: Record<string, string> = {};
+        if (existingRecord) {
+          slide.matchingPairs.forEach((p) => {
+            if (existingRecord.selectedOptionIds.includes(p.correctOptionId)) {
+              nextMt[p.id] = p.right;
+            }
+          });
+        }
+        setMtSelections(nextMt);
       }
-      setMtSelections(nextMt);
     }
 
     // Initialize Drag/Sort Bucket (DD)
     if (slide.problemFormat === 'dd-bucket' && slide.ddBucketConfig) {
-      const nextBucket: Record<string, string> = {};
-      if (existingRecord) {
-        slide.ddBucketConfig.items.forEach((item) => {
-          if (existingRecord.selectedOptionIds.includes(item.correctOptionId)) {
-            nextBucket[item.id] = item.correctCategory;
-          }
-        });
+      const savedBucket = savedBucketBySlideRef.current[historyKey];
+      if (
+        savedBucket &&
+        Object.keys(savedBucket).length > 0 &&
+        existingRecord
+      ) {
+        setDdBucketSelections(savedBucket);
+      } else {
+        const nextBucket: Record<string, string> = {};
+        if (existingRecord) {
+          slide.ddBucketConfig.items.forEach((item) => {
+            if (
+              existingRecord.selectedOptionIds.includes(item.correctOptionId)
+            ) {
+              nextBucket[item.id] = item.correctCategory;
+            }
+          });
+        }
+        setDdBucketSelections(nextBucket);
       }
-      setDdBucketSelections(nextBucket);
     }
 
     // Initialize Sequence Order (DD)
     if (slide.problemFormat === 'dd-order' && slide.ddOrderConfig) {
       const items = slide.ddOrderConfig.items;
+      const savedOrder = savedOrderBySlideRef.current[historyKey];
       if (existingRecord?.evaluation.isFullyCorrect) {
         const sorted = [...items]
           .sort((a, b) => a.correctPosition - b.correctPosition)
           .map((i) => i.id);
         setDdOrderedIds(sorted);
+      } else if (savedOrder && savedOrder.length === items.length && existingRecord) {
+        setDdOrderedIds(savedOrder);
       } else {
         // Deterministically scramble so it doesn't start already solved
         const scrambled = [...items]
@@ -404,7 +430,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         }
       }
     }
-  }, [slide.id, existingRecord, historyKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slide.id, historyKey]);
 
   // Badge Battle countdown timer
   useEffect(() => {
@@ -497,7 +524,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     wrongOptionId: string
   ) => {
     setValidationMessage('');
-    setMtSelections((prev) => ({ ...prev, [pairId]: chosenRight }));
+    setMtSelections((prev) => {
+      const updated = { ...prev, [pairId]: chosenRight };
+      savedMtBySlideRef.current[historyKey] = updated;
+      return updated;
+    });
     const targetOptionId =
       chosenRight === correctRight ? correctOptionId : wrongOptionId;
     setSelectedIds((prev) => {
@@ -516,7 +547,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     wrongOptionId: string
   ) => {
     setValidationMessage('');
-    setDdBucketSelections((prev) => ({ ...prev, [itemId]: chosenCategory }));
+    setDdBucketSelections((prev) => {
+      const updated = { ...prev, [itemId]: chosenCategory };
+      savedBucketBySlideRef.current[historyKey] = updated;
+      return updated;
+    });
     const targetOptionId =
       chosenCategory === correctCategory ? correctOptionId : wrongOptionId;
     setSelectedIds((prev) => {
@@ -537,6 +572,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     nextOrder[index] = nextOrder[targetIndex];
     nextOrder[targetIndex] = temp;
     setDdOrderedIds(nextOrder);
+    savedOrderBySlideRef.current[historyKey] = nextOrder;
 
     const items = slide.ddOrderConfig.items;
     const updatedOptionIds = nextOrder.map((itemId, pos) => {
@@ -1119,6 +1155,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   solvedMt[p.id] = p.right;
                 });
                 setMtSelections(solvedMt);
+                savedMtBySlideRef.current[historyKey] = solvedMt;
               }
               if (slide.problemFormat === 'dd-bucket' && slide.ddBucketConfig) {
                 const solvedBuckets: Record<string, string> = {};
@@ -1126,13 +1163,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   solvedBuckets[i.id] = i.correctCategory;
                 });
                 setDdBucketSelections(solvedBuckets);
+                savedBucketBySlideRef.current[historyKey] = solvedBuckets;
               }
               if (slide.problemFormat === 'dd-order' && slide.ddOrderConfig) {
-                setDdOrderedIds(
-                  [...slide.ddOrderConfig.items]
-                    .sort((a, b) => a.correctPosition - b.correctPosition)
-                    .map((i) => i.id)
-                );
+                const solvedOrder = [...slide.ddOrderConfig.items]
+                  .sort((a, b) => a.correctPosition - b.correctPosition)
+                  .map((i) => i.id);
+                setDdOrderedIds(solvedOrder);
+                savedOrderBySlideRef.current[historyKey] = solvedOrder;
               }
               onSubmitAnswer(module.id, slide.id, correctIds);
               triggerConfettiBreeze();
@@ -1191,6 +1229,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       <button
                         type="button"
                         onClick={() => {
+                          delete savedMtBySlideRef.current[historyKey];
+                          delete savedBucketBySlideRef.current[historyKey];
+                          delete savedOrderBySlideRef.current[historyKey];
+                          setSelectedIds([]);
+                          setMtSelections({});
+                          setDdBucketSelections({});
                           setRevealedSolutionSlides((prev) => {
                             const next = { ...prev };
                             delete next[historyKey];
