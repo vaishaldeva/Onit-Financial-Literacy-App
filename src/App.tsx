@@ -13,8 +13,6 @@ import {
   Settings,
   Search,
   X,
-  Sparkles,
-  Gamepad2,
   Wallet,
   ShieldCheck,
   TrendingUp,
@@ -52,7 +50,7 @@ import { useTheme } from './context/ThemeContext';
 
 type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
 
-const MODULE_VISUAL_ICONS = [
+export const MODULE_VISUAL_ICONS = [
   Wallet,
   CreditCard,
   ShieldCheck,
@@ -98,7 +96,7 @@ function loadAccountProgress(email: string | undefined | null): PerAccountProgre
 }
 
 export default function App() {
-  const { theme, isModern, toggleTheme } = useTheme();
+  const { isModern } = useTheme();
   const isAutostart =
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('autostart') === '1';
@@ -637,44 +635,17 @@ export default function App() {
               <PWAInstallButton />
 
               {onboardingStage === 'none' && (
-                <>
-                  {/* Global Theme Toggle (Modern Default vs Retro) */}
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    aria-label={`Switch theme (current: ${theme})`}
-                    title="Switch between Modern and Retro theme"
-                    className={`min-h-[40px] px-3 py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
-                      isModern
-                        ? 'rounded-2xl bg-gradient-to-r from-emerald-300/20 via-sky-300/20 to-indigo-300/20 border border-emerald-300/35 text-emerald-200 hover:bg-white/15 shadow-sm'
-                        : 'rounded-xl bg-amber-500/15 border border-amber-400/35 text-amber-300 hover:bg-amber-500/25'
-                    }`}
-                  >
-                    {isModern ? (
-                      <>
-                        <Sparkles className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" />
-                        <span>Modern</span>
-                      </>
-                    ) : (
-                      <>
-                        <Gamepad2 className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
-                        <span>Retro</span>
-                      </>
-                    )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowSettingsModal(true)}
-                    aria-label="Open Account Settings"
-                    className={`min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/10 hover:bg-white/15 border border-white/14 ${
-                      isModern ? 'rounded-2xl' : 'rounded-xl'
-                    } transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer`}
-                  >
-                    <Settings className="h-4 w-4 text-emerald-300" aria-hidden="true" />
-                    <span className="hidden sm:inline">Settings</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => setShowSettingsModal(true)}
+                  aria-label="Open Account Settings"
+                  className={`min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/10 hover:bg-white/15 border border-white/14 ${
+                    isModern ? 'rounded-2xl' : 'rounded-xl'
+                  } transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer`}
+                >
+                  <Settings className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+                  <span className="hidden sm:inline">Settings</span>
+                </button>
               )}
 
               <button
@@ -730,24 +701,6 @@ export default function App() {
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     <PWAInstallButton compact />
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      aria-label="Toggle Modern or Retro theme"
-                      className="min-h-[34px] px-2.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/14 flex items-center gap-1 text-[11px] font-semibold text-emerald-200 cursor-pointer"
-                    >
-                      {isModern ? (
-                        <>
-                          <Sparkles className="h-3 w-3 text-emerald-300" />
-                          <span>Modern</span>
-                        </>
-                      ) : (
-                        <>
-                          <Gamepad2 className="h-3 w-3 text-amber-300" />
-                          <span>Retro</span>
-                        </>
-                      )}
-                    </button>
                     {userProfile && (
                       <button
                         type="button"
@@ -821,12 +774,12 @@ export default function App() {
               )}
 
               {/* =========================================================
-                  MODULES VIEW (Low-Text, Welcoming Module Cards — Short Titles Only)
+                  MODULES VIEW (Low-Text, Welcoming Module Cards — Short Titles + % Finished)
                  ========================================================= */}
               {activeTab === 'modules' && (
                 <div className="space-y-4">
                   {modulesScreenMode === 'list' ? (
-                    /* LEVEL 1: CLEAN MODULE LIST (Short Titles + Welcoming Icons Only — Zero +XP / Lesson Count / Description Clutter) */
+                    /* LEVEL 1: CLEAN MODULE LIST (Short Titles + Welcoming Icons + % Finished) */
                     <div className="space-y-3.5">
                       <div className="relative">
                         <Search
@@ -883,9 +836,22 @@ export default function App() {
 
                         return (
                           <div className="grid grid-cols-1 gap-3">
-                            {matchingModules.map((mod, idx) => {
+                            {matchingModules.map((mod) => {
                               const isCompleted = completedModuleIds.includes(mod.id);
-                              const ModIcon = MODULE_VISUAL_ICONS[idx % MODULE_VISUAL_ICONS.length];
+                              const canonicalIdx = Math.max(
+                                0,
+                                LEARNING_MODULES.findIndex((m) => m.id === mod.id)
+                              );
+                              const ModIcon =
+                                MODULE_VISUAL_ICONS[canonicalIdx % MODULE_VISUAL_ICONS.length];
+                              const modViewedIds = viewedSlideIds[mod.id] || [];
+                              const modProgressPercent = isCompleted
+                                ? 100
+                                : hasUserStartedProgress
+                                ? Math.round(
+                                    (modViewedIds.length / Math.max(1, mod.slides.length)) * 100
+                                  )
+                                : 0;
 
                               return (
                                 <button
@@ -920,7 +886,10 @@ export default function App() {
                                     </h2>
                                   </div>
 
-                                  <div className="shrink-0 flex items-center">
+                                  <div className="shrink-0 flex items-center gap-2.5">
+                                    <span className="font-mono-tabular text-xs font-semibold text-emerald-300">
+                                      {modProgressPercent}%
+                                    </span>
                                     {isCompleted ? (
                                       <span className="p-2 rounded-2xl bg-emerald-400/20 border border-emerald-300/35 text-emerald-300 flex items-center justify-center">
                                         <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
@@ -948,6 +917,14 @@ export default function App() {
                     /* LEVEL 2 (Lesson Selector) & LEVEL 3 (Slide Player) */
                     <ModulePlayerView
                       module={activeModule}
+                      ModuleIcon={
+                        MODULE_VISUAL_ICONS[
+                          Math.max(
+                            0,
+                            LEARNING_MODULES.findIndex((m) => m.id === activeModule.id)
+                          ) % MODULE_VISUAL_ICONS.length
+                        ]
+                      }
                       slideIndex={moduleSlideIndices[activeModule.id] || 0}
                       onChangeSlideIndex={(newIdx) => {
                         const targetSlide = activeModule.slides[newIdx];

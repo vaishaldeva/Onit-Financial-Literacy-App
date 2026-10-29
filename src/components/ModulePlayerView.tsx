@@ -34,6 +34,7 @@ import {
 
 interface ModulePlayerViewProps {
   module: LearningModule;
+  ModuleIcon?: React.FC<{ className?: string }>;
   slideIndex: number;
   onChangeSlideIndex: (newIndex: number) => void;
   answeredQuestions: Record<string, AnsweredQuestionRecord>;
@@ -173,6 +174,7 @@ const SmoothConfettiBreeze: React.FC<{ burstKey: number }> = ({ burstKey }) => {
 
 export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   module,
+  ModuleIcon = BookOpen,
   slideIndex,
   onChangeSlideIndex,
   answeredQuestions,
@@ -703,15 +705,17 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   // LEVEL 2: MODULE OVERVIEW & LESSON SELECTOR VIEW (Low-Text, Welcoming)
   // =========================================================
   if (subView === 'lessons') {
-    const progressPercent = Math.round(
-      (completionGate.viewedSlidesCount /
-        Math.max(1, completionGate.totalSlidesCount)) *
-        100
-    );
+    const progressPercent = isModuleCompleted
+      ? 100
+      : Math.round(
+          (completionGate.viewedSlidesCount /
+            Math.max(1, completionGate.totalSlidesCount)) *
+            100
+        );
 
     return (
       <div ref={playerTopRef} className="space-y-4 sm:space-y-5">
-        {/* Top Module Header Card (Short Title Only — No Description Clutter or +XP Badge) */}
+        {/* Top Module Header Card (Same Module Thumbnail Icon + Short Title + % Finished Only) */}
         <div className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <button
@@ -743,8 +747,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           </div>
 
           <div className="flex items-center gap-3.5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/25 via-sky-400/20 to-indigo-400/25 border border-white/20 text-emerald-300 shadow-inner">
-              <BookOpen className="h-5 w-5" aria-hidden="true" />
+            <div
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                isModuleCompleted
+                  ? 'bg-emerald-400/20 border border-emerald-300/40 text-emerald-300'
+                  : 'bg-gradient-to-br from-emerald-400/20 via-sky-400/15 to-indigo-400/20 border border-white/18 text-sky-200 shadow-inner'
+              }`}
+            >
+              <ModuleIcon className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug">
@@ -753,14 +763,19 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             </div>
           </div>
 
-          {/* Clean Visual Progress Bar */}
-          <div className="h-2.5 w-full rounded-full bg-slate-950/70 border border-white/10 overflow-hidden p-[1px]">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 transition-all duration-300"
-              style={{
-                width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%`,
-              }}
-            />
+          {/* Clean Visual Progress Bar + % Finished Only */}
+          <div className="flex items-center gap-3">
+            <div className="h-2.5 flex-1 rounded-full bg-slate-950/70 border border-white/10 overflow-hidden p-[1px]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 transition-all duration-300"
+                style={{
+                  width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%`,
+                }}
+              />
+            </div>
+            <span className="font-mono-tabular text-xs font-bold text-emerald-300 shrink-0">
+              {progressPercent}%
+            </span>
           </div>
         </div>
 
@@ -874,7 +889,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     <div ref={playerTopRef} className="space-y-4 relative">
       {confettiBurstKey > 0 && <SmoothConfettiBreeze burstKey={confettiBurstKey} />}
 
-      {/* Clean Lesson Header (No slide number or progress indicator) */}
+      {/* Clean Lesson Header (Lesson Number to the Left of its Title) */}
       <div className="glass-panel rounded-3xl p-3 sm:p-4 border border-white/14 flex items-center justify-between gap-3">
         <button
           type="button"
@@ -885,9 +900,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           <span>Lessons</span>
         </button>
 
-        <span className="text-xs sm:text-sm font-semibold text-white truncate">
-          {currentLesson.title}
-        </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-400/20 border border-emerald-300/35 font-mono-tabular text-xs font-bold text-emerald-300">
+            {currentLesson.number}
+          </span>
+          <span className="text-xs sm:text-sm font-semibold text-white truncate">
+            {currentLesson.title}
+          </span>
+        </div>
       </div>
 
       {/* Main Slide Card (Glows emerald green when right, subtle red glow + gentle shake when wrong) */}
@@ -1609,7 +1629,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Lesson Complete"
+          aria-label={`Lesson ${currentLesson.number} Complete`}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xl animate-page-enter"
         >
           <div className="glass-panel-elevated w-full max-w-sm rounded-[32px] p-7 text-center space-y-4 border border-emerald-300/35 shadow-2xl">
@@ -1619,7 +1639,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
             <div className="space-y-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
-                Lesson Complete
+                Lesson {currentLesson.number} Complete
               </p>
               <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">
                 {currentLesson.title}

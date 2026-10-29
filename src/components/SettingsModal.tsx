@@ -123,12 +123,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Theme Switcher (Modern Default vs Retro) */}
+        {/* Theme Switcher (Theme 1 vs Theme 2) */}
         <div className="rounded-2xl bg-slate-950/65 border border-white/14 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <p className="text-xs font-bold text-white">App Theme</p>
             <p className="text-[11px] text-slate-300">
-              Switch between the soft Modern look and the Retro style
+              Switch between Theme 1 and Theme 2
             </p>
           </div>
 
@@ -143,7 +143,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Modern</span>
+              <span>Theme 1</span>
             </button>
             <button
               type="button"
@@ -155,7 +155,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               }`}
             >
               <Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Retro</span>
+              <span>Theme 2</span>
             </button>
           </div>
         </div>
