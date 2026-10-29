@@ -8,8 +8,11 @@ import {
   Play,
   ShieldCheck,
   Pin,
+  Sparkles,
+  Gamepad2,
 } from 'lucide-react';
 import type { UserProfile } from './AuthAndIntroModal';
+import { useTheme } from '../context/ThemeContext';
 
 interface SettingsModalProps {
   userProfile: UserProfile | null;
@@ -48,6 +51,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   isPhoneView = false,
 }) => {
+  const { theme, setTheme } = useTheme();
   const [name, setName] = useState(userProfile?.name || 'Alex Morgan');
   const [email, setEmail] = useState(userProfile?.email || 'alex.morgan@onitfinance.com');
   const [savedBanner, setSavedBanner] = useState(false);
@@ -89,7 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       <div
         className={`glass-panel-elevated w-full ${
           isPhoneView
-            ? 'rounded-2xl p-4 sm:p-5 border border-white/15 my-auto space-y-5'
+            ? 'rounded-3xl p-4 sm:p-5 border border-white/15 my-auto space-y-5'
             : 'max-w-xl rounded-3xl p-6 sm:p-8 border border-white/15 my-auto space-y-6'
         }`}
       >
@@ -113,10 +117,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close settings"
-            className="min-h-[40px] min-w-[40px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+            className="min-h-[40px] min-w-[40px] rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+
+        {/* Theme Switcher (Modern Default vs Retro) */}
+        <div className="rounded-2xl bg-slate-950/65 border border-white/14 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold text-white">App Theme</p>
+            <p className="text-[11px] text-slate-300">
+              Switch between the soft Modern look and the Retro style
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5 bg-slate-950/90 p-1 rounded-2xl border border-white/12 shrink-0">
+            <button
+              type="button"
+              onClick={() => setTheme('modern')}
+              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                theme === 'modern'
+                  ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Modern</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme('retro')}
+              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                theme === 'retro'
+                  ? 'bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 shadow-sm'
+                  : 'text-slate-300 hover:text-white'
+              }`}
+            >
+              <Gamepad2 className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Retro</span>
+            </button>
+          </div>
         </div>
 
         {/* Profile Form */}
@@ -156,7 +197,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 Learning Progress ({completedModulesCount}/{totalModulesCount} Modules)
               </span>
               <span className="font-mono-tabular font-bold text-emerald-300">
-                {totalXp}/{maxPossibleXp} XP · {progressPercent}%
+                {progressPercent}%
               </span>
             </div>
 
@@ -176,7 +217,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
             <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono-tabular">
               <span>{solvedQuizzesCount}/{totalQuizzesCount} Solved Questions</span>
-              <span>{totalXp} XP Earned</span>
+              <span>{completedModulesCount} Completed</span>
             </div>
           </div>
 
@@ -190,7 +231,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {resetBanner && (
             <div className="rounded-xl bg-amber-500/15 border border-amber-400/40 px-4 py-2.5 text-xs font-semibold text-amber-200 flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-amber-300 shrink-0" />
-              <span>XP and solved questions have been reset to 0!</span>
+              <span>Progress and solved questions have been reset!</span>
             </div>
           )}
 

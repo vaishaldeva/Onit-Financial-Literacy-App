@@ -220,7 +220,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
       {/* =========================================================
           1. COMPACT AT-A-GLANCE PROGRESS BAR & QUICK RESUME
          ========================================================= */}
-      <section className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 bg-gradient-to-br from-emerald-950/45 via-slate-900/90 to-cyan-950/45">
+      <section className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35">
         <div
           className={`flex flex-col ${
             isPhoneView ? '' : 'md:flex-row md:items-center'
@@ -236,10 +236,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     : `Welcome, ${userName}`
                   : 'Onit: Own Your Future'}
               </span>
-              <span aria-hidden="true">·</span>
-              <span className="font-mono-tabular font-bold text-amber-300">
-                {totalXp} XP
-              </span>
             </div>
             <h1
               className={`${
@@ -254,7 +250,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             <button
               type="button"
               onClick={onResumeLearning}
-              className="min-h-[42px] px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 hover:brightness-110 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+              className="min-h-[42px] px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
             >
               <Play className="h-3.5 w-3.5 fill-current shrink-0" aria-hidden="true" />
               <span>
@@ -267,9 +263,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             <button
               type="button"
               onClick={onOpenModulesTab}
-              className="min-h-[42px] px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white transition-colors whitespace-nowrap cursor-pointer"
+              className="min-h-[42px] px-3.5 py-2 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/15 text-xs font-semibold text-white transition-colors whitespace-nowrap cursor-pointer"
             >
-              All 10 Modules
+              Modules
             </button>
           </div>
         </div>
@@ -278,16 +274,13 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
         <div className="mt-4 pt-3.5 border-t border-white/10 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] sm:text-xs">
             <span className="font-semibold text-slate-200 flex items-center gap-1.5">
-              <Award className="h-3.5 w-3.5 text-emerald-400 shrink-0" aria-hidden="true" />
+              <Award className="h-3.5 w-3.5 text-emerald-300 shrink-0" aria-hidden="true" />
               <span>
                 {completedModulesCount}/{totalModulesCount} Modules Completed
               </span>
-              <span className="hidden sm:inline text-slate-400">
-                · Up next: {activeModuleTitle}
-              </span>
             </span>
             <span className="font-mono-tabular font-bold text-emerald-300">
-              {totalXp}/{maxPossibleXp} XP · {overallProgressPercent}%
+              {overallProgressPercent}%
             </span>
           </div>
           <div
@@ -299,7 +292,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             className="h-2.5 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
           >
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 shadow-[0_0_12px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
+              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 shadow-[0_0_12px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
               style={{
                 width: `${Math.max(
                   overallProgressPercent,

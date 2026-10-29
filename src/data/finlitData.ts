@@ -574,7 +574,7 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
     applyUrl: 'https://www.discover.com/credit-cards/cash-back/it-card.html',
     officialDomain: 'discover.com',
     preApprovalNote: 'Check if you are pre-approved on Discover.com with zero impact to your credit score.',
-    searchKeywords: ['discover', 'discover it', '5%', '10%', 'cashback match', 'starter', 'student', 'groceries', 'gas', 'online shopping', 'amazon'],
+    searchKeywords: ['discover', 'discover it', '5%', '10%', 'cashback match', 'starter', 'student', 'groceries', 'gas', 'online shopping', 'amazon', 'all purchases'],
   },
   {
     id: 'card-chase-freedom-rise',
@@ -608,11 +608,11 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
       },
       {
         rate: '1.5%',
-        category: 'All Other Spend',
+        category: 'All Purchases',
         detail: 'Unlimited 1.5% floor on every purchase (50% more than 1% cards)',
       },
     ],
-    upfrontSummaryLine: '3% Dining · 3% Drugstores · 5% Travel · 1.5% Everything Else',
+    upfrontSummaryLine: '3% Dining · 3% Drugstores · 5% Travel · 1.5% All Purchases',
     description:
       'The ultimate everyday catch-all card. Instead of settling for 1% on non-category bills (insurance, utilities, medical, auto service, retail), Freedom Unlimited gives an automatic 1.5% floor on everything—plus 3% on dining (including takeout/delivery) and 3% at drugstores (CVS/Walgreens). Points are Chase Ultimate Rewards® that can also combine with Chase Sapphire®.',
     bestForWho:
@@ -633,7 +633,7 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
     applyUrl: 'https://creditcards.chase.com/cash-back-credit-cards/freedom/unlimited',
     officialDomain: 'chase.com',
     preApprovalNote: 'Existing Chase checking customers see elevated approval odds inside the Chase app.',
-    searchKeywords: ['chase', 'freedom unlimited', '3%', '1.5%', 'dining', 'drugstores', 'travel', 'visa'],
+    searchKeywords: ['chase', 'freedom unlimited', '3%', '1.5%', 'dining', 'drugstores', 'travel', 'visa', 'all purchases'],
   },
   {
     id: 'card-bilt-mastercard',
@@ -711,7 +711,7 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
     upfrontBenefits: [
       {
         rate: '2%',
-        category: 'Everything You Buy',
+        category: 'All Purchases',
         detail: '1% unlimited when you buy + 1% as you pay for those purchases',
       },
       {
@@ -730,7 +730,7 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
         detail: 'No category tracking, no quarterly activations, $0 annual fee',
       },
     ],
-    upfrontSummaryLine: 'Unlimited 2% Cash Back on Everything · $200 Bonus',
+    upfrontSummaryLine: 'Unlimited 2% Cash Back on All Purchases · $200 Bonus',
     description:
       'One of the simplest, highest-earning flat-rate cards on the market. Earn an automatic 2% cash back on every single purchase—from car repairs and medical bills to taxes, utilities, and shopping—with zero category caps or quarterly activations required.',
     bestForWho:
@@ -751,6 +751,6 @@ export const CREDIT_CARDS_DATA: CreditCardItem[] = [
     applyUrl: 'https://www.citi.com/credit-cards/citi-double-cash-credit-card',
     officialDomain: 'citi.com',
     preApprovalNote: 'Use Citi’s online pre-qualification tool to check offers with zero impact to your credit score.',
-    searchKeywords: ['citi', 'double cash', '2%', 'flat rate', 'everything', 'starter', 'cash back', 'no annual fee'],
+    searchKeywords: ['citi', 'double cash', '2%', 'flat rate', 'everything', 'all purchases', 'starter', 'cash back', 'no annual fee'],
   },
 ];

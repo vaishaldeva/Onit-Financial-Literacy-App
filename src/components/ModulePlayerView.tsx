@@ -662,6 +662,29 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     }
   };
 
+  const [showLessonComplete, setShowLessonComplete] = useState(false);
+  const lessonCompleteTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (lessonCompleteTimerRef.current) {
+        window.clearTimeout(lessonCompleteTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleFinishLesson = () => {
+    setShowLessonComplete(true);
+    triggerConfettiBreeze();
+    if (lessonCompleteTimerRef.current) {
+      window.clearTimeout(lessonCompleteTimerRef.current);
+    }
+    lessonCompleteTimerRef.current = window.setTimeout(() => {
+      setShowLessonComplete(false);
+      setSubView('lessons');
+    }, 1650);
+  };
+
   const openLessonAtSlide = (lesson: ModuleLesson) => {
     if (lesson.isBadgeBattle && !isBadgeBattleUnlocked) {
       return;
@@ -672,94 +695,82 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     if (firstSlideOfTargetLesson >= 0) {
       onChangeSlideIndex(firstSlideOfTargetLesson);
     }
+    setShowLessonComplete(false);
     setSubView('player');
   };
 
   // =========================================================
-  // LEVEL 2: MODULE OVERVIEW & LESSON SELECTOR VIEW
+  // LEVEL 2: MODULE OVERVIEW & LESSON SELECTOR VIEW (Low-Text, Welcoming)
   // =========================================================
   if (subView === 'lessons') {
+    const progressPercent = Math.round(
+      (completionGate.viewedSlidesCount /
+        Math.max(1, completionGate.totalSlidesCount)) *
+        100
+    );
+
     return (
       <div ref={playerTopRef} className="space-y-4 sm:space-y-5">
-        {/* Top Module Header Card (Reveals explanation only after clicking module) */}
+        {/* Top Module Header Card (Short Title Only — No Description Clutter or +XP Badge) */}
         <div className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 space-y-4">
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={onBackToModuleList}
-              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-white/8 hover:bg-white/15 border border-white/12 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/14 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>All Modules</span>
+              <span>Modules</span>
             </button>
 
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-400/30 font-mono-tabular text-xs font-bold text-amber-300">
-                +{module.xpReward} XP
-              </span>
-              {isModuleCompleted && (
-                <span className="px-2.5 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400/35 text-xs font-bold text-emerald-300 flex items-center gap-1">
+              {isModuleCompleted ? (
+                <span className="px-3 py-1 rounded-2xl bg-emerald-500/20 border border-emerald-400/35 text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
                   <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Completed</span>
                 </span>
-              )}
+              ) : completionGate.canComplete ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCelebration(true)}
+                  className="px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-emerald-300 to-teal-300 text-slate-950 text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
+                  <span>Complete Module</span>
+                </button>
+              ) : null}
             </div>
           </div>
 
-          <div>
-            <p className="text-[11px] font-mono-tabular font-bold uppercase tracking-wider text-emerald-400">
-              {module.numberLabel} · {module.category}
-            </p>
-            <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight mt-0.5">
-              {module.title}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mt-1.5">
-              {module.summary}
-            </p>
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400/25 via-sky-400/20 to-indigo-400/25 border border-white/20 text-emerald-300 shadow-inner">
+              <BookOpen className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug">
+                {module.title}
+              </h1>
+            </div>
           </div>
 
-          {/* Compact Module Progress Bar */}
-          <div className="rounded-2xl bg-slate-950/80 border border-white/10 p-3.5 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-slate-200">
-                Slides Viewed: {completionGate.viewedSlidesCount}/
-                {completionGate.totalSlidesCount}
-              </span>
-              <span
-                className={`font-mono-tabular font-bold ${
-                  completionGate.meetsPassingScore
-                    ? 'text-emerald-300'
-                    : 'text-amber-300'
-                }`}
-              >
-                Quiz Score: {completionGate.quizAccuracyPercent}% (70%+ required)
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-300"
-                style={{
-                  width: `${Math.round(
-                    (completionGate.viewedSlidesCount /
-                      Math.max(1, completionGate.totalSlidesCount)) *
-                      100
-                  )}%`,
-                }}
-              />
-            </div>
+          {/* Clean Visual Progress Bar */}
+          <div className="h-2.5 w-full rounded-full bg-slate-950/70 border border-white/10 overflow-hidden p-[1px]">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 transition-all duration-300"
+              style={{
+                width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%`,
+              }}
+            />
           </div>
         </div>
 
-        {/* Single-Column Lesson List */}
+        {/* Single-Column Lesson List (Minimalist & Intuitive) */}
         <div className="space-y-2.5">
-          <div className="flex items-center justify-between px-1">
+          <div className="flex items-center px-1">
             <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-emerald-400" />
-              <span>Lessons ({module.lessons.length})</span>
+              <ListChecks className="h-4 w-4 text-emerald-300" />
+              <span>Lessons</span>
             </h2>
-            <span className="text-xs text-slate-400">
-              Tap a lesson to start
-            </span>
           </div>
 
           <div className="grid grid-cols-1 gap-2.5">
@@ -767,9 +778,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               const lSlides = module.slides.filter(
                 (s) => s.lessonId === lesson.id
               );
-              const lContentCount = lSlides.filter(
-                (s) => s.type === 'content'
-              ).length;
               const lQuizSlides = lSlides.filter((s) => s.type !== 'content');
               const lSolvedCorrect = lQuizSlides.filter((q) => {
                 const rec =
@@ -792,61 +800,59 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   type="button"
                   disabled={isBattleLocked}
                   onClick={() => openLessonAtSlide(lesson)}
-                  className={`w-full text-left glass-panel rounded-2xl p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 ${
+                  className={`w-full text-left glass-panel rounded-3xl p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 ${
                     isBattleLocked
-                      ? 'border-white/10 bg-slate-950/60 opacity-75 cursor-not-allowed'
+                      ? 'border-white/10 bg-slate-950/50 opacity-75 cursor-not-allowed'
                       : lesson.isBadgeBattle
-                      ? 'border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-slate-900/90 to-rose-500/15 hover:border-amber-400 cursor-pointer'
+                      ? 'border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-slate-900/80 to-rose-500/15 hover:border-amber-400 cursor-pointer'
                       : isLessonDone
                       ? 'border-emerald-400/35 hover:border-emerald-400/60 cursor-pointer'
-                      : 'border-white/12 hover:border-cyan-400/50 cursor-pointer'
+                      : 'border-white/14 hover:border-sky-300/50 cursor-pointer'
                   }`}
                 >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-md font-mono-tabular text-[11px] font-medium ${
-                          isBattleLocked
-                            ? 'bg-white/10 text-slate-300'
-                            : lesson.isBadgeBattle
-                            ? 'bg-amber-400 text-slate-950 font-semibold'
-                            : isLessonDone
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
-                            : 'bg-white/10 text-cyan-300'
-                        }`}
-                      >
-                        {lesson.isBadgeBattle
-                          ? '⚡ BADGE BATTLE'
-                          : `Lesson ${lesson.number}`}
-                      </span>
-                      <span className="text-[11px] font-mono-tabular text-slate-400">
-                        {isBattleLocked
-                          ? `Complete 70% of lessons to unlock (${regularLessonsCompletionPercent}% / 70%)`
-                          : `${lContentCount} slides${
-                              lQuizSlides.length > 0
-                                ? ` · ${lSolvedCorrect}/${lQuizSlides.length} checks`
-                                : ''
-                            }`}
-                      </span>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold ${
+                        isBattleLocked
+                          ? 'bg-white/8 text-slate-400 border border-white/10'
+                          : lesson.isBadgeBattle
+                          ? 'bg-amber-300 text-slate-950 shadow-sm'
+                          : isLessonDone
+                          ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/35'
+                          : 'bg-white/10 text-sky-300 border border-white/15'
+                      }`}
+                    >
+                      {lesson.isBadgeBattle ? (
+                        <Zap className="h-4 w-4 fill-current" aria-hidden="true" />
+                      ) : isLessonDone ? (
+                        <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
+                      ) : (
+                        <span>{lesson.number}</span>
+                      )}
                     </div>
 
-                    <h3 className="text-xs sm:text-sm font-normal text-white truncate">
-                      {lesson.title}
-                    </h3>
+                    <div className="min-w-0">
+                      <h3 className="text-xs sm:text-sm font-medium text-white truncate">
+                        {lesson.title}
+                      </h3>
+                      {isBattleLocked && (
+                        <p className="text-[11px] text-amber-300/90 mt-0.5">
+                          Unlock at 70% ({regularLessonsCompletionPercent}%/70%)
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="shrink-0 flex items-center gap-2">
                     {isBattleLocked ? (
-                      <span className="px-2.5 py-1 rounded-xl bg-white/8 border border-white/10 text-[11px] font-normal text-amber-300 flex items-center gap-1">
-                        <Lock className="h-3.5 w-3.5" />
-                        <span>Locked ({regularLessonsCompletionPercent}%/70%)</span>
+                      <span className="p-2 rounded-2xl bg-white/8 border border-white/10 text-amber-300 flex items-center justify-center">
+                        <Lock className="h-4 w-4" />
                       </span>
                     ) : isLessonDone ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                      <CheckCircle2 className="h-5 w-5 text-emerald-300" />
                     ) : (
-                      <span className="px-3 py-1.5 rounded-xl bg-white/10 text-xs font-normal text-white flex items-center gap-1">
-                        <span>Start</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
+                      <span className="p-2 rounded-2xl bg-white/10 text-white flex items-center justify-center">
+                        <ArrowRight className="h-4 w-4" />
                       </span>
                     )}
                   </div>
@@ -860,68 +866,28 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   }
 
   // =========================================================
-  // LEVEL 3: BITE-SIZED 1-LINE SLIDE PLAYER VIEW
+  // LEVEL 3: ACTIVE LESSON SCREEN (No Slide Counter Header Clutter)
   // =========================================================
   const isContentSlide = slide.type === 'content';
 
   return (
     <div ref={playerTopRef} className="space-y-4 relative">
       {confettiBurstKey > 0 && <SmoothConfettiBreeze burstKey={confettiBurstKey} />}
-      {/* Compact Lesson Bar */}
-      <div className="glass-panel rounded-2xl p-3 sm:p-4 space-y-2.5 border border-white/12">
-        <div className="flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => setSubView('lessons')}
-            className="min-h-[36px] px-3 py-1.5 rounded-xl bg-white/8 hover:bg-white/15 border border-white/10 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            <span>Lessons ({module.lessons.length})</span>
-          </button>
 
-          <div className="text-right min-w-0">
-            <span className="text-[11px] font-mono-tabular font-bold text-emerald-400 block truncate">
-              {module.numberLabel} · Lesson {currentLesson.number} of{' '}
-              {module.lessons.length}
-            </span>
-            <span className="text-xs font-bold text-white block truncate">
-              {currentLesson.title}
-            </span>
-          </div>
-        </div>
+      {/* Clean Lesson Header (No slide number or progress indicator) */}
+      <div className="glass-panel rounded-3xl p-3 sm:p-4 border border-white/14 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setSubView('lessons')}
+          className="min-h-[36px] px-3.5 py-1.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/14 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>Lessons</span>
+        </button>
 
-        {/* Lesson Slide Progress Dots */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-          {lessonSlideIndices.map((globalIdx, localIdx) => {
-            const s = module.slides[globalIdx];
-            const sKey = getQuestionHistoryKey(module.id, s.id);
-            const sRec = answeredQuestions[sKey];
-            const isCurr = globalIdx === safeSlideIndex;
-
-            return (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => onChangeSlideIndex(globalIdx)}
-                className={`h-7 min-w-[28px] px-2 rounded-lg text-[11px] font-mono-tabular font-bold transition-all shrink-0 flex items-center justify-center gap-0.5 cursor-pointer ${
-                  isCurr
-                    ? 'bg-emerald-400 text-slate-950 shadow-sm'
-                    : s.type !== 'content'
-                    ? sRec?.evaluation.isFullyCorrect
-                      ? 'bg-emerald-500/20 border border-emerald-400/40 text-emerald-300'
-                      : 'bg-cyan-500/15 border border-cyan-400/30 text-cyan-300'
-                    : effectiveViewedSlideIds.includes(s.id)
-                    ? 'bg-white/15 text-white'
-                    : 'bg-white/5 text-slate-400 hover:bg-white/10'
-                }`}
-              >
-                <span>
-                  {s.type === 'content' ? `C${localIdx + 1}` : 'P'}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <span className="text-xs sm:text-sm font-semibold text-white truncate">
+          {currentLesson.title}
+        </span>
       </div>
 
       {/* Main Slide Card (Glows emerald green when right, subtle red glow + gentle shake when wrong) */}
@@ -937,25 +903,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         } min-h-[240px] flex flex-col justify-between`}
       >
         <div className="space-y-4">
-          {/* Slide Badge & Counter */}
-          <div className="flex items-center justify-between gap-2">
-            <span
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-mono-tabular font-medium uppercase tracking-wider ${
-                isContentSlide
-                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-400/30'
-                  : 'bg-cyan-500/15 text-cyan-300 border border-cyan-400/30'
-              }`}
-            >
-              {isContentSlide
-                ? `Slide ${positionInLesson + 1} of ${totalSlidesInLesson}`
-                : 'Quick Check'}
-            </span>
-
-            <span className="font-mono-tabular text-xs text-slate-400">
-              {positionInLesson + 1} / {totalSlidesInLesson}
-            </span>
-          </div>
-
           {/* =========================================================
               1-LINE BITE-SIZED CONTENT SLIDE (C SLIDE)
              ========================================================= */}
@@ -1614,91 +1561,88 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           })()}
         </div>
 
-        {/* Bottom Slide Navigation Bar */}
+        {/* Bottom Slide Navigation Bar (No auto-start of next lesson) */}
         <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between gap-3">
           <button
             type="button"
-            disabled={isFirstSlideOfModule}
-            onClick={() => onChangeSlideIndex(Math.max(0, safeSlideIndex - 1))}
-            className="min-h-[42px] px-4 py-2 rounded-xl bg-white/8 hover:bg-white/15 disabled:opacity-40 text-xs font-normal text-white flex items-center gap-1.5 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            onClick={() => {
+              if (safeSlideIndex <= firstLessonSlideIdx) {
+                setSubView('lessons');
+              } else {
+                onChangeSlideIndex(Math.max(0, safeSlideIndex - 1));
+              }
+            }}
+            className="min-h-[42px] px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span>Back</span>
           </button>
 
-          {!isLastSlideOfModule ? (
-            isLastSlideOfLesson &&
-            nextLesson?.isBadgeBattle &&
-            !isBadgeBattleUnlocked ? (
-              <button
-                type="button"
-                onClick={() => setSubView('lessons')}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-white/10 border border-amber-400/35 text-amber-200 text-xs font-normal flex items-center gap-1.5 cursor-pointer"
-              >
-                <Lock className="h-3.5 w-3.5 text-amber-300" />
-                <span>
-                  Badge Battle Locked ({regularLessonsCompletionPercent}% / 70% lessons)
-                </span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() =>
-                  onChangeSlideIndex(
-                    Math.min(module.slides.length - 1, safeSlideIndex + 1)
-                  )
-                }
-                className="min-h-[42px] px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-xs sm:text-sm font-medium shadow-md hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>
-                  {isLastSlideOfLesson && nextLesson
-                    ? `Next Lesson: L${nextLesson.number}`
-                    : 'Next'}
-                </span>
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </button>
-            )
-          ) : isModuleCompleted ? (
+          {!isLastSlideOfLesson ? (
             <button
               type="button"
-              disabled
-              aria-disabled="true"
-              className="min-h-[42px] px-5 py-2 rounded-xl bg-white/8 border border-white/15 text-slate-400 text-xs sm:text-sm font-bold flex items-center gap-1.5 opacity-60 cursor-not-allowed select-none"
+              onClick={() =>
+                onChangeSlideIndex(
+                  Math.min(module.slides.length - 1, safeSlideIndex + 1)
+                )
+              }
+              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <CheckCircle2 className="h-4 w-4 text-slate-400" />
-              <span>Completed</span>
+              <span>Next</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           ) : (
             <button
               type="button"
-              disabled={!completionGate.canComplete}
-              onClick={() => {
-                if (!completionGate.canComplete) return;
-                setShowCelebration(true);
-              }}
-              className={`min-h-[42px] px-5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all ${
-                completionGate.canComplete
-                  ? 'bg-gradient-to-r from-amber-400 via-emerald-400 to-cyan-400 text-slate-950 shadow-lg cursor-pointer'
-                  : 'bg-white/8 border border-white/15 text-slate-400 opacity-75 cursor-not-allowed'
-              }`}
+              onClick={handleFinishLesson}
+              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              {completionGate.canComplete ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>Complete Module (+{module.xpReward} XP)</span>
-                </>
-              ) : (
-                <>
-                  <Lock className="h-4 w-4 text-amber-300" />
-                  <span>
-                    Locked ({completionGate.quizAccuracyPercent}% / 70% req)
-                  </span>
-                </>
-              )}
+              <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+              <span>Finish Lesson</span>
             </button>
           )}
         </div>
       </div>
+
+      {/* Brief "Lesson Complete" Screen/Animation before navigating back to parent Module screen */}
+      {showLessonComplete && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Lesson Complete"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xl animate-page-enter"
+        >
+          <div className="glass-panel-elevated w-full max-w-sm rounded-[32px] p-7 text-center space-y-4 border border-emerald-300/35 shadow-2xl">
+            <div className="mx-auto h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-300/30 via-teal-300/25 to-sky-300/30 border border-emerald-300/45 flex items-center justify-center shadow-lg animate-trophy-pop">
+              <CheckCircle2 className="h-9 w-9 text-emerald-300" aria-hidden="true" />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                Lesson Complete
+              </p>
+              <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">
+                {currentLesson.title}
+              </h3>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                if (lessonCompleteTimerRef.current) {
+                  window.clearTimeout(lessonCompleteTimerRef.current);
+                }
+                setShowLessonComplete(false);
+                setSubView('lessons');
+              }}
+              className="w-full min-h-[44px] px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-bold shadow-md hover:brightness-105 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <span>Back to Module</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Module Completion Celebration Modal */}
       {showCelebration && !isModuleCompleted && (
@@ -1718,14 +1662,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             <div className="space-y-1.5">
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-xs font-bold uppercase tracking-wider text-emerald-300">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>{module.numberLabel} Complete!</span>
+                <span>Module Complete!</span>
               </span>
               <h3 className="text-xl sm:text-2xl font-bold text-white">
                 {module.title}
               </h3>
-              <p className="text-xs text-slate-300">
-                +{module.xpReward} XP added to your account!
-              </p>
             </div>
 
             <button
@@ -1734,9 +1675,9 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 setShowCelebration(false);
                 onCompleteModule(module.id);
               }}
-              className="w-full min-h-[46px] px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 text-sm font-bold shadow-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full min-h-[46px] px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-300 to-sky-300 text-slate-950 text-sm font-bold shadow-lg hover:brightness-105 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Claim +{module.xpReward} XP & Continue</span>
+              <span>Continue</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </div>

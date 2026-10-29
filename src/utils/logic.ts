@@ -216,11 +216,17 @@ export function filterAndSortWithPinnedFirst<T extends PinnableItem>(
   items: T[],
   pinnedIds: string[],
   searchQuery: string,
-  categoryFilter: string
+  categoryFilter: string | string[]
 ): T[] {
   const pinnedSet = new Set(pinnedIds);
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const normalizedCat = categoryFilter.trim().toLowerCase();
+
+  const rawCategories = Array.isArray(categoryFilter)
+    ? categoryFilter
+    : [categoryFilter];
+  const normalizedCategories = rawCategories
+    .map((c) => c.trim().toLowerCase())
+    .filter((c) => c.length > 0 && c !== 'all');
 
   // Step 1: Order with pinned items at the very top first (preserving original relative order)
   const orderedWithPinnedTop = [...items].sort((a, b) => {
@@ -229,17 +235,25 @@ export function filterAndSortWithPinnedFirst<T extends PinnableItem>(
     return bPinned - aPinned;
   });
 
-  // Step 2: Apply category and search filters while keeping pinned items at the top
+  // Step 2: Apply multi-category (AND) and search filters while keeping pinned items at the top
   return orderedWithPinnedTop.filter((item) => {
     const itemKeywords = (item.searchKeywords || []).map((k) => k.toLowerCase());
-    const matchesCategory =
-      normalizedCat === 'all' ||
-      (normalizedCat === 'pinned' && pinnedSet.has(item.id)) ||
-      item.category.toLowerCase() === normalizedCat ||
-      item.category.toLowerCase().includes(normalizedCat) ||
-      itemKeywords.some((kw) => kw === normalizedCat || kw.includes(normalizedCat));
+    const itemCategoryLower = item.category.toLowerCase();
 
-    if (!matchesCategory) return false;
+    const matchesAllCategories =
+      normalizedCategories.length === 0 ||
+      normalizedCategories.every((cat) => {
+        if (cat === 'pinned') {
+          return pinnedSet.has(item.id);
+        }
+        return (
+          itemCategoryLower === cat ||
+          itemCategoryLower.includes(cat) ||
+          itemKeywords.some((kw) => kw === cat || kw.includes(cat))
+        );
+      });
+
+    if (!matchesAllCategories) return false;
     if (!normalizedQuery) return true;
 
     const haystack = [
