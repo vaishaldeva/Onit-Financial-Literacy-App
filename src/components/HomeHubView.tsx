@@ -29,6 +29,7 @@ import {
   ModuleBadgeFigure,
   type ModuleBadgeStatusItem,
 } from './ModuleVisualsAndBadges';
+import { SecondaryModalOverlay } from './SecondaryModalOverlay';
 
 interface HomeHubViewProps {
   userName?: string;
@@ -96,16 +97,6 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
   const [inspectBank, setInspectBank] = useState<BankItem | null>(null);
   const [inspectCard, setInspectCard] = useState<CreditCardItem | null>(null);
-
-  useEffect(() => {
-    if (inspectBank || inspectCard) {
-      const prevOverflow = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = prevOverflow;
-      };
-    }
-  }, [inspectBank, inspectCard]);
 
   const utilSim = estimateUtilizationImpact(simLimit, simBalance);
   const hysaSim = calculateHysaComparison(simDeposit, simMonthlySave, 4.5, 3);
@@ -1010,9 +1001,9 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             {badgeCollectionItems.map((item, idx) => (
               <div
                 key={item.module.id}
-                className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center p-1.5 border transition-all ${
+                className={`h-13 w-13 sm:h-15 sm:w-15 rounded-2xl flex items-center justify-center p-0.5 border overflow-hidden transition-all ${
                   item.isUnlocked
-                    ? 'bg-slate-900 border-emerald-400/50 shadow-[0_0_14px_rgba(16,185,129,0.2)]'
+                    ? 'bg-slate-900 border-amber-400/60 shadow-[0_0_14px_rgba(245,158,11,0.22)]'
                     : 'bg-[#171A21] border-white/10'
                 }`}
               >
@@ -1030,18 +1021,14 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
 
       {/* Bank Detail Modal */}
       {inspectBank && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${inspectBank.name} details`}
-          onClick={() => setInspectBank(null)}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
-          >
-            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
+        <SecondaryModalOverlay
+          ariaLabel={`${inspectBank.name} details`}
+          onClose={() => setInspectBank(null)}
+          isPhoneView={isPhoneView}
+          maxWidthClass="max-w-xl"
+          cardClassName="bg-slate-900 border border-white/15"
+          header={
+            <div className="px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-cyan-400">
                   {inspectBank.institutionType} · {inspectBank.fdicInsured}
@@ -1059,82 +1046,77 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-7 sm:pt-5 sm:pb-7 space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                  <span className="text-[11px] text-slate-400 block">Savings APY</span>
-                  <span className="font-mono-tabular text-base font-bold text-emerald-300">
-                    {inspectBank.savingsApy}
-                  </span>
-                </div>
-                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                  <span className="text-[11px] text-slate-400 block">Monthly Fee</span>
-                  <span className="font-mono-tabular text-base font-bold text-white">
-                    {inspectBank.monthlyFee}
-                  </span>
-                </div>
-                <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
-                  <span className="text-[11px] text-slate-400 block">ATM Access</span>
-                  <span className="text-xs font-bold text-cyan-300">
-                    {inspectBank.atmAccess}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                {inspectBank.description}
-              </p>
-
-              <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-3.5 space-y-1.5 text-xs text-slate-200">
-                <p>
-                  <strong className="text-emerald-300">Onit Verdict:</strong>{' '}
-                  {inspectBank.verdict}
-                </p>
-                <p className="text-amber-200">
-                  <strong className="text-amber-300">Watch Out For:</strong>{' '}
-                  {inspectBank.watchOutFor}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => onTogglePinBank(inspectBank.id)}
-                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Pin className="h-3.5 w-3.5" />
-                  <span>
-                    {pinnedBankIds.includes(inspectBank.id) ? 'Pinned' : 'Pin This Bank'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInspectBank(null)}
-                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
+          }
+          footer={
+            <div className="px-5 py-3.5 sm:px-7 flex items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => onTogglePinBank(inspectBank.id)}
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Pin className="h-3.5 w-3.5" />
+                <span>
+                  {pinnedBankIds.includes(inspectBank.id) ? 'Pinned' : 'Pin This Bank'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectBank(null)}
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          }
+        >
+          <div className="grid grid-cols-3 gap-2">
+            <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+              <span className="text-[11px] text-slate-400 block">Savings APY</span>
+              <span className="font-mono-tabular text-base font-bold text-emerald-300">
+                {inspectBank.savingsApy}
+              </span>
+            </div>
+            <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+              <span className="text-[11px] text-slate-400 block">Monthly Fee</span>
+              <span className="font-mono-tabular text-base font-bold text-white">
+                {inspectBank.monthlyFee}
+              </span>
+            </div>
+            <div className="rounded-xl bg-slate-950/90 border border-white/10 p-3">
+              <span className="text-[11px] text-slate-400 block">ATM Access</span>
+              <span className="text-xs font-bold text-cyan-300">
+                {inspectBank.atmAccess}
+              </span>
             </div>
           </div>
-        </div>
+
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+            {inspectBank.description}
+          </p>
+
+          <div className="rounded-2xl bg-emerald-500/10 border border-emerald-400/30 p-3.5 space-y-1.5 text-xs text-slate-200">
+            <p>
+              <strong className="text-emerald-300">Onit Verdict:</strong>{' '}
+              {inspectBank.verdict}
+            </p>
+            <p className="text-amber-200">
+              <strong className="text-amber-300">Watch Out For:</strong>{' '}
+              {inspectBank.watchOutFor}
+            </p>
+          </div>
+        </SecondaryModalOverlay>
       )}
 
       {/* Card Detail Modal */}
       {inspectCard && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${inspectCard.name} details`}
-          onClick={() => setInspectCard(null)}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl max-h-[85dvh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-slate-900 border border-white/15 shadow-2xl"
-          >
-            <div className="shrink-0 px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 bg-slate-900 border-b border-white/10 flex items-start justify-between gap-3">
+        <SecondaryModalOverlay
+          ariaLabel={`${inspectCard.name} details`}
+          onClose={() => setInspectCard(null)}
+          isPhoneView={isPhoneView}
+          maxWidthClass="max-w-xl"
+          cardClassName="bg-slate-900 border border-white/15"
+          header={
+            <div className="px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold text-emerald-400">
                   {inspectCard.issuer} · {inspectCard.annualFee} Annual Fee
@@ -1152,53 +1134,52 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 <X className="h-5 w-5" />
               </button>
             </div>
-
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-4 pb-6 sm:px-7 sm:pt-5 sm:pb-7 space-y-4">
-              <div className="max-w-xs mx-auto">
-                <PhysicalCardVisual card={inspectCard} compact />
-              </div>
-
-              <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-                {inspectCard.description}
-              </p>
-
-              <div className="rounded-2xl bg-slate-950/85 border border-white/10 p-3.5 space-y-1.5 text-xs text-slate-200">
-                <p>
-                  <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
-                  {inspectCard.welcomeBonus}
-                </p>
-                <p>
-                  <strong className="text-amber-300">Best For:</strong>{' '}
-                  {inspectCard.bestForWho}
-                </p>
-                <p className="flex items-start gap-1.5 text-slate-300 pt-1">
-                  <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                  <span>{inspectCard.preApprovalNote}</span>
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between gap-2.5 pt-2 border-t border-white/10">
-                <button
-                  type="button"
-                  onClick={() => onTogglePinCard(inspectCard.id)}
-                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Pin className="h-3.5 w-3.5" />
-                  <span>
-                    {pinnedCardIds.includes(inspectCard.id) ? 'Pinned' : 'Pin This Card'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setInspectCard(null)}
-                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
+          }
+          footer={
+            <div className="px-5 py-3.5 sm:px-7 flex items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => onTogglePinCard(inspectCard.id)}
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Pin className="h-3.5 w-3.5" />
+                <span>
+                  {pinnedCardIds.includes(inspectCard.id) ? 'Pinned' : 'Pin This Card'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setInspectCard(null)}
+                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+              >
+                Close
+              </button>
             </div>
+          }
+        >
+          <div className="max-w-xs mx-auto">
+            <PhysicalCardVisual card={inspectCard} compact />
           </div>
-        </div>
+
+          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+            {inspectCard.description}
+          </p>
+
+          <div className="rounded-2xl bg-slate-950/85 border border-white/10 p-3.5 space-y-1.5 text-xs text-slate-200">
+            <p>
+              <strong className="text-cyan-300">Welcome Bonus:</strong>{' '}
+              {inspectCard.welcomeBonus}
+            </p>
+            <p>
+              <strong className="text-amber-300">Best For:</strong>{' '}
+              {inspectCard.bestForWho}
+            </p>
+            <p className="flex items-start gap-1.5 text-slate-300 pt-1">
+              <ShieldCheck className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+              <span>{inspectCard.preApprovalNote}</span>
+            </p>
+          </div>
+        </SecondaryModalOverlay>
       )}
     </div>
   );

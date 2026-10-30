@@ -783,7 +783,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
 
               {/* Compact Badge Status Card Under Title (Grey if < 100%, Full Color if 100%) */}
               <div className="inline-flex items-center gap-2 rounded-xl bg-slate-950/85 border border-slate-950/40 px-2 py-1 shadow-sm max-w-full">
-                <div className="h-7 w-7 shrink-0 rounded-lg bg-[#1C1E22] border border-white/10 flex items-center justify-center overflow-hidden p-0.5">
+                <div className="h-8 w-8 shrink-0 rounded-lg bg-[#1C1E22] border border-white/10 flex items-center justify-center overflow-hidden p-0.5">
                   <ModuleBadgeFigure
                     moduleId={module.id}
                     unlocked={isBadgeUnlocked}
@@ -1026,11 +1026,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       : 'Complete all lessons on the path to unlock'}
                   </p>
                 </div>
-                <div className="h-14 w-14 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center">
+                <div className="h-16 w-16 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
                   <ModuleBadgeFigure
                     moduleId={module.id}
                     unlocked={isBadgeUnlocked}
-                    size="sm"
+                    size="md"
                   />
                 </div>
               </div>
@@ -1810,7 +1810,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             {/* Subtle Module Badge Incorporation on Completing the Last Lesson of a Module */}
             {(isFinalLessonInModule || lessonProgress.progressPercent >= 100) && (
               <div className="rounded-2xl bg-[#181B20]/95 border border-emerald-400/35 p-3 flex items-center gap-3 text-left shadow-inner">
-                <div className="h-14 w-14 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center">
+                <div className="h-16 w-16 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
                   <ModuleBadgeFigure
                     moduleId={module.id}
                     unlocked={
@@ -1818,7 +1818,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       lessonProgress.completedLessonsCount >=
                         lessonProgress.totalLessons
                     }
-                    size="sm"
+                    size="md"
                   />
                 </div>
                 <div className="min-w-0 flex-1">

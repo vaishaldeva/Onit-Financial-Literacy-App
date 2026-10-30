@@ -731,6 +731,7 @@ export default function App() {
       {/* Main Content Container */}
       {(onboardingStage === 'none' || mobilePhoneFrameMode) && (
         <div
+          id={mobilePhoneFrameMode ? 'onit-phone-frame' : undefined}
           className={
             mobilePhoneFrameMode
               ? `relative z-10 mx-auto my-4 w-full max-w-[412px] h-[820px] max-h-[85vh] rounded-[46px] border-[10px] border-slate-800 ${
@@ -848,9 +849,9 @@ export default function App() {
                             {badgeCollectionItems.slice(0, 4).map((item, idx) => (
                               <div
                                 key={item.module.id}
-                                className={`h-9 w-9 rounded-xl flex items-center justify-center p-1 border ${
+                                className={`h-10 w-10 rounded-xl flex items-center justify-center p-0.5 border overflow-hidden ${
                                   item.isUnlocked
-                                    ? 'bg-slate-900 border-emerald-400/50'
+                                    ? 'bg-slate-900 border-amber-400/60'
                                     : 'bg-[#171A21] border-white/10'
                                 }`}
                               >
@@ -985,10 +986,10 @@ export default function App() {
                                     />
 
                                     <div
-                                      className={`h-8 w-8 rounded-xl flex items-center justify-center p-1 shrink-0 ${
+                                      className={`h-10 w-10 rounded-xl flex items-center justify-center p-0.5 shrink-0 overflow-hidden ${
                                         isUnlocked
-                                          ? 'bg-slate-950/55 border border-emerald-300/60 shadow-sm'
-                                          : 'bg-black/25 border border-white/15'
+                                          ? 'bg-slate-950/65 border border-amber-300/70 shadow-sm'
+                                          : 'bg-black/30 border border-white/15'
                                       }`}
                                       title={
                                         isUnlocked
