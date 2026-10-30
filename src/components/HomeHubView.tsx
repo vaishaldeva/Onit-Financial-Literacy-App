@@ -25,6 +25,10 @@ import {
   estimateUtilizationImpact,
 } from '../utils/logic';
 import { PhysicalCardVisual } from './PhysicalCardVisual';
+import {
+  ModuleBadgeFigure,
+  type ModuleBadgeStatusItem,
+} from './ModuleVisualsAndBadges';
 
 interface HomeHubViewProps {
   userName?: string;
@@ -36,12 +40,14 @@ interface HomeHubViewProps {
   overallProgressPercent: number;
   activeModuleTitle: string;
   activeModuleNumberLabel: string;
+  badgeCollectionItems: ModuleBadgeStatusItem[];
   pinnedBankIds: string[];
   pinnedCardIds: string[];
   onTogglePinBank: (bankId: string) => void;
   onTogglePinCard: (cardId: string) => void;
   onResumeLearning: () => void;
   onOpenModulesTab: () => void;
+  onOpenModuleById: (moduleId: string) => void;
   onOpenBanksTab: () => void;
   onOpenCardsTab: () => void;
   onOpenCompareTab: () => void;
@@ -57,13 +63,11 @@ type SurveyGoalPref = 'buckets' | 'everyday-student' | 'travel-invest';
 export const HomeHubView: React.FC<HomeHubViewProps> = ({
   userName,
   hasUserStartedProgress,
-  totalXp,
-  maxPossibleXp,
   completedModulesCount,
   totalModulesCount,
   overallProgressPercent,
-  activeModuleTitle,
   activeModuleNumberLabel,
+  badgeCollectionItems,
   pinnedBankIds,
   pinnedCardIds,
   onTogglePinBank,
@@ -218,7 +222,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
   return (
     <div className={isPhoneView ? 'space-y-4' : 'space-y-6'}>
       {/* =========================================================
-          1. COMPACT AT-A-GLANCE PROGRESS BAR & QUICK RESUME
+          1. COMPACT AT-A-GLANCE PROGRESS BAR, QUICK RESUME & SUBTLE BADGE COLLECTION
          ========================================================= */}
       <section className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35">
         <div
@@ -226,7 +230,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
             isPhoneView ? '' : 'md:flex-row md:items-center'
           } justify-between gap-4`}
         >
-          <div className="space-y-1">
+          <div className="space-y-1 min-w-0">
             <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold text-emerald-300">
               <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>
@@ -987,6 +991,39 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 Compare Pinned ({pinnedBankIds.length + pinnedCardIds.length}) →
               </button>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          4. BOTTOM BADGE DISPLAY BANNER (Icons Only Inside Banner)
+         ========================================================= */}
+      <section className="space-y-2 pt-1">
+        <h2 className="text-xs sm:text-sm font-bold text-slate-300 tracking-wide px-1">
+          Badge Display
+        </h2>
+        <div
+          aria-label="Badge Display"
+          className="glass-panel-elevated rounded-3xl p-3.5 sm:p-5 border border-white/15 bg-slate-900/75"
+        >
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2.5 sm:gap-3 place-items-center">
+            {badgeCollectionItems.map((item, idx) => (
+              <div
+                key={item.module.id}
+                className={`h-12 w-12 sm:h-14 sm:w-14 rounded-2xl flex items-center justify-center p-1.5 border transition-all ${
+                  item.isUnlocked
+                    ? 'bg-slate-900 border-emerald-400/50 shadow-[0_0_14px_rgba(16,185,129,0.2)]'
+                    : 'bg-[#171A21] border-white/10'
+                }`}
+              >
+                <ModuleBadgeFigure
+                  moduleId={item.module.id}
+                  unlocked={item.isUnlocked}
+                  index={idx}
+                  size="sm"
+                />
+              </div>
+            ))}
           </div>
         </div>
       </section>

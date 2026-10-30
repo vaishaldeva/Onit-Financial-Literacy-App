@@ -923,14 +923,14 @@ export const CURRICULUM_MODULES_1_TO_5: LearningModule[] = [
       {
         id: 'm2-l13-badge-battle',
         number: 13,
-        title: 'Badge Battle & Final Boss',
+        title: 'Boss Blitz & Final Showdown',
         isBadgeBattle: true,
         badgeBattleQuestions: MODULE_2_BADGE_BATTLE_QUESTIONS,
         slides: [
           C(
             'm2-l13-c1',
-            'BADGE BATTLE',
-            'Ready for the Module 2 Badge Battle? Answer all 17 lightning questions before the timer runs out — missed questions add a brief time penalty and cycle back to the end of the queue!'
+            'BOSS BLITZ',
+            'Ready for the Module 2 Boss Blitz? Answer all 17 lightning questions before the timer runs out — missed questions add a brief time penalty and cycle back to the end of the queue!'
           ),
           MT('m2-l13-final-boss', 'FINAL BOSS', 'Final Boss — Match the credit term to what it actually means:', [
             { left: 'Statement balance', right: 'How much you currently owe' },

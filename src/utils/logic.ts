@@ -662,11 +662,86 @@ export function validatePasswordRules(password: string): PasswordValidationResul
 export interface PerAccountProgressData {
   answeredQuestions: Record<string, AnsweredQuestionRecord>;
   completedModuleIds: string[];
+  completedLessonIds?: Record<string, string[]>;
   pinnedCardIds: string[];
   pinnedBankIds: string[];
   moduleSlideIndices: Record<string, number>;
   viewedSlideIds: Record<string, string[]>;
   hasStartedLearning: boolean;
+}
+
+export const POINTS_PER_LESSON = 100;
+
+export function calculateModuleLessonProgress(
+  module: {
+    id: string;
+    lessons: { id: string; isBadgeBattle?: boolean }[];
+    slides: {
+      id: string;
+      lessonId?: string;
+      type: 'content' | 'single-choice' | 'select-all';
+    }[];
+  },
+  answeredQuestions: Record<string, AnsweredQuestionRecord>,
+  viewedSlideIdsForModule: string[],
+  completedLessonIdsForModule: string[] = [],
+  isModuleCompleted = false
+): {
+  pointsPerLesson: number;
+  totalLessons: number;
+  completedLessonsCount: number;
+  completedLessonIdSet: Set<string>;
+  earnedPoints: number;
+  totalPossiblePoints: number;
+  progressPercent: number;
+} {
+  const viewedSet = new Set(viewedSlideIdsForModule);
+  const explicitDoneSet = new Set(completedLessonIdsForModule);
+  const completedLessonIdSet = new Set<string>();
+
+  for (const lesson of module.lessons) {
+    if (isModuleCompleted || explicitDoneSet.has(lesson.id)) {
+      completedLessonIdSet.add(lesson.id);
+      continue;
+    }
+
+    const lSlides = module.slides.filter((s) => s.lessonId === lesson.id);
+    if (lSlides.length === 0) continue;
+
+    const lQuizSlides = lSlides.filter((s) => s.type !== 'content');
+    const allViewed = lSlides.every((s) => viewedSet.has(s.id));
+    const allQuizzesSolved =
+      lQuizSlides.length > 0 &&
+      lQuizSlides.every((q) =>
+        Boolean(
+          answeredQuestions[getQuestionHistoryKey(module.id, q.id)]?.evaluation
+            .isFullyCorrect
+        )
+      );
+
+    if (allViewed && allQuizzesSolved) {
+      completedLessonIdSet.add(lesson.id);
+    }
+  }
+
+  const totalLessons = module.lessons.length;
+  const completedLessonsCount = completedLessonIdSet.size;
+  const totalPossiblePoints = totalLessons * POINTS_PER_LESSON;
+  const earnedPoints = completedLessonsCount * POINTS_PER_LESSON;
+  const progressPercent =
+    totalPossiblePoints > 0
+      ? Math.round((earnedPoints / totalPossiblePoints) * 100)
+      : 0;
+
+  return {
+    pointsPerLesson: POINTS_PER_LESSON,
+    totalLessons,
+    completedLessonsCount,
+    completedLessonIdSet,
+    earnedPoints,
+    totalPossiblePoints,
+    progressPercent,
+  };
 }
 
 export function normalizeAccountEmail(email: string): string {
@@ -689,9 +764,10 @@ export function createFreshAccountProgress(
   return {
     answeredQuestions: {},
     completedModuleIds: [],
+    completedLessonIds: {},
     pinnedCardIds: [],
     pinnedBankIds: [],
-    moduleSlideIndices: Object.fromEntries(moduleIds.map((id) => [id, 0])),
+    moduleSlideIndices: Object.fromEntries(moduleIds.map((id, _idx) => [id, 0])),
     viewedSlideIds: initialViewed,
     hasStartedLearning: false,
   };

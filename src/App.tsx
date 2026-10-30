@@ -32,6 +32,7 @@ import {
   getQuestionHistoryKey,
   getAccountProgressStorageKey,
   createFreshAccountProgress,
+  calculateModuleLessonProgress,
   filterModulesByKeyword,
   type AnsweredQuestionRecord,
   type PerAccountProgressData,
@@ -46,6 +47,13 @@ import { ModulePlayerView } from './components/ModulePlayerView';
 import { VaultAndCompareView } from './components/VaultAndCompareView';
 import { SettingsModal } from './components/SettingsModal';
 import { PWAInstallButton, OfflineIndicator } from './components/PWAInstallButton';
+import {
+  getModuleTheme,
+  ModuleTileIllustration,
+  ModuleBadgeFigure,
+  BadgeCollectionModal,
+  type ModuleBadgeStatusItem,
+} from './components/ModuleVisualsAndBadges';
 import { useTheme } from './context/ThemeContext';
 
 type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
@@ -78,6 +86,7 @@ function loadAccountProgress(email: string | undefined | null): PerAccountProgre
     return {
       answeredQuestions: parsed.answeredQuestions || {},
       completedModuleIds: Array.isArray(parsed.completedModuleIds) ? parsed.completedModuleIds : [],
+      completedLessonIds: parsed.completedLessonIds || {},
       pinnedCardIds: Array.isArray(parsed.pinnedCardIds) ? parsed.pinnedCardIds : [],
       pinnedBankIds: Array.isArray(parsed.pinnedBankIds) ? parsed.pinnedBankIds : [],
       moduleSlideIndices: {
@@ -125,6 +134,7 @@ export default function App() {
   });
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showBadgeCollectionModal, setShowBadgeCollectionModal] = useState(false);
   const [activeTab, setActiveTab] = useState<MainTab>('home');
   const [modulesScreenMode, setModulesScreenMode] = useState<'list' | 'module'>('list');
   const [moduleSearchQuery, setModuleSearchQuery] = useState('');
@@ -210,6 +220,10 @@ export default function App() {
     () => loadAccountProgress(userProfile?.email).completedModuleIds
   );
 
+  const [completedLessonIds, setCompletedLessonIds] = useState<Record<string, string[]>>(
+    () => loadAccountProgress(userProfile?.email).completedLessonIds || {}
+  );
+
   const [pinnedCardIds, setPinnedCardIds] = useState<string[]>(
     () => loadAccountProgress(userProfile?.email).pinnedCardIds
   );
@@ -221,24 +235,6 @@ export default function App() {
   const [hasStartedLearning, setHasStartedLearning] = useState<boolean>(
     () => loadAccountProgress(userProfile?.email).hasStartedLearning
   );
-
-  // Ensure current slide in activeModuleId is recorded as viewed whenever inside a module
-  useEffect(() => {
-    const mod = LEARNING_MODULES.find((m) => m.id === activeModuleId);
-    if (!mod) return;
-    const currentIdx = moduleSlideIndices[activeModuleId] || 0;
-    const currentSlide = mod.slides[currentIdx] || mod.slides[0];
-    if (!currentSlide) return;
-
-    setViewedSlideIds((prev) => {
-      const existing = prev[activeModuleId] || [];
-      if (existing.includes(currentSlide.id)) return prev;
-      return {
-        ...prev,
-        [activeModuleId]: [...existing, currentSlide.id],
-      };
-    });
-  }, [activeModuleId, moduleSlideIndices]);
 
   // Scroll to top whenever activeTab, activeModuleId, modulesScreenMode, or current slide index changes
   useEffect(() => {
@@ -259,6 +255,7 @@ export default function App() {
       const accountData: PerAccountProgressData = {
         answeredQuestions,
         completedModuleIds,
+        completedLessonIds,
         pinnedCardIds,
         pinnedBankIds,
         moduleSlideIndices,
@@ -276,6 +273,7 @@ export default function App() {
     userProfile?.email,
     answeredQuestions,
     completedModuleIds,
+    completedLessonIds,
     pinnedCardIds,
     pinnedBankIds,
     moduleSlideIndices,
@@ -286,6 +284,7 @@ export default function App() {
   const applyAccountProgressToState = (progress: PerAccountProgressData) => {
     setAnsweredQuestions(progress.answeredQuestions);
     setCompletedModuleIds(progress.completedModuleIds);
+    setCompletedLessonIds(progress.completedLessonIds || {});
     setPinnedCardIds(progress.pinnedCardIds);
     setPinnedBankIds(progress.pinnedBankIds);
     setModuleSlideIndices(progress.moduleSlideIndices);
@@ -445,10 +444,44 @@ export default function App() {
     setActiveTab('modules');
   };
 
+  const handleCompleteLesson = (moduleId: string, lessonId: string) => {
+    setHasStartedLearning(true);
+    const mod = LEARNING_MODULES.find((m) => m.id === moduleId);
+    setCompletedLessonIds((prev) => {
+      const existing = prev[moduleId] || [];
+      const nextForModule = existing.includes(lessonId)
+        ? existing
+        : [...existing, lessonId];
+      if (mod && nextForModule.length >= mod.lessons.length) {
+        setCompletedModuleIds((prevMods) =>
+          prevMods.includes(moduleId) ? prevMods : [...prevMods, moduleId]
+        );
+      }
+      if (existing.includes(lessonId)) return prev;
+      return {
+        ...prev,
+        [moduleId]: nextForModule,
+      };
+    });
+    if (mod) {
+      const lessonSlideIds = mod.slides
+        .filter((s) => s.lessonId === lessonId)
+        .map((s) => s.id);
+      setViewedSlideIds((prev) => {
+        const existing = prev[moduleId] || [];
+        return {
+          ...prev,
+          [moduleId]: Array.from(new Set([...existing, ...lessonSlideIds])),
+        };
+      });
+    }
+  };
+
   const handleResetXpAndSolvedQuestions = () => {
     const fresh = createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE);
     setAnsweredQuestions({});
     setCompletedModuleIds([]);
+    setCompletedLessonIds({});
     setModuleSlideIndices(fresh.moduleSlideIndices);
     setViewedSlideIds(fresh.viewedSlideIds);
     setHasStartedLearning(false);
@@ -460,6 +493,7 @@ export default function App() {
         const updatedAccountData: PerAccountProgressData = {
           answeredQuestions: {},
           completedModuleIds: [],
+          completedLessonIds: {},
           pinnedCardIds,
           pinnedBankIds,
           moduleSlideIndices: fresh.moduleSlideIndices,
@@ -476,8 +510,31 @@ export default function App() {
     }
   };
 
-  // Calculate total XP strictly from the set xpReward of completed modules (no individual quiz XP)
-  const uniqueCompletedModuleIds = Array.from(new Set(completedModuleIds));
+  const badgeCollectionItems: ModuleBadgeStatusItem[] = LEARNING_MODULES.map((mod) => {
+    const isExplicitDone = completedModuleIds.includes(mod.id);
+    const lProg = calculateModuleLessonProgress(
+      mod,
+      answeredQuestions,
+      viewedSlideIds[mod.id] || [],
+      completedLessonIds[mod.id] || [],
+      isExplicitDone
+    );
+    const isUnlocked = isExplicitDone || lProg.progressPercent >= 100;
+    return {
+      module: mod,
+      completedLessonsCount: lProg.completedLessonsCount,
+      totalLessonsCount: lProg.totalLessons,
+      isUnlocked,
+    };
+  });
+
+  // Calculate total XP strictly from the set xpReward of completed/unlocked modules
+  const unlockedModuleIds = badgeCollectionItems
+    .filter((item) => item.isUnlocked)
+    .map((item) => item.module.id);
+  const uniqueCompletedModuleIds = Array.from(
+    new Set([...completedModuleIds, ...unlockedModuleIds])
+  );
   const totalXp = uniqueCompletedModuleIds.reduce((sum, id) => {
     const m = LEARNING_MODULES.find((mod) => mod.id === id);
     return sum + (m ? m.xpReward : 0);
@@ -504,6 +561,7 @@ export default function App() {
     totalXp > 0 ||
     solvedQuizzesCount > 0 ||
     completedModuleIds.length > 0 ||
+    Object.values(completedLessonIds).some((arr) => arr.length > 0) ||
     Object.values(moduleSlideIndices).some((idx) => idx > 0);
 
   return (
@@ -740,7 +798,7 @@ export default function App() {
               }`}
             >
               {/* =========================================================
-                  HOME VIEW (Interactive Calculators Playground + Bank & Card Recommendation Survey)
+                  HOME VIEW (Interactive Calculators Playground + Bank & Card Recommendation Survey + Badge Collection)
                  ========================================================= */}
               {activeTab === 'home' && (
                 <HomeHubView
@@ -753,6 +811,7 @@ export default function App() {
                   overallProgressPercent={overallProgressPercent}
                   activeModuleTitle={activeModule.title}
                   activeModuleNumberLabel={activeModule.numberLabel}
+                  badgeCollectionItems={badgeCollectionItems}
                   pinnedBankIds={pinnedBankIds}
                   pinnedCardIds={pinnedCardIds}
                   onTogglePinBank={(bankId) =>
@@ -766,6 +825,7 @@ export default function App() {
                     setModulesScreenMode('list');
                     setActiveTab('modules');
                   }}
+                  onOpenModuleById={(moduleId) => handleOpenModule(moduleId)}
                   onOpenBanksTab={() => setActiveTab('banks')}
                   onOpenCardsTab={() => setActiveTab('cards')}
                   onOpenCompareTab={() => setActiveTab('compare')}
@@ -774,13 +834,66 @@ export default function App() {
               )}
 
               {/* =========================================================
-                  MODULES VIEW (Low-Text, Welcoming Module Cards — Short Titles + % Finished)
+                  MODULES VIEW (Colorful Tile/Card Grid with Custom Pictures — Matching IMG_4174.PNG)
                  ========================================================= */}
               {activeTab === 'modules' && (
                 <div className="space-y-4">
                   {modulesScreenMode === 'list' ? (
-                    /* LEVEL 1: CLEAN MODULE LIST (Short Titles + Welcoming Icons + % Finished) */
-                    <div className="space-y-3.5">
+                    /* LEVEL 1: VIBRANT MODULE TILES GRID (2 Columns on Mobile, 3 on Desktop) */
+                    <div className="space-y-4">
+                      {/* Relocated Badge Collection Mini UI & Button at Very Top of Modules Tab */}
+                      <div className="glass-panel-elevated rounded-3xl p-3.5 sm:p-4 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex -space-x-2 overflow-hidden shrink-0">
+                            {badgeCollectionItems.slice(0, 4).map((item, idx) => (
+                              <div
+                                key={item.module.id}
+                                className={`h-9 w-9 rounded-xl flex items-center justify-center p-1 border ${
+                                  item.isUnlocked
+                                    ? 'bg-slate-900 border-emerald-400/50'
+                                    : 'bg-[#171A21] border-white/10'
+                                }`}
+                              >
+                                <ModuleBadgeFigure
+                                  moduleId={item.module.id}
+                                  unlocked={item.isUnlocked}
+                                  index={idx}
+                                  size="sm"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs sm:text-sm font-bold text-white truncate">
+                              Badge Collection
+                            </p>
+                            <p className="text-[11px] text-emerald-300 font-mono-tabular">
+                              {badgeCollectionItems.filter((b) => b.isUnlocked).length} /{' '}
+                              {totalModulesCount} unlocked
+                            </p>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setShowBadgeCollectionModal(true)}
+                          className="min-h-[38px] px-4 py-1.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/18 text-xs font-bold text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                        >
+                          <Award className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                          <span>Badge Collection</span>
+                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      {showBadgeCollectionModal && (
+                        <BadgeCollectionModal
+                          items={badgeCollectionItems}
+                          onClose={() => setShowBadgeCollectionModal(false)}
+                          onSelectModule={(moduleId) => handleOpenModule(moduleId)}
+                          isPhoneView={mobilePhoneFrameMode}
+                        />
+                      )}
+
                       <div className="relative">
                         <Search
                           className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-300"
@@ -835,23 +948,23 @@ export default function App() {
                         }
 
                         return (
-                          <div className="grid grid-cols-1 gap-3">
+                          <div
+                            className={`grid grid-cols-2 ${
+                              mobilePhoneFrameMode
+                                ? 'gap-3'
+                                : 'sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4'
+                            }`}
+                          >
                             {matchingModules.map((mod) => {
-                              const isCompleted = completedModuleIds.includes(mod.id);
                               const canonicalIdx = Math.max(
                                 0,
                                 LEARNING_MODULES.findIndex((m) => m.id === mod.id)
                               );
-                              const ModIcon =
-                                MODULE_VISUAL_ICONS[canonicalIdx % MODULE_VISUAL_ICONS.length];
-                              const modViewedIds = viewedSlideIds[mod.id] || [];
-                              const modProgressPercent = isCompleted
-                                ? 100
-                                : hasUserStartedProgress
-                                ? Math.round(
-                                    (modViewedIds.length / Math.max(1, mod.slides.length)) * 100
-                                  )
-                                : 0;
+                              const themeMeta = getModuleTheme(mod.id, canonicalIdx);
+                              const badgeStatus = badgeCollectionItems.find(
+                                (b) => b.module.id === mod.id
+                              );
+                              const isUnlocked = Boolean(badgeStatus?.isUnlocked);
 
                               return (
                                 <button
@@ -862,49 +975,43 @@ export default function App() {
                                     setActiveModuleId(mod.id);
                                     setModulesScreenMode('module');
                                   }}
-                                  className={`w-full text-left glass-panel-elevated ${
-                                    isModern
-                                      ? 'rounded-[28px] p-4 sm:p-5 border border-white/16 hover:border-emerald-300/50'
-                                      : 'rounded-2xl p-4 sm:p-5 border border-white/12 hover:border-emerald-400/50'
-                                  } transition-all flex items-center justify-between gap-3.5 cursor-pointer`}
+                                  className={`group w-full text-left ${themeMeta.tileBgClass} rounded-[26px] p-3.5 sm:p-5 shadow-lg hover:brightness-105 active:scale-[0.99] transition-all flex flex-col justify-between gap-3 border border-white/20 cursor-pointer overflow-hidden`}
                                 >
-                                  <div className="flex items-center gap-3.5 min-w-0">
-                                    <div
-                                      className={`flex h-12 w-12 shrink-0 items-center justify-center ${
-                                        isModern ? 'rounded-2xl' : 'rounded-xl'
-                                      } ${
-                                        isCompleted
-                                          ? 'bg-emerald-400/20 border border-emerald-300/40 text-emerald-300'
-                                          : 'bg-gradient-to-br from-emerald-400/20 via-sky-400/15 to-indigo-400/20 border border-white/18 text-sky-200 shadow-inner'
-                                      }`}
-                                    >
-                                      <ModIcon className="h-5 w-5" aria-hidden="true" />
-                                    </div>
+                                  <div className="flex items-start justify-between gap-2 w-full">
+                                    <ModuleTileIllustration
+                                      moduleId={mod.id}
+                                      index={canonicalIdx}
+                                      className="h-20 w-20 sm:h-24 sm:w-24"
+                                    />
 
-                                    <h2 className="text-sm sm:text-base font-semibold text-white truncate">
-                                      {mod.title}
-                                    </h2>
+                                    <div
+                                      className={`h-8 w-8 rounded-xl flex items-center justify-center p-1 shrink-0 ${
+                                        isUnlocked
+                                          ? 'bg-slate-950/55 border border-emerald-300/60 shadow-sm'
+                                          : 'bg-black/25 border border-white/15'
+                                      }`}
+                                      title={
+                                        isUnlocked
+                                          ? `${themeMeta.badgeName} Unlocked!`
+                                          : `${themeMeta.badgeName} (Complete 100% of lessons to unlock)`
+                                      }
+                                    >
+                                      <ModuleBadgeFigure
+                                        moduleId={mod.id}
+                                        unlocked={isUnlocked}
+                                        index={canonicalIdx}
+                                        size="sm"
+                                      />
+                                    </div>
                                   </div>
 
-                                  <div className="shrink-0 flex items-center gap-2.5">
-                                    <span className="font-mono-tabular text-xs font-semibold text-emerald-300">
-                                      {modProgressPercent}%
-                                    </span>
-                                    {isCompleted ? (
-                                      <span className="p-2 rounded-2xl bg-emerald-400/20 border border-emerald-300/35 text-emerald-300 flex items-center justify-center">
-                                        <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-                                      </span>
-                                    ) : (
-                                      <span
-                                        className={`p-2.5 ${
-                                          isModern
-                                            ? 'rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-sm'
-                                            : 'rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-sm'
-                                        } flex items-center justify-center`}
-                                      >
-                                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                                      </span>
-                                    )}
+                                  <div className="space-y-1 min-w-0 w-full">
+                                    <h2 className="text-sm sm:text-lg font-extrabold text-white leading-snug break-words">
+                                      {mod.title}
+                                    </h2>
+                                    <p className="text-[11px] sm:text-xs text-white/95 font-normal leading-snug line-clamp-3 break-words">
+                                      {themeMeta.shortDescription}
+                                    </p>
                                   </div>
                                 </button>
                               );
@@ -945,6 +1052,8 @@ export default function App() {
                       }}
                       answeredQuestions={answeredQuestions}
                       viewedSlideIdsForModule={viewedSlideIds[activeModule.id] || []}
+                      completedLessonIdsForModule={completedLessonIds[activeModule.id] || []}
+                      onCompleteLesson={handleCompleteLesson}
                       onSubmitAnswer={handleSubmitQuestionAnswer}
                       onResetSingleQuestion={handleResetSingleQuestion}
                       onBackToModuleList={() => setModulesScreenMode('list')}

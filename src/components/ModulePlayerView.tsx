@@ -28,9 +28,15 @@ import type {
 import {
   getQuestionHistoryKey,
   calculateModuleCompletionGate,
+  calculateModuleLessonProgress,
   evaluateQuestionSelection,
   type AnsweredQuestionRecord,
 } from '../utils/logic';
+import {
+  getModuleTheme,
+  ModuleBadgeFigure,
+  ModuleTileIllustration,
+} from './ModuleVisualsAndBadges';
 
 interface ModulePlayerViewProps {
   module: LearningModule;
@@ -39,6 +45,8 @@ interface ModulePlayerViewProps {
   onChangeSlideIndex: (newIndex: number) => void;
   answeredQuestions: Record<string, AnsweredQuestionRecord>;
   viewedSlideIdsForModule?: string[];
+  completedLessonIdsForModule?: string[];
+  onCompleteLesson?: (moduleId: string, lessonId: string) => void;
   onSubmitAnswer: (
     moduleId: string,
     slideId: string,
@@ -179,6 +187,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   onChangeSlideIndex,
   answeredQuestions,
   viewedSlideIdsForModule = [],
+  completedLessonIdsForModule = [],
+  onCompleteLesson,
   onSubmitAnswer,
   onResetSingleQuestion,
   onBackToModuleList,
@@ -188,6 +198,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   initialSubView = 'lessons',
 }) => {
   const [subView, setSubView] = useState<'lessons' | 'player'>(initialSubView);
+  const [localCompletedLessonIds, setLocalCompletedLessonIds] = useState<string[]>([]);
 
   const safeSlideIndex = Math.max(
     0,
@@ -227,9 +238,23 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const historyKey = getQuestionHistoryKey(module.id, slide.id);
   const existingRecord = answeredQuestions[historyKey];
 
-  const effectiveViewedSlideIds = Array.from(
-    new Set([...viewedSlideIdsForModule, slide.id])
+  const effectiveViewedSlideIds =
+    subView === 'player'
+      ? Array.from(new Set([...viewedSlideIdsForModule, slide.id]))
+      : viewedSlideIdsForModule;
+
+  const mergedCompletedLessonIds = Array.from(
+    new Set([...completedLessonIdsForModule, ...localCompletedLessonIds])
   );
+
+  const lessonProgress = calculateModuleLessonProgress(
+    module,
+    answeredQuestions,
+    effectiveViewedSlideIds,
+    mergedCompletedLessonIds,
+    isModuleCompleted
+  );
+
   const completionGate = calculateModuleCompletionGate(
     module,
     answeredQuestions,
@@ -273,26 +298,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const [wrongShakeActive, setWrongShakeActive] = useState(false);
   const [wrongGlowActive, setWrongGlowActive] = useState(false);
 
-  // Calculate regular lesson completion percentage for the 70% Badge Battle unlock rule
+  // Calculate regular lesson completion percentage for the 70% Badge Battle unlock rule using equal points per lesson
   const regularLessons = module.lessons.filter((l) => !l.isBadgeBattle);
-  const completedRegularLessonsCount = regularLessons.filter((l) => {
-    const lSlides = module.slides.filter((s) => s.lessonId === l.id);
-    const lQuizSlides = lSlides.filter((s) => s.type !== 'content');
-    const lSolvedCorrect = lQuizSlides.filter((q) =>
-      Boolean(
-        answeredQuestions[getQuestionHistoryKey(module.id, q.id)]?.evaluation
-          .isFullyCorrect
-      )
-    ).length;
-    const lViewedCount = lSlides.filter((s) =>
-      effectiveViewedSlideIds.includes(s.id)
-    ).length;
-    return (
-      lSlides.length > 0 &&
-      lViewedCount === lSlides.length &&
-      lSolvedCorrect === lQuizSlides.length
-    );
-  }).length;
+  const completedRegularLessonsCount = regularLessons.filter((l) =>
+    lessonProgress.completedLessonIdSet.has(l.id)
+  ).length;
   const regularLessonsCompletionPercent =
     regularLessons.length > 0
       ? Math.round((completedRegularLessonsCount / regularLessons.length) * 100)
@@ -676,6 +686,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   }, []);
 
   const handleFinishLesson = () => {
+    const nextCompletedIds = localCompletedLessonIds.includes(currentLesson.id)
+      ? localCompletedLessonIds
+      : [...localCompletedLessonIds, currentLesson.id];
+    setLocalCompletedLessonIds(nextCompletedIds);
+    onCompleteLesson?.(module.id, currentLesson.id);
     setShowLessonComplete(true);
     triggerConfettiBreeze();
     if (lessonCompleteTimerRef.current) {
@@ -684,7 +699,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     lessonCompleteTimerRef.current = window.setTimeout(() => {
       setShowLessonComplete(false);
       setSubView('lessons');
-    }, 1650);
+    }, 3000);
   };
 
   const openLessonAtSlide = (lesson: ModuleLesson) => {
@@ -701,179 +716,325 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setSubView('player');
   };
 
+  const moduleTheme = getModuleTheme(module.id);
+  const isFinalLessonInModule =
+    module.lessons[module.lessons.length - 1]?.id === currentLesson.id;
+
   // =========================================================
-  // LEVEL 2: MODULE OVERVIEW & LESSON SELECTOR VIEW (Low-Text, Welcoming)
+  // LEVEL 2: MODULE OVERVIEW & GAME-LIKE VERTICAL LESSON PATH (IMG_4175)
   // =========================================================
   if (subView === 'lessons') {
-    const progressPercent = isModuleCompleted
-      ? 100
-      : Math.round(
-          (completionGate.viewedSlidesCount /
-            Math.max(1, completionGate.totalSlidesCount)) *
-            100
-        );
+    const progressPercent = lessonProgress.progressPercent;
+    const isBadgeUnlocked = Boolean(isModuleCompleted || progressPercent >= 100);
+    const canCompleteModuleNow =
+      completionGate.canComplete || progressPercent >= 100;
+
+    // Find the first incomplete unlocked lesson to highlight as "Up Next"
+    const nextUpLessonId = module.lessons.find((l) => {
+      const done = lessonProgress.completedLessonIdSet.has(l.id);
+      const locked = Boolean(l.isBadgeBattle) && !isBadgeBattleUnlocked;
+      return !done && !locked;
+    })?.id;
 
     return (
-      <div ref={playerTopRef} className="space-y-4 sm:space-y-5">
-        {/* Top Module Header Card (Same Module Thumbnail Icon + Short Title + % Finished Only) */}
-        <div className="glass-panel-elevated rounded-3xl p-4 sm:p-6 border border-white/15 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+      <div ref={playerTopRef} className="space-y-5 pb-4">
+        {/* Top Module Banner Inspired by IMG_4175 + Module Thumbnail + Badge Status Under Title */}
+        <div
+          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${moduleTheme.headerBgClass} p-4 sm:p-6 shadow-xl border border-white/15`}
+        >
+          {/* Top Navigation Row */}
+          <div className="flex items-center justify-between gap-2 mb-3">
             <button
               type="button"
               onClick={onBackToModuleList}
-              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/14 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+              aria-label="Back to Modules"
+              className="h-9 w-9 rounded-full bg-slate-950/20 hover:bg-slate-950/35 text-slate-950 flex items-center justify-center transition-colors cursor-pointer"
             >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Modules</span>
+              <ArrowLeft className="h-5 w-5 stroke-[2.4]" aria-hidden="true" />
             </button>
 
-            <div className="flex items-center gap-2">
-              {isModuleCompleted ? (
-                <span className="px-3 py-1 rounded-2xl bg-emerald-500/20 border border-emerald-400/35 text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Completed</span>
+            {(isModuleCompleted || canCompleteModuleNow) && (
+              <div className="px-3.5 py-1.5 rounded-full bg-slate-950 text-emerald-300 text-xs font-bold shadow-md inline-flex items-center gap-1.5 select-none">
+                <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>Module Complete</span>
+              </div>
+            )}
+          </div>
+
+          {/* Main Banner Content: Left Info + Badge Status Under Title | Right Circular % Badge */}
+          <div className="flex items-center justify-between gap-3.5">
+            <div className="min-w-0 flex-1 space-y-2.5">
+              {/* Module Thumbnail Picture + Title */}
+              <div className="flex items-center gap-3 min-w-0">
+                <ModuleTileIllustration
+                  moduleId={module.id}
+                  className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 !rounded-2xl shadow-md"
+                />
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-extrabold text-slate-950 tracking-tight leading-tight break-words">
+                    {module.title}
+                  </h1>
+                  <p className="text-xs sm:text-sm font-semibold text-slate-950/80 mt-0.5">
+                    {lessonProgress.completedLessonsCount} of{' '}
+                    {lessonProgress.totalLessons} lessons completed
+                  </p>
+                </div>
+              </div>
+
+              {/* Compact Badge Status Card Under Title (Grey if < 100%, Full Color if 100%) */}
+              <div className="inline-flex items-center gap-2 rounded-xl bg-slate-950/85 border border-slate-950/40 px-2 py-1 shadow-sm max-w-full">
+                <div className="h-7 w-7 shrink-0 rounded-lg bg-[#1C1E22] border border-white/10 flex items-center justify-center overflow-hidden p-0.5">
+                  <ModuleBadgeFigure
+                    moduleId={module.id}
+                    unlocked={isBadgeUnlocked}
+                    size="sm"
+                  />
+                </div>
+                <div className="min-w-0 flex items-center gap-1.5 flex-wrap pr-0.5">
+                  <span className="text-[11px] font-bold text-white leading-tight">
+                    {moduleTheme.badgeName}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider leading-none ${
+                      isBadgeUnlocked
+                        ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40'
+                        : 'bg-white/10 text-slate-400 border border-white/10'
+                    }`}
+                  >
+                    {isBadgeUnlocked ? 'Unlocked' : 'Locked'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Circular % Complete Ring Badge on Right (Matches IMG_4175) */}
+            <div className="shrink-0">
+              <div className="h-16 w-16 sm:h-[74px] sm:w-[74px] rounded-full bg-[#246BFD] border-[3.5px] border-slate-950 shadow-[0_6px_18px_rgba(0,0,0,0.32)] flex flex-col items-center justify-center text-white">
+                <span className="font-mono-tabular text-base sm:text-lg font-extrabold leading-none">
+                  {progressPercent}%
                 </span>
-              ) : completionGate.canComplete ? (
-                <button
-                  type="button"
-                  onClick={() => setShowCelebration(true)}
-                  className="px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-emerald-300 to-teal-300 text-slate-950 text-xs font-bold shadow-md flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
-                  <span>Complete Module</span>
-                </button>
-              ) : null}
+                <span className="text-[10px] font-semibold text-white/90 mt-0.5">
+                  Complete
+                </span>
+              </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            <div
-              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                isModuleCompleted
-                  ? 'bg-emerald-400/20 border border-emerald-300/40 text-emerald-300'
-                  : 'bg-gradient-to-br from-emerald-400/20 via-sky-400/15 to-indigo-400/20 border border-white/18 text-sky-200 shadow-inner'
-              }`}
-            >
-              <ModuleIcon className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-snug">
-                {module.title}
-              </h1>
-            </div>
-          </div>
-
-          {/* Clean Visual Progress Bar + % Finished Only */}
-          <div className="flex items-center gap-3">
-            <div className="h-2.5 flex-1 rounded-full bg-slate-950/70 border border-white/10 overflow-hidden p-[1px]">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 transition-all duration-300"
-                style={{
-                  width: `${Math.max(progressPercent, progressPercent > 0 ? 4 : 0)}%`,
-                }}
-              />
-            </div>
-            <span className="font-mono-tabular text-xs font-bold text-emerald-300 shrink-0">
-              {progressPercent}%
-            </span>
           </div>
         </div>
 
-        {/* Single-Column Lesson List (Minimalist & Intuitive) */}
-        <div className="space-y-2.5">
-          <div className="flex items-center px-1">
-            <h2 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-              <ListChecks className="h-4 w-4 text-emerald-300" />
-              <span>Lessons</span>
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2.5">
-            {module.lessons.map((lesson) => {
-              const lSlides = module.slides.filter(
-                (s) => s.lessonId === lesson.id
+        {/* Game-Like Vertical Lesson Path (Inspired by IMG_4175 + Enhanced Game Feel) */}
+        <div className="rounded-[28px] bg-[#0B0E13]/95 border border-white/10 px-3.5 py-5 sm:px-6 sm:py-6 shadow-xl">
+          <div className="relative">
+            {module.lessons.map((lesson, idx) => {
+              const isLessonDone = lessonProgress.completedLessonIdSet.has(
+                lesson.id
               );
-              const lQuizSlides = lSlides.filter((s) => s.type !== 'content');
-              const lSolvedCorrect = lQuizSlides.filter((q) => {
-                const rec =
-                  answeredQuestions[getQuestionHistoryKey(module.id, q.id)];
-                return Boolean(rec?.evaluation.isFullyCorrect);
-              }).length;
-              const lViewedCount = lSlides.filter((s) =>
-                effectiveViewedSlideIds.includes(s.id)
-              ).length;
-              const isLessonDone =
-                lViewedCount === lSlides.length &&
-                lSolvedCorrect === lQuizSlides.length;
-
               const isBattleLocked =
                 Boolean(lesson.isBadgeBattle) && !isBadgeBattleUnlocked;
+              const isUpNext = lesson.id === nextUpLessonId;
+              const isLastLessonNode = idx === module.lessons.length - 1;
+
+              // Node circle style
+              const nodeCircleClass = isBattleLocked
+                ? 'bg-slate-900 border-slate-700 text-slate-500 shadow-none'
+                : lesson.isBadgeBattle
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500 border-slate-950 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                : isLessonDone
+                ? 'bg-[#10B981] border-slate-950 text-slate-950 shadow-[0_0_18px_rgba(16,185,129,0.5)]'
+                : isUpNext
+                ? 'bg-[#246BFD] border-slate-950 text-white shadow-[0_0_22px_rgba(36,107,253,0.65)] ring-4 ring-[#246BFD]/25'
+                : 'bg-[#246BFD] border-slate-950 text-white shadow-[0_0_14px_rgba(36,107,253,0.35)]';
+
+              // Status label
+              const statusText = isBattleLocked
+                ? `Unlock at 70% (${regularLessonsCompletionPercent}%/70%)`
+                : lesson.isBadgeBattle
+                ? isLessonDone
+                  ? 'Boss Blitz Cleared!'
+                  : 'Boss Blitz Ready'
+                : isLessonDone
+                ? 'Completed'
+                : isUpNext
+                ? 'Up Next'
+                : 'Not Started';
 
               return (
-                <button
+                <div
                   key={lesson.id}
-                  type="button"
-                  disabled={isBattleLocked}
-                  onClick={() => openLessonAtSlide(lesson)}
-                  className={`w-full text-left glass-panel rounded-3xl p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 ${
-                    isBattleLocked
-                      ? 'border-white/10 bg-slate-950/50 opacity-75 cursor-not-allowed'
-                      : lesson.isBadgeBattle
-                      ? 'border-amber-400/40 bg-gradient-to-r from-amber-500/15 via-slate-900/80 to-rose-500/15 hover:border-amber-400 cursor-pointer'
-                      : isLessonDone
-                      ? 'border-emerald-400/35 hover:border-emerald-400/60 cursor-pointer'
-                      : 'border-white/14 hover:border-sky-300/50 cursor-pointer'
-                  }`}
+                  className="relative flex items-stretch gap-3.5 sm:gap-5"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-xs font-semibold ${
+                  {/* Left Column: Circular Path Node + Vertical Dashed Connector Line */}
+                  <div className="flex flex-col items-center shrink-0 w-12 sm:w-14">
+                    <button
+                      type="button"
+                      disabled={isBattleLocked}
+                      onClick={() => openLessonAtSlide(lesson)}
+                      aria-label={`Lesson ${lesson.number}: ${lesson.title}`}
+                      className={`relative z-10 h-11 w-11 sm:h-12 sm:w-12 rounded-full border-[3px] flex items-center justify-center transition-transform ${
                         isBattleLocked
-                          ? 'bg-white/8 text-slate-400 border border-white/10'
+                          ? 'cursor-not-allowed'
+                          : 'hover:scale-105 active:scale-95 cursor-pointer'
+                      } ${nodeCircleClass}`}
+                    >
+                      {isBattleLocked ? (
+                        <Lock className="h-4 w-4" aria-hidden="true" />
+                      ) : lesson.isBadgeBattle ? (
+                        <Zap
+                          className="h-5 w-5 fill-current"
+                          aria-hidden="true"
+                        />
+                      ) : isLessonDone ? (
+                        <Check
+                          className="h-5 w-5 stroke-[3]"
+                          aria-hidden="true"
+                        />
+                      ) : (
+                        <span className="h-3.5 w-3.5 rounded-full bg-white shadow-sm" />
+                      )}
+                    </button>
+
+                    {/* Vertical Dashed Path Line to Next Node (or to Final Badge Pedestal) */}
+                    <div
+                      className={`w-0 flex-1 my-1 border-l-[3px] border-dashed transition-colors ${
+                        isLastLessonNode ? 'min-h-[28px]' : 'min-h-[34px]'
+                      } ${
+                        isLessonDone
+                          ? 'border-emerald-400/75'
+                          : 'border-slate-600/70'
+                      }`}
+                    />
+                  </div>
+
+                  {/* Right Column: Interactive Game Lesson Card */}
+                  <div className="flex-1 min-w-0 pb-5 sm:pb-6">
+                    <button
+                      type="button"
+                      disabled={isBattleLocked}
+                      onClick={() => openLessonAtSlide(lesson)}
+                      className={`w-full text-left rounded-2xl p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 ${
+                        isBattleLocked
+                          ? 'bg-[#17191D]/60 border-white/8 opacity-75 cursor-not-allowed'
                           : lesson.isBadgeBattle
-                          ? 'bg-amber-300 text-slate-950 shadow-sm'
+                          ? 'bg-gradient-to-r from-amber-500/18 via-[#1C1F26] to-rose-500/15 border-amber-400/45 hover:border-amber-300 shadow-lg cursor-pointer'
                           : isLessonDone
-                          ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/35'
-                          : 'bg-white/10 text-sky-300 border border-white/15'
+                          ? 'bg-[#1C1F26] border-emerald-400/40 hover:border-emerald-300/70 shadow-md cursor-pointer'
+                          : isUpNext
+                          ? 'bg-[#1E222B] border-[#3B82F6]/65 hover:border-[#60A5FA] shadow-[0_6px_20px_rgba(36,107,253,0.18)] cursor-pointer'
+                          : 'bg-[#1C1E22] border-white/12 hover:border-white/25 cursor-pointer'
                       }`}
                     >
-                      {lesson.isBadgeBattle ? (
-                        <Zap className="h-4 w-4 fill-current" aria-hidden="true" />
-                      ) : isLessonDone ? (
-                        <Check className="h-4 w-4 stroke-[2.5]" aria-hidden="true" />
-                      ) : (
-                        <span>{lesson.number}</span>
-                      )}
-                    </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`px-2 py-0.5 rounded-md font-mono-tabular text-[10px] font-bold uppercase tracking-wider ${
+                              lesson.isBadgeBattle
+                                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/35'
+                                : isLessonDone
+                                ? 'bg-emerald-400/15 text-emerald-300'
+                                : isUpNext
+                                ? 'bg-blue-500/25 text-blue-300'
+                                : 'bg-white/8 text-slate-400'
+                            }`}
+                          >
+                            {lesson.isBadgeBattle
+                              ? 'Boss Blitz'
+                              : `Lesson ${lesson.number}`}
+                          </span>
+                        </div>
 
-                    <div className="min-w-0">
-                      <h3 className="text-xs sm:text-sm font-medium text-white truncate">
-                        {lesson.title}
-                      </h3>
-                      {isBattleLocked && (
-                        <p className="text-[11px] text-amber-300/90 mt-0.5">
-                          Unlock at 70% ({regularLessonsCompletionPercent}%/70%)
+                        <h3 className="text-sm sm:text-base font-bold text-white leading-snug break-words">
+                          {lesson.title}
+                        </h3>
+
+                        <p
+                          className={`text-xs font-medium ${
+                            isBattleLocked
+                              ? 'text-amber-300/90'
+                              : isLessonDone
+                              ? 'text-emerald-300'
+                              : isUpNext
+                              ? 'text-sky-300'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {statusText}
                         </p>
-                      )}
-                    </div>
-                  </div>
+                      </div>
 
-                  <div className="shrink-0 flex items-center gap-2">
-                    {isBattleLocked ? (
-                      <span className="p-2 rounded-2xl bg-white/8 border border-white/10 text-amber-300 flex items-center justify-center">
-                        <Lock className="h-4 w-4" />
-                      </span>
-                    ) : isLessonDone ? (
-                      <CheckCircle2 className="h-5 w-5 text-emerald-300" />
-                    ) : (
-                      <span className="p-2 rounded-2xl bg-white/10 text-white flex items-center justify-center">
-                        <ArrowRight className="h-4 w-4" />
-                      </span>
-                    )}
+                      <div className="shrink-0 flex items-center">
+                        {isBattleLocked ? (
+                          <span className="h-9 w-9 rounded-xl bg-white/5 border border-white/10 text-amber-300 flex items-center justify-center">
+                            <Lock className="h-4 w-4" />
+                          </span>
+                        ) : isLessonDone ? (
+                          <span className="h-9 w-9 rounded-xl bg-emerald-400/15 border border-emerald-400/35 text-emerald-300 flex items-center justify-center">
+                            <CheckCircle2 className="h-5 w-5" />
+                          </span>
+                        ) : (
+                          <span
+                            className={`h-9 w-9 rounded-xl flex items-center justify-center ${
+                              isUpNext
+                                ? 'bg-[#246BFD] text-white shadow-sm'
+                                : 'bg-white/8 text-slate-300'
+                            }`}
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </span>
+                        )}
+                      </div>
+                    </button>
                   </div>
-                </button>
+                </div>
               );
             })}
+
+            {/* Final Finish Node on the Path: Module Badge Pedestal */}
+            <div className="relative flex items-center gap-3.5 sm:gap-5">
+              <div className="flex flex-col items-center shrink-0 w-12 sm:w-14">
+                <div
+                  className={`h-12 w-12 sm:h-13 sm:w-13 rounded-2xl border-2 flex items-center justify-center ${
+                    isBadgeUnlocked
+                      ? 'bg-emerald-500/20 border-emerald-400 shadow-[0_0_22px_rgba(16,185,129,0.45)]'
+                      : 'bg-[#17191D] border-white/15'
+                  }`}
+                >
+                  <Trophy
+                    className={`h-5 w-5 ${
+                      isBadgeUnlocked ? 'text-amber-300' : 'text-slate-500'
+                    }`}
+                    aria-hidden="true"
+                  />
+                </div>
+              </div>
+
+              <div
+                className={`flex-1 min-w-0 rounded-2xl p-3.5 sm:p-4 border flex items-center justify-between gap-3 ${
+                  isBadgeUnlocked
+                    ? 'bg-gradient-to-r from-emerald-500/15 via-[#1C1F26] to-sky-500/15 border-emerald-400/45'
+                    : 'bg-[#16181D] border-white/10'
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                    {isBadgeUnlocked ? 'Badge Unlocked!' : 'Path Reward'}
+                  </span>
+                  <h4 className="text-sm font-bold text-white leading-snug break-words">
+                    {moduleTheme.badgeName}
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {isBadgeUnlocked
+                      ? 'Added to your Badge Collection in full color!'
+                      : 'Complete all lessons on the path to unlock'}
+                  </p>
+                </div>
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center">
+                  <ModuleBadgeFigure
+                    moduleId={module.id}
+                    unlocked={isBadgeUnlocked}
+                    size="sm"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -956,7 +1117,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                     <div className="flex items-center gap-2">
                       <Flame className="h-5 w-5 text-amber-300" />
                       <h2 className="text-base sm:text-lg font-bold text-white">
-                        Module 2 Lightning Badge Battle
+                        Module 2 Boss Blitz
                       </h2>
                     </div>
                     <div className="flex items-center gap-2 font-mono-tabular text-xs font-bold">
@@ -993,8 +1154,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       <Zap className="h-4 w-4 fill-current" />
                       <span>
                         {battleSecondsLeft === 0
-                          ? 'Time Up — Retry Badge Battle'
-                          : 'Start Timed Badge Battle (17 Questions)'}
+                          ? 'Time Up — Retry Boss Blitz'
+                          : 'Start Timed Boss Blitz (17 Questions)'}
                       </span>
                     </button>
                   )}
@@ -1004,8 +1165,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       <div className="flex items-center gap-2 text-emerald-200 text-xs sm:text-sm font-bold">
                         <Trophy className="h-5 w-5 text-amber-300 shrink-0" />
                         <span>
-                          All 17 Badge Battle questions cleared! Proceed to the
-                          Final Boss on the next slide.
+                          All 17 Boss Blitz questions cleared! Proceed to the
+                          Final Showdown on the next slide.
                         </span>
                       </div>
                       <button
@@ -1632,7 +1793,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           aria-label={`Lesson ${currentLesson.number} Complete`}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xl animate-page-enter"
         >
-          <div className="glass-panel-elevated w-full max-w-sm rounded-[32px] p-7 text-center space-y-4 border border-emerald-300/35 shadow-2xl">
+          <div className="glass-panel-elevated w-full max-w-sm rounded-[32px] p-6 sm:p-7 text-center space-y-4 border border-emerald-300/35 shadow-2xl">
             <div className="mx-auto h-16 w-16 rounded-3xl bg-gradient-to-br from-emerald-300/30 via-teal-300/25 to-sky-300/30 border border-emerald-300/45 flex items-center justify-center shadow-lg animate-trophy-pop">
               <CheckCircle2 className="h-9 w-9 text-emerald-300" aria-hidden="true" />
             </div>
@@ -1641,10 +1802,41 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
                 Lesson {currentLesson.number} Complete
               </p>
-              <h3 className="text-lg sm:text-xl font-bold text-white leading-snug">
+              <h3 className="text-lg sm:text-xl font-bold text-white leading-snug break-words">
                 {currentLesson.title}
               </h3>
             </div>
+
+            {/* Subtle Module Badge Incorporation on Completing the Last Lesson of a Module */}
+            {(isFinalLessonInModule || lessonProgress.progressPercent >= 100) && (
+              <div className="rounded-2xl bg-[#181B20]/95 border border-emerald-400/35 p-3 flex items-center gap-3 text-left shadow-inner">
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center">
+                  <ModuleBadgeFigure
+                    moduleId={module.id}
+                    unlocked={
+                      lessonProgress.progressPercent >= 100 ||
+                      lessonProgress.completedLessonsCount >=
+                        lessonProgress.totalLessons
+                    }
+                    size="sm"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-amber-300 shrink-0" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                      Module Badge Earned
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm font-bold text-white truncate mt-0.5">
+                    {moduleTheme.badgeName}
+                  </p>
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    Unlocked in your Badge Collection!
+                  </p>
+                </div>
+              </div>
+            )}
 
             <button
               type="button"
