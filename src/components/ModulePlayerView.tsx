@@ -614,6 +614,9 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   };
 
   const handleCheckAnswer = () => {
+    if (existingRecord?.evaluation.isFullyCorrect) {
+      return;
+    }
     if (slide.problemFormat === 'tf' && slide.tfStatements) {
       if (selectedIds.length < slide.tfStatements.length) {
         setValidationMessage(
@@ -1334,9 +1337,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   <h2 className="text-base sm:text-lg font-normal text-slate-100 leading-relaxed">
                     {slide.questionPrompt || slide.title}
                   </h2>
-                  <p className="text-xs text-cyan-300/90 mt-1 font-normal">
-                    {slide.helperInstruction}
-                  </p>
+                  {slide.helperInstruction && pFormat !== 'tf' && (
+                    <p className="text-xs text-cyan-300/90 mt-1 font-normal">
+                      {slide.helperInstruction}
+                    </p>
+                  )}
                 </div>
 
                 {/* Subtle Non-Exam Helper Actions */}
@@ -1727,11 +1732,13 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 <div className="pt-1 relative inline-block w-full sm:w-auto">
                   <button
                     type="button"
+                    disabled={isFullyCorrect}
+                    aria-disabled={isFullyCorrect}
                     onClick={handleCheckAnswer}
-                    className={`w-full sm:w-auto min-h-[42px] px-6 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all cursor-pointer ${
+                    className={`w-full sm:w-auto min-h-[42px] px-6 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
                       isFullyCorrect
-                        ? 'bg-emerald-400 text-slate-950 shadow-[0_0_20px_rgba(52,211,153,0.45)]'
-                        : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md hover:brightness-110'
+                        ? 'bg-emerald-500/30 text-emerald-200/75 border border-emerald-400/30 shadow-none opacity-80 cursor-default pointer-events-none'
+                        : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md hover:brightness-110 cursor-pointer'
                     }`}
                   >
                     {isFullyCorrect ? 'Got it!' : 'Submit'}

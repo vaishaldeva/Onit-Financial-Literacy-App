@@ -20,6 +20,9 @@ import {
   GraduationCap,
   Receipt,
   PiggyBank,
+  Sliders,
+  Sparkles,
+  Play,
 } from 'lucide-react';
 import {
   LEARNING_MODULES,
@@ -42,7 +45,7 @@ import {
   type UserProfile,
   type OnboardingStage,
 } from './components/AuthAndIntroModal';
-import { HomeHubView } from './components/HomeHubView';
+import { InteractiveCalculatorsModal } from './components/HomeHubView';
 import { ModulePlayerView } from './components/ModulePlayerView';
 import { VaultAndCompareView } from './components/VaultAndCompareView';
 import { SettingsModal } from './components/SettingsModal';
@@ -56,7 +59,7 @@ import {
 } from './components/ModuleVisualsAndBadges';
 import { useTheme } from './context/ThemeContext';
 
-type MainTab = 'home' | 'modules' | 'cards' | 'banks' | 'compare';
+type MainTab = 'modules' | 'cards' | 'banks' | 'compare';
 
 export const MODULE_VISUAL_ICONS = [
   Wallet,
@@ -135,7 +138,8 @@ export default function App() {
 
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showBadgeCollectionModal, setShowBadgeCollectionModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<MainTab>('home');
+  const [showCalculatorsModal, setShowCalculatorsModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<MainTab>('modules');
   const [modulesScreenMode, setModulesScreenMode] = useState<'list' | 'module'>('list');
   const [moduleSearchQuery, setModuleSearchQuery] = useState('');
   const [mobilePhoneFrameMode, setMobilePhoneFrameMode] = useState(false);
@@ -342,7 +346,7 @@ export default function App() {
 
     applyAccountProgressToState(targetProgress);
     setUserProfile(profile);
-    setActiveTab('home');
+    setActiveTab('modules');
     setModulesScreenMode('list');
     setActiveModuleId(LEARNING_MODULES[0].id);
 
@@ -381,7 +385,7 @@ export default function App() {
     }
     setUserProfile(null);
     applyAccountProgressToState(createFreshAccountProgress(ALL_MODULE_IDS, FIRST_SLIDE_BY_MODULE));
-    setActiveTab('home');
+    setActiveTab('modules');
     setModulesScreenMode('list');
     setOnboardingStage('signup');
   };
@@ -629,7 +633,10 @@ export default function App() {
               href="#top"
               onClick={(e) => {
                 e.preventDefault();
-                if (onboardingStage === 'none') setActiveTab('home');
+                if (onboardingStage === 'none') {
+                  setModulesScreenMode('list');
+                  setActiveTab('modules');
+                }
               }}
               className="text-base sm:text-lg font-bold tracking-tight text-white whitespace-nowrap shrink-0"
             >
@@ -638,15 +645,6 @@ export default function App() {
 
             {onboardingStage === 'none' && (
               <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-300" aria-label="Main navigation">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('home')}
-                  className={`hover:text-white transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                    activeTab === 'home' ? 'text-emerald-300 font-semibold underline underline-offset-8' : ''
-                  }`}
-                >
-                  Home
-                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -752,7 +750,10 @@ export default function App() {
                 <div className="px-4 py-2 flex items-center justify-between gap-2">
                   <button
                     type="button"
-                    onClick={() => setActiveTab('home')}
+                    onClick={() => {
+                      setModulesScreenMode('list');
+                      setActiveTab('modules');
+                    }}
                     className="text-sm font-bold text-white tracking-tight truncate cursor-pointer"
                   >
                     Onit: Own Your Future
@@ -799,98 +800,140 @@ export default function App() {
               }`}
             >
               {/* =========================================================
-                  HOME VIEW (Interactive Calculators Playground + Bank & Card Recommendation Survey + Badge Collection)
-                 ========================================================= */}
-              {activeTab === 'home' && (
-                <HomeHubView
-                  userName={userProfile?.name}
-                  hasUserStartedProgress={hasUserStartedProgress}
-                  totalXp={totalXp}
-                  maxPossibleXp={maxPossibleXp}
-                  completedModulesCount={completedModulesCount}
-                  totalModulesCount={totalModulesCount}
-                  overallProgressPercent={overallProgressPercent}
-                  activeModuleTitle={activeModule.title}
-                  activeModuleNumberLabel={activeModule.numberLabel}
-                  badgeCollectionItems={badgeCollectionItems}
-                  pinnedBankIds={pinnedBankIds}
-                  pinnedCardIds={pinnedCardIds}
-                  onTogglePinBank={(bankId) =>
-                    setPinnedBankIds((prev) => togglePinnedId(prev, bankId))
-                  }
-                  onTogglePinCard={(cardId) =>
-                    setPinnedCardIds((prev) => togglePinnedId(prev, cardId))
-                  }
-                  onResumeLearning={() => handleOpenModule(activeModuleId)}
-                  onOpenModulesTab={() => {
-                    setModulesScreenMode('list');
-                    setActiveTab('modules');
-                  }}
-                  onOpenModuleById={(moduleId) => handleOpenModule(moduleId)}
-                  onOpenBanksTab={() => setActiveTab('banks')}
-                  onOpenCardsTab={() => setActiveTab('cards')}
-                  onOpenCompareTab={() => setActiveTab('compare')}
-                  isPhoneView={mobilePhoneFrameMode}
-                />
-              )}
-
-              {/* =========================================================
-                  MODULES VIEW (Colorful Tile/Card Grid with Custom Pictures — Matching IMG_4174.PNG)
+                  MODULES VIEW (Starting Page with Welcome Back Card, Nested Calculators & Badge Collection, and Colorful Module Tiles)
                  ========================================================= */}
               {activeTab === 'modules' && (
                 <div className="space-y-4">
                   {modulesScreenMode === 'list' ? (
-                    /* LEVEL 1: VIBRANT MODULE TILES GRID (2 Columns on Mobile, 3 on Desktop) */
+                    /* LEVEL 1: WELCOME BACK CARD + NESTED TOOLS + VIBRANT MODULE TILES GRID */
                     <div className="space-y-4">
-                      {/* Relocated Badge Collection Mini UI & Button at Very Top of Modules Tab */}
-                      <div className="glass-panel-elevated rounded-3xl p-3.5 sm:p-4 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="flex -space-x-2 overflow-hidden shrink-0">
-                            {badgeCollectionItems.slice(0, 4).map((item, idx) => (
-                              <div
-                                key={item.module.id}
-                                className={`h-10 w-10 rounded-xl flex items-center justify-center p-0.5 border overflow-hidden ${
-                                  item.isUnlocked
-                                    ? 'bg-slate-900 border-amber-400/60'
-                                    : 'bg-[#171A21] border-white/10'
-                                }`}
-                              >
-                                <ModuleBadgeFigure
-                                  moduleId={item.module.id}
-                                  unlocked={item.isUnlocked}
-                                  index={idx}
-                                  size="sm"
-                                />
-                              </div>
-                            ))}
+                      {/* Welcome Back Card (First Name Only, No Comma) + Nested Calculators & Badge Collection */}
+                      <section className="glass-panel-elevated rounded-3xl p-4 sm:p-5 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35 space-y-3.5">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Sparkles className="h-5 w-5 text-emerald-300 shrink-0" aria-hidden="true" />
+                            <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
+                              {userProfile?.name?.trim()
+                                ? `Welcome back ${userProfile.name.trim().split(/\s+/)[0]}`
+                                : 'Welcome back'}
+                            </h1>
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-xs sm:text-sm font-bold text-white truncate">
-                              Badge Collection
-                            </p>
-                            <p className="text-[11px] text-emerald-300 font-mono-tabular">
-                              {badgeCollectionItems.filter((b) => b.isUnlocked).length} /{' '}
-                              {totalModulesCount} unlocked
-                            </p>
+
+                          <button
+                            type="button"
+                            onClick={() => handleOpenModule(activeModuleId)}
+                            className="min-h-[40px] px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                          >
+                            <Play className="h-3.5 w-3.5 fill-current shrink-0" aria-hidden="true" />
+                            <span>
+                              {hasUserStartedProgress
+                                ? `Resume ${activeModule.numberLabel}`
+                                : 'Start Learning'}
+                            </span>
+                          </button>
+                        </div>
+
+                        {/* Smooth At-a-Glance Progress Bar */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-[11px] sm:text-xs">
+                            <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                              <Award className="h-3.5 w-3.5 text-emerald-300 shrink-0" aria-hidden="true" />
+                              <span>
+                                {completedModulesCount}/{totalModulesCount} Modules Completed
+                              </span>
+                            </span>
+                            <span className="font-mono-tabular font-bold text-emerald-300">
+                              {overallProgressPercent}%
+                            </span>
+                          </div>
+                          <div
+                            role="progressbar"
+                            aria-valuenow={overallProgressPercent}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-label="Overall module completion progress"
+                            className="h-2.5 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
+                          >
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 shadow-[0_0_12px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
+                              style={{
+                                width: `${Math.max(
+                                  overallProgressPercent,
+                                  overallProgressPercent > 0 ? 4 : 0
+                                )}%`,
+                              }}
+                            />
                           </div>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setShowBadgeCollectionModal(true)}
-                          className="min-h-[38px] px-4 py-1.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/18 text-xs font-bold text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
-                        >
-                          <Award className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
-                          <span>Badge Collection</span>
-                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                      </div>
+                        {/* Nested Quick-Access Row: Badge Collection & Interactive Calculators */}
+                        <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="flex -space-x-2 overflow-hidden shrink-0">
+                              {badgeCollectionItems.slice(0, 4).map((item, idx) => (
+                                <div
+                                  key={item.module.id}
+                                  className={`h-9 w-9 rounded-xl flex items-center justify-center p-0.5 border overflow-hidden ${
+                                    item.isUnlocked
+                                      ? 'bg-slate-900 border-amber-400/60'
+                                      : 'bg-[#171A21] border-white/10'
+                                  }`}
+                                >
+                                  <ModuleBadgeFigure
+                                    moduleId={item.module.id}
+                                    unlocked={item.isUnlocked}
+                                    index={idx}
+                                    size="sm"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-white truncate">
+                                Badge Collection
+                              </p>
+                              <p className="text-[11px] text-emerald-300 font-mono-tabular">
+                                {badgeCollectionItems.filter((b) => b.isUnlocked).length} /{' '}
+                                {totalModulesCount} unlocked
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setShowCalculatorsModal(true)}
+                              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/35 text-xs font-bold text-cyan-200 flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                            >
+                              <Sliders className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
+                              <span>Interactive Calculators</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setShowBadgeCollectionModal(true)}
+                              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/18 text-xs font-bold text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                            >
+                              <Award className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
+                              <span>Badge Collection</span>
+                              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          </div>
+                        </div>
+                      </section>
 
                       {showBadgeCollectionModal && (
                         <BadgeCollectionModal
                           items={badgeCollectionItems}
                           onClose={() => setShowBadgeCollectionModal(false)}
                           onSelectModule={(moduleId) => handleOpenModule(moduleId)}
+                          isPhoneView={mobilePhoneFrameMode}
+                        />
+                      )}
+
+                      {showCalculatorsModal && (
+                        <InteractiveCalculatorsModal
+                          onClose={() => setShowCalculatorsModal(false)}
                           isPhoneView={mobilePhoneFrameMode}
                         />
                       )}
@@ -1006,13 +1049,10 @@ export default function App() {
                                     </div>
                                   </div>
 
-                                  <div className="space-y-1 min-w-0 w-full">
+                                  <div className="min-w-0 w-full">
                                     <h2 className="text-sm sm:text-lg font-extrabold text-white leading-snug break-words">
                                       {mod.title}
                                     </h2>
-                                    <p className="text-[11px] sm:text-xs text-white/95 font-normal leading-snug line-clamp-3 break-words">
-                                      {themeMeta.shortDescription}
-                                    </p>
                                   </div>
                                 </button>
                               );
@@ -1116,7 +1156,6 @@ export default function App() {
           {/* Mobile Bottom Navigation Bar — Soft Modern Default + Retro Support */}
           {onboardingStage === 'none' && (() => {
             const navItems: { id: MainTab; label: string; Icon: React.FC<{ className?: string }> }[] = [
-              { id: 'home', label: 'Home', Icon: Compass },
               { id: 'modules', label: 'Modules', Icon: BookOpen },
               { id: 'cards', label: 'Cards', Icon: CreditCard },
               { id: 'banks', label: 'Banks', Icon: Building2 },
@@ -1216,12 +1255,12 @@ export default function App() {
                         : 'transition-transform duration-200 ease-out'
                     }`}
                     style={{
-                      width: 'calc((100% - 12px) / 5)',
+                      width: 'calc((100% - 12px) / 4)',
                       transform: `translate3d(${pillPosition * 100}%, 0, 0)`,
                     }}
                   />
 
-                  <div className="relative z-10 grid grid-cols-5 items-center min-h-[58px]">
+                  <div className="relative z-10 grid grid-cols-4 items-center min-h-[58px]">
                     {navItems.map(({ id, label, Icon }, idx) => {
                       const isActive = idx === highlightedIdx;
                       return (

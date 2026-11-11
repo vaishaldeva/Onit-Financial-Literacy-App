@@ -226,10 +226,8 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               <span>
                 {userName
-                  ? hasUserStartedProgress
-                    ? `Welcome back, ${userName}`
-                    : `Welcome, ${userName}`
-                  : 'Onit: Own Your Future'}
+                  ? `Welcome back ${userName.trim().split(/\s+/)[0]}`
+                  : 'Welcome back'}
               </span>
             </div>
             <h1
@@ -1184,3 +1182,405 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
     </div>
   );
 };
+
+export const InteractiveCalculatorsModal: React.FC<{
+  onClose: () => void;
+  isPhoneView?: boolean;
+}> = ({ onClose, isPhoneView = false }) => {
+  const [activeCalc, setActiveCalc] = useState<CalculatorTab>('utilization');
+  const [simBalance, setSimBalance] = useState(200);
+  const [simLimit, setSimLimit] = useState(2000);
+  const [simDeposit, setSimDeposit] = useState(2500);
+  const [simMonthlySave, setSimMonthlySave] = useState(150);
+  const [simIncome, setSimIncome] = useState(2400);
+  const [simInvestMonthly, setSimInvestMonthly] = useState(150);
+  const [simInvestYears, setSimInvestYears] = useState(20);
+
+  const utilSim = estimateUtilizationImpact(simLimit, simBalance);
+  const hysaSim = calculateHysaComparison(simDeposit, simMonthlySave, 4.5, 3);
+
+  const monthlyGrowthRate = 0.08 / 12;
+  const totalMonthsInvested = simInvestYears * 12;
+  const compoundTotal = Math.round(
+    simInvestMonthly *
+      ((Math.pow(1 + monthlyGrowthRate, totalMonthsInvested) - 1) /
+        monthlyGrowthRate)
+  );
+  const compoundPrincipal = simInvestMonthly * totalMonthsInvested;
+  const compoundGains = Math.max(0, compoundTotal - compoundPrincipal);
+
+  return (
+    <SecondaryModalOverlay
+      ariaLabel="Interactive Calculators"
+      onClose={onClose}
+      isPhoneView={isPhoneView}
+      maxWidthClass="max-w-2xl"
+      cardClassName="bg-slate-900 border border-white/15"
+      header={
+        <div className="px-5 pt-5 pb-4 sm:px-7 sm:pt-6 sm:pb-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-cyan-400">
+              <Sliders className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>Interactive Calculators</span>
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mt-0.5">
+              Slide the Numbers to See How Money Works
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close Interactive Calculators"
+            className="touch-manipulation min-h-[38px] min-w-[38px] rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      }
+      footer={
+        <div className="px-5 py-3.5 sm:px-7 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="touch-manipulation min-h-[42px] px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+          >
+            Done
+          </button>
+        </div>
+      }
+    >
+      {/* 4-Calculator Switcher */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        {(
+          [
+            { id: 'utilization', label: 'Credit Utilization' },
+            { id: 'hysa', label: 'High-Yield Savings' },
+            { id: 'budget', label: '50/30/20 Budget' },
+            { id: 'compound', label: 'Compound Growth' },
+          ] as { id: CalculatorTab; label: string }[]
+        ).map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActiveCalc(tab.id)}
+            className={`min-h-[38px] px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+              activeCalc === tab.id
+                ? 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-sm'
+                : 'bg-white/8 text-slate-300 hover:bg-white/15'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* CALCULATOR 1: CREDIT UTILIZATION */}
+      {activeCalc === 'utilization' && (
+        <div className="rounded-2xl bg-slate-950/90 border border-cyan-400/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-bold text-white">
+              How Much of Your Credit Limit Are You Using?
+            </span>
+            <span
+              className={`font-mono-tabular text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                utilSim.utilizationPercent <= 10
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/35'
+                  : utilSim.utilizationPercent <= 29
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400/35'
+                  : utilSim.utilizationPercent <= 49
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-400/35'
+                  : 'bg-rose-500/20 text-rose-300 border-rose-400/35'
+              }`}
+            >
+              {utilSim.utilizationPercent}% Used · {utilSim.tierLabel}
+            </span>
+          </div>
+
+          <div
+            className={`grid grid-cols-1 ${
+              isPhoneView ? '' : 'sm:grid-cols-2'
+            } gap-4`}
+          >
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-util-balance">Statement Balance You Owe</label>
+                <span className="font-mono-tabular font-bold text-emerald-300 text-sm">
+                  ${simBalance.toLocaleString()}
+                </span>
+              </div>
+              <input
+                id="modal-util-balance"
+                type="range"
+                min={0}
+                max={simLimit}
+                step={25}
+                value={simBalance}
+                onChange={(e) => setSimBalance(Number(e.target.value))}
+                className="w-full accent-emerald-400 cursor-pointer"
+              />
+            </div>
+
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-util-limit">Your Total Credit Limit</label>
+                <span className="font-mono-tabular font-bold text-cyan-300 text-sm">
+                  ${simLimit.toLocaleString()}
+                </span>
+              </div>
+              <input
+                id="modal-util-limit"
+                type="range"
+                min={500}
+                max={10000}
+                step={250}
+                value={simLimit}
+                onChange={(e) => {
+                  const nextLim = Number(e.target.value);
+                  setSimLimit(nextLim);
+                  if (simBalance > nextLim) setSimBalance(nextLim);
+                }}
+                className="w-full accent-cyan-400 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="h-3 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden relative">
+              <div
+                className={`h-full transition-all duration-200 ${
+                  utilSim.utilizationPercent <= 10
+                    ? 'bg-emerald-400'
+                    : utilSim.utilizationPercent <= 29
+                    ? 'bg-cyan-400'
+                    : utilSim.utilizationPercent <= 49
+                    ? 'bg-amber-400'
+                    : 'bg-rose-500'
+                }`}
+                style={{ width: `${Math.max(2, utilSim.utilizationPercent)}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono-tabular">
+              <span>0% (Best: 1%–9%)</span>
+              <span>30% Max Target</span>
+              <span>100% Maxed Out</span>
+            </div>
+          </div>
+
+          <div className="rounded-xl bg-white/[0.04] border border-white/8 p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <span className="text-slate-200">{utilSim.recommendation}</span>
+            <span className="font-mono-tabular font-bold text-emerald-300 shrink-0">
+              Score Impact: {utilSim.estimatedScoreImpact}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* CALCULATOR 2: HIGH-YIELD SAVINGS APY */}
+      {activeCalc === 'hysa' && (
+        <div className="rounded-2xl bg-slate-950/90 border border-emerald-400/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-bold text-white">
+              3-Year Growth: 4.50% High-Yield Savings vs. 0.01% Normal Bank
+            </span>
+            <span className="font-mono-tabular text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-400/35">
+              +${hysaSim.extraEarnedWithHysa.toLocaleString()} Free Extra Interest
+            </span>
+          </div>
+
+          <div
+            className={`grid grid-cols-1 ${
+              isPhoneView ? '' : 'sm:grid-cols-2'
+            } gap-4`}
+          >
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-hysa-deposit">Starting Savings</label>
+                <span className="font-mono-tabular font-bold text-white text-sm">
+                  ${simDeposit.toLocaleString()}
+                </span>
+              </div>
+              <input
+                id="modal-hysa-deposit"
+                type="range"
+                min={100}
+                max={20000}
+                step={100}
+                value={simDeposit}
+                onChange={(e) => setSimDeposit(Number(e.target.value))}
+                className="w-full accent-emerald-400 cursor-pointer"
+              />
+            </div>
+
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-hysa-monthly">Monthly Deposit</label>
+                <span className="font-mono-tabular font-bold text-cyan-300 text-sm">
+                  ${simMonthlySave}/mo
+                </span>
+              </div>
+              <input
+                id="modal-hysa-monthly"
+                type="range"
+                min={0}
+                max={1000}
+                step={25}
+                value={simMonthlySave}
+                onChange={(e) => setSimMonthlySave(Number(e.target.value))}
+                className="w-full accent-cyan-400 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/30 p-3">
+              <span className="text-[11px] font-semibold text-emerald-200 block">
+                4.50% APY High-Yield (3 Yrs)
+              </span>
+              <span className="font-mono-tabular text-lg sm:text-xl font-bold text-white block mt-0.5">
+                ${hysaSim.hysaTotal.toLocaleString()}
+              </span>
+              <span className="text-xs font-bold text-emerald-300 block">
+                +${hysaSim.hysaInterestEarned.toLocaleString()} interest
+              </span>
+            </div>
+
+            <div className="rounded-xl bg-rose-500/12 border border-rose-400/30 p-3">
+              <span className="text-[11px] font-semibold text-rose-200 block">
+                0.01% Traditional Bank (3 Yrs)
+              </span>
+              <span className="font-mono-tabular text-lg sm:text-xl font-bold text-white block mt-0.5">
+                ${hysaSim.traditionalTotal.toLocaleString()}
+              </span>
+              <span className="text-xs font-bold text-rose-300 block">
+                Only +${hysaSim.traditionalInterestEarned} interest
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CALCULATOR 3: 50/30/20 BUDGET */}
+      {activeCalc === 'budget' && (
+        <div className="rounded-2xl bg-slate-950/90 border border-amber-400/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-bold text-white">
+              50 / 30 / 20 Monthly Take-Home Pay Splitter
+            </span>
+            <span className="font-mono-tabular text-sm font-bold text-amber-300">
+              ${simIncome.toLocaleString()} / month
+            </span>
+          </div>
+
+          <input
+            type="range"
+            aria-label="Monthly Take-Home Pay"
+            min={500}
+            max={10000}
+            step={100}
+            value={simIncome}
+            onChange={(e) => setSimIncome(Number(e.target.value))}
+            className="w-full accent-amber-400 cursor-pointer"
+          />
+
+          <div className="grid grid-cols-3 gap-2.5 text-center">
+            <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/30 p-3">
+              <span className="text-[11px] font-bold text-emerald-300 block">50% Needs</span>
+              <span className="font-mono-tabular text-base sm:text-xl font-bold text-white block mt-0.5">
+                ${Math.round(simIncome * 0.5).toLocaleString()}
+              </span>
+              <span className="text-[10px] text-slate-300 block">Rent, groceries, bills</span>
+            </div>
+            <div className="rounded-xl bg-amber-500/15 border border-amber-400/30 p-3">
+              <span className="text-[11px] font-bold text-amber-300 block">30% Wants</span>
+              <span className="font-mono-tabular text-base sm:text-xl font-bold text-white block mt-0.5">
+                ${Math.round(simIncome * 0.3).toLocaleString()}
+              </span>
+              <span className="text-[10px] text-slate-300 block">Dining out, fun, apps</span>
+            </div>
+            <div className="rounded-xl bg-cyan-500/15 border border-cyan-400/30 p-3">
+              <span className="text-[11px] font-bold text-cyan-300 block">20% Savings</span>
+              <span className="font-mono-tabular text-base sm:text-xl font-bold text-white block mt-0.5">
+                ${Math.round(simIncome * 0.2).toLocaleString()}
+              </span>
+              <span className="text-[10px] text-slate-300 block">HYSA, investing, debt</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CALCULATOR 4: COMPOUND INVESTING GROWTH */}
+      {activeCalc === 'compound' && (
+        <div className="rounded-2xl bg-slate-950/90 border border-violet-400/30 p-4 sm:p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm font-bold text-white">
+              S&P 500 Index Fund Compound Growth (8% Avg Annual Return)
+            </span>
+            <span className="font-mono-tabular text-xs font-bold px-2.5 py-1 rounded-lg bg-violet-500/20 text-violet-200 border border-violet-400/35">
+              Projected Total: ${compoundTotal.toLocaleString()}
+            </span>
+          </div>
+
+          <div
+            className={`grid grid-cols-1 ${
+              isPhoneView ? '' : 'sm:grid-cols-2'
+            } gap-4`}
+          >
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-comp-monthly">Monthly Investment</label>
+                <span className="font-mono-tabular font-bold text-white text-sm">
+                  ${simInvestMonthly}/mo
+                </span>
+              </div>
+              <input
+                id="modal-comp-monthly"
+                type="range"
+                min={25}
+                max={1000}
+                step={25}
+                value={simInvestMonthly}
+                onChange={(e) => setSimInvestMonthly(Number(e.target.value))}
+                className="w-full accent-violet-400 cursor-pointer"
+              />
+            </div>
+
+            <div className="rounded-xl bg-white/[0.03] border border-white/8 p-3.5">
+              <div className="flex justify-between text-xs text-slate-300 mb-2">
+                <label htmlFor="modal-comp-years">Years Invested</label>
+                <span className="font-mono-tabular font-bold text-cyan-300 text-sm">
+                  {simInvestYears} Years
+                </span>
+              </div>
+              <input
+                id="modal-comp-years"
+                type="range"
+                min={5}
+                max={40}
+                step={5}
+                value={simInvestYears}
+                onChange={(e) => setSimInvestYears(Number(e.target.value))}
+                className="w-full accent-cyan-400 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl bg-white/[0.05] border border-white/10 p-3">
+              <span className="text-[11px] text-slate-300 block">What You Put In</span>
+              <span className="font-mono-tabular text-lg font-bold text-white block mt-0.5">
+                ${compoundPrincipal.toLocaleString()}
+              </span>
+            </div>
+            <div className="rounded-xl bg-emerald-500/15 border border-emerald-400/30 p-3">
+              <span className="text-[11px] text-emerald-200 block">Compound Growth Earned</span>
+              <span className="font-mono-tabular text-lg font-bold text-emerald-300 block mt-0.5">
+                +${compoundGains.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </SecondaryModalOverlay>
+  );
+};
+

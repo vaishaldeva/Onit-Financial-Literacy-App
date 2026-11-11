@@ -117,8 +117,8 @@ export function getModuleTheme(moduleId: string, index = 0): ModuleThemeMeta {
 }
 
 /**
- * Renders the playful illustrated scene inside a cream rounded square card
- * for each module tile on the Modules tab (matching IMG_4174.PNG).
+ * Renders the vibrant, colorful illustrated scene inside a rounded square card
+ * for each module tile on the Modules tab and module overview header.
  */
 export const ModuleTileIllustration: React.FC<{
   moduleId: string;
@@ -128,272 +128,389 @@ export const ModuleTileIllustration: React.FC<{
   const canonicalIdx = (CANONICAL_MODULE_IDS as readonly string[]).indexOf(moduleId);
   const slot = canonicalIdx >= 0 ? canonicalIdx : index % 10;
 
+  const backdropPalettes: {
+    cardBg: string;
+    outerCircle: string;
+    innerGlow: string;
+    leafLeft: string;
+    leafRight: string;
+  }[] = [
+    // 0: Intro to Financial Literacy — Warm Sunrise Gold, Coral & Sky
+    {
+      cardBg: 'bg-gradient-to-br from-[#FFF7D6] via-[#FFE8B3] to-[#FFD6A5]',
+      outerCircle: '#FFE39F',
+      innerGlow: '#FFF4CC',
+      leafLeft: '#34D399',
+      leafRight: '#38BDF8',
+    },
+    // 1: Credit — Vibrant Aqua, Mint & Electric Sky
+    {
+      cardBg: 'bg-gradient-to-br from-[#DDFDF6] via-[#B8F7E8] to-[#BAE6FD]',
+      outerCircle: '#99F6E4',
+      innerGlow: '#E0F2FE',
+      leafLeft: '#10B981',
+      leafRight: '#F59E0B',
+    },
+    // 2: University Finances — Sunny Amber, Rose & Sky Blue
+    {
+      cardBg: 'bg-gradient-to-br from-[#FEF3C7] via-[#FDE68A] to-[#FECDD3]',
+      outerCircle: '#FDE047',
+      innerGlow: '#FEF9C3',
+      leafLeft: '#38BDF8',
+      leafRight: '#FB7185',
+    },
+    // 3: Taxes — Coral Peach, Gold & Mint
+    {
+      cardBg: 'bg-gradient-to-br from-[#FFE4E6] via-[#FECDD3] to-[#FDE68A]',
+      outerCircle: '#FDA4AF',
+      innerGlow: '#FFF1F2',
+      leafLeft: '#F59E0B',
+      leafRight: '#22C55E',
+    },
+    // 4: Types of Accounts — Electric Sky, Cyan & Sunny Yellow
+    {
+      cardBg: 'bg-gradient-to-br from-[#E0F2FE] via-[#BAE6FD] to-[#FEF08A]',
+      outerCircle: '#7DD3FC',
+      innerGlow: '#F0F9FF',
+      leafLeft: '#10B981',
+      leafRight: '#F43F5E',
+    },
+    // 5: Consumer Skills — Periwinkle, Lavender & Warm Gold
+    {
+      cardBg: 'bg-gradient-to-br from-[#E0E7FF] via-[#C7D2FE] to-[#FDE68A]',
+      outerCircle: '#A5B4FC',
+      innerGlow: '#EEF2FF',
+      leafLeft: '#F59E0B',
+      leafRight: '#10B981',
+    },
+    // 6: IRL Money Skills — Vibrant Violet, Pink & Mint
+    {
+      cardBg: 'bg-gradient-to-br from-[#F3E8FF] via-[#E9D5FF] to-[#FBCFE8]',
+      outerCircle: '#D8B4FE',
+      innerGlow: '#FAF5FF',
+      leafLeft: '#34D399',
+      leafRight: '#F59E0B',
+    },
+    // 7: Getting Out of Debt — Sunset Rose, Coral & Emerald
+    {
+      cardBg: 'bg-gradient-to-br from-[#FFE4E6] via-[#FDA4AF] to-[#A7F3D0]',
+      outerCircle: '#FECDD3',
+      innerGlow: '#FFF1F2',
+      leafLeft: '#10B981',
+      leafRight: '#F59E0B',
+    },
+    // 8: How Banks Work — Tropical Teal, Gold & Sky
+    {
+      cardBg: 'bg-gradient-to-br from-[#CCFBF1] via-[#99F6E4] to-[#FDE68A]',
+      outerCircle: '#5EEAD4',
+      innerGlow: '#F0FDFA',
+      leafLeft: '#3B82F6',
+      leafRight: '#F59E0B',
+    },
+    // 9: Investing / Financial Services — Lush Emerald, Gold & Cyan
+    {
+      cardBg: 'bg-gradient-to-br from-[#D1FAE5] via-[#A7F3D0] to-[#BAE6FD]',
+      outerCircle: '#6EE7B7',
+      innerGlow: '#ECFDF5',
+      leafLeft: '#F59E0B',
+      leafRight: '#0284C7',
+    },
+  ];
+
+  const pal = backdropPalettes[slot] || backdropPalettes[0];
+
   return (
     <div
-      className={`${className} rounded-[20px] bg-[#FAF6EE] shadow-md flex items-center justify-center overflow-hidden p-1.5 shrink-0 select-none border border-white/50`}
+      className={`${className} rounded-[20px] ${pal.cardBg} shadow-md flex items-center justify-center overflow-hidden p-1.5 shrink-0 select-none border-2 border-white/80`}
       aria-hidden="true"
     >
       <svg viewBox="0 0 120 120" className="w-full h-full">
-        {/* Soft background botanical leaf accents */}
-        <circle cx="60" cy="60" r="52" fill="#F3EDE0" />
+        {/* Vibrant multi-layer aura & colorful botanical accents */}
+        <circle cx="60" cy="60" r="53" fill={pal.outerCircle} opacity="0.72" />
+        <circle cx="60" cy="60" r="41" fill={pal.innerGlow} opacity="0.92" />
         <path
-          d="M16 88 C22 78, 30 82, 26 94 C20 94, 16 92, 16 88 Z"
-          fill="#CBD5C0"
-          opacity="0.65"
+          d="M14 89 C20 77, 31 81, 26 95 C19 95, 14 93, 14 89 Z"
+          fill={pal.leafLeft}
+          opacity="0.9"
         />
         <path
-          d="M102 86 C96 76, 88 80, 92 92 C98 92, 102 90, 102 86 Z"
-          fill="#CBD5C0"
-          opacity="0.65"
+          d="M106 87 C100 75, 89 79, 94 93 C101 93, 106 91, 106 87 Z"
+          fill={pal.leafRight}
+          opacity="0.9"
         />
 
-        {/* MODULE 1: Intro to Financial Literacy (Book with $ + speech bubbles) */}
+        {/* MODULE 1: Intro to Financial Literacy (Colorful Book with Gold $ + Vibrant Bubbles) */}
         {slot === 0 && (
           <g>
-            {/* Floating bubbles */}
-            <circle cx="30" cy="24" r="11" fill="#FDE2E4" />
-            <circle cx="30" cy="24" r="5" fill="#F4A261" />
-            <circle cx="68" cy="18" r="10" fill="#E2ECE9" />
-            <text x="68" y="22" textAnchor="middle" fontSize="10" fontWeight="800" fill="#2A9D8F">
+            {/* Floating colorful bubbles */}
+            <circle cx="28" cy="24" r="11.5" fill="#FB7185" />
+            <circle cx="28" cy="24" r="5.5" fill="#FDE047" />
+            <circle cx="70" cy="18" r="10.5" fill="#10B981" />
+            <text x="70" y="22" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               %
             </text>
-            <circle cx="20" cy="48" r="10" fill="#E0FBFC" />
-            <rect x="16" y="46" width="2.5" height="6" rx="1" fill="#2563EB" />
-            <rect x="20" y="43" width="2.5" height="9" rx="1" fill="#2563EB" />
-            <rect x="24" y="45" width="2.5" height="7" rx="1" fill="#2563EB" />
-            <circle cx="96" cy="44" r="11" fill="#FFF1E6" />
-            <rect x="92" y="40" width="2.5" height="8" rx="1" fill="#E76F51" />
-            <rect x="97" y="38" width="2.5" height="10" rx="1" fill="#2A9D8F" />
+            <circle cx="19" cy="49" r="10.5" fill="#38BDF8" />
+            <rect x="14.5" y="47" width="2.8" height="6" rx="1" fill="#FFFFFF" />
+            <rect x="18.2" y="43.5" width="2.8" height="9.5" rx="1" fill="#FDE047" />
+            <rect x="22" y="45" width="2.8" height="8" rx="1" fill="#FFFFFF" />
+            <circle cx="97" cy="44" r="11.5" fill="#A855F7" />
+            <rect x="92.5" y="40" width="3" height="8" rx="1" fill="#FDE047" />
+            <rect x="97.5" y="37" width="3" height="11" rx="1" fill="#34D399" />
 
-            {/* Person shoulders + open golden book */}
-            <path d="M34 112 C34 90, 86 90, 86 112 Z" fill="#3B82F6" />
-            <circle cx="60" cy="52" r="11" fill="#1E293B" />
+            {/* Person shoulders + open golden/orange book */}
+            <path d="M32 112 C32 88, 88 88, 88 112 Z" fill="#2563EB" />
+            <circle cx="60" cy="50" r="11.5" fill="#1E293B" />
             <path
-              d="M36 42 L60 48 L84 42 L84 86 L60 92 L36 86 Z"
+              d="M34 40 L60 47 L86 40 L86 86 L60 93 L34 86 Z"
               fill="#F59E0B"
-              stroke="#D97706"
-              strokeWidth="1.5"
+              stroke="#B45309"
+              strokeWidth="2"
             />
-            <line x1="60" y1="48" x2="60" y2="92" stroke="#B45309" strokeWidth="1.5" />
-            <text x="50" y="75" textAnchor="middle" fontSize="20" fontWeight="800" fill="#FEF3C7">
+            <path d="M60 47 L86 40 L86 86 L60 93 Z" fill="#FBBF24" />
+            <line x1="60" y1="47" x2="60" y2="93" stroke="#92400E" strokeWidth="2" />
+            <circle cx="48" cy="68" r="9.5" fill="#10B981" />
+            <text x="48" y="72.5" textAnchor="middle" fontSize="14" fontWeight="900" fill="#FFFFFF">
               $
             </text>
+            <line x1="66" y1="59" x2="80" y2="56" stroke="#EA580C" strokeWidth="3" strokeLinecap="round" />
+            <line x1="66" y1="67" x2="80" y2="64" stroke="#2563EB" strokeWidth="3" strokeLinecap="round" />
+            <line x1="66" y1="75" x2="77" y2="73" stroke="#10B981" strokeWidth="3" strokeLinecap="round" />
           </g>
         )}
 
-        {/* MODULE 2: Credit (Tilted Teal Credit Card + Check, %, Lock, $ bubbles) */}
+        {/* MODULE 2: Credit (Colorful Tilted Credit Card + Rainbow Badges) */}
         {slot === 1 && (
           <g>
-            <circle cx="28" cy="30" r="10" fill="#E6F4EA" />
+            <circle cx="26" cy="28" r="11" fill="#10B981" />
             <path
-              d="M24 30 L27 33 L33 27"
-              stroke="#10B981"
-              strokeWidth="2.2"
+              d="M21 28 L25 32 L32 24"
+              stroke="#FFFFFF"
+              strokeWidth="2.6"
               fill="none"
               strokeLinecap="round"
             />
-            <circle cx="88" cy="28" r="10" fill="#E0F2FE" />
-            <text x="88" y="32" textAnchor="middle" fontSize="10" fontWeight="800" fill="#0284C7">
+            <circle cx="90" cy="26" r="11" fill="#3B82F6" />
+            <text x="90" y="30" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               %
             </text>
-            <circle cx="26" cy="84" r="10" fill="#E6F4EA" />
-            <rect x="22" y="83" width="8" height="6" rx="1.5" fill="#10B981" />
-            <path d="M24 83 V80 A2 2 0 0 1 28 80 V83" stroke="#10B981" strokeWidth="1.5" fill="none" />
-            <circle cx="86" cy="88" r="10" fill="#ECFDF5" />
-            <text x="86" y="92" textAnchor="middle" fontSize="11" fontWeight="800" fill="#059669">
+            <circle cx="25" cy="86" r="11" fill="#F59E0B" />
+            <rect x="21" y="85" width="8" height="6" rx="1.5" fill="#FFFFFF" />
+            <path d="M23 85 V82 A2 2 0 0 1 27 82 V85" stroke="#FFFFFF" strokeWidth="1.8" fill="none" />
+            <circle cx="90" cy="88" r="11" fill="#EC4899" />
+            <text x="90" y="92.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
               $
             </text>
 
-            {/* Tilted Credit Card */}
-            <g transform="translate(60, 58) rotate(12)">
-              <rect x="-28" y="-18" width="56" height="36" rx="6" fill="#14B8A6" stroke="#0D9488" strokeWidth="1.5" />
-              <rect x="-28" y="-10" width="56" height="6" fill="#0F766E" />
-              <rect x="-21" y="2" width="10" height="7" rx="1.5" fill="#FDE68A" />
-              <circle cx="18" cy="10" r="4" fill="#CCFBF1" opacity="0.8" />
+            {/* Vibrant Multi-Tone Tilted Credit Card */}
+            <g transform="translate(60, 58) rotate(11)">
+              <rect x="-31" y="-20" width="62" height="40" rx="7" fill="#06B6D4" stroke="#0E7490" strokeWidth="2" />
+              <path d="M-31 -6 H31 V13 A7 7 0 0 1 24 20 H-24 A7 7 0 0 1 -31 13 Z" fill="#0EA5E9" />
+              <rect x="-31" y="-12" width="62" height="7" fill="#1E293B" />
+              <rect x="-23" y="1" width="12" height="9" rx="2" fill="#FACC15" stroke="#CA8A04" strokeWidth="1" />
+              <circle cx="15" cy="9" r="5.5" fill="#FB7185" />
+              <circle cx="21" cy="9" r="5.5" fill="#FBBF24" opacity="0.9" />
             </g>
           </g>
         )}
 
-        {/* MODULE 3: University Finances (Graduation Cap on Books + Coins & Campus) */}
+        {/* MODULE 3: University Finances (Colorful Graduation Cap on Rainbow Books + Gold Coins) */}
         {slot === 2 && (
           <g>
-            <circle cx="24" cy="36" r="10" fill="#FEF3C7" />
-            <circle cx="24" cy="36" r="6" fill="#F59E0B" />
-            <circle cx="92" cy="32" r="11" fill="#FFE4E6" />
-            <ellipse cx="92" cy="32" rx="6" ry="4.5" fill="#FB7185" />
-            <circle cx="94" cy="78" r="11" fill="#FEF3C7" />
-            <path d="M88 82 H100 L94 74 Z" fill="#D97706" />
+            <circle cx="23" cy="34" r="11" fill="#F59E0B" />
+            <text x="23" y="38" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
+              $
+            </text>
+            <circle cx="94" cy="30" r="11" fill="#EC4899" />
+            <ellipse cx="94" cy="30" rx="6" ry="4.5" fill="#FDE047" />
+            <circle cx="95" cy="80" r="11" fill="#10B981" />
+            <path d="M89 84 H101 L95 75 Z" fill="#FFFFFF" />
 
-            {/* Stacked Books */}
-            <rect x="34" y="72" width="52" height="10" rx="3" fill="#84CC16" />
-            <rect x="38" y="62" width="44" height="10" rx="3" fill="#38BDF8" />
-            <rect x="42" y="52" width="36" height="10" rx="3" fill="#FBBF24" />
+            {/* Vibrant Stacked Books */}
+            <rect x="30" y="75" width="60" height="11" rx="3.5" fill="#10B981" stroke="#047857" strokeWidth="1.5" />
+            <rect x="35" y="63" width="50" height="11" rx="3.5" fill="#3B82F6" stroke="#1D4ED8" strokeWidth="1.5" />
+            <rect x="40" y="51" width="40" height="11" rx="3.5" fill="#F43F5E" stroke="#BE123C" strokeWidth="1.5" />
 
-            {/* Graduation Cap */}
-            <polygon points="60,28 88,40 60,52 32,40" fill="#D97706" />
-            <rect x="46" y="46" width="28" height="9" rx="3" fill="#B45309" />
-            <path d="M82 42 V56" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Royal Blue & Gold Graduation Cap */}
+            <polygon points="60,22 92,36 60,50 28,36" fill="#4F46E5" stroke="#312E81" strokeWidth="1.8" />
+            <rect x="45" y="43" width="30" height="10" rx="3" fill="#6366F1" stroke="#312E81" strokeWidth="1.5" />
+            <path d="M84 38 V55" stroke="#FACC15" strokeWidth="3" strokeLinecap="round" />
+            <circle cx="84" cy="56" r="3" fill="#F59E0B" />
           </g>
         )}
 
-        {/* MODULE 4: Taxes (Clipboard Form + Calculator + % and $) */}
+        {/* MODULE 4: Taxes (Colorful Clipboard Form + Turquoise Calculator + Gold Coin) */}
         {slot === 3 && (
           <g>
-            <circle cx="24" cy="32" r="10" fill="#FEE2E2" />
-            <text x="24" y="36" textAnchor="middle" fontSize="10" fontWeight="800" fill="#EF4444">
+            <circle cx="22" cy="30" r="11" fill="#EF4444" />
+            <text x="22" y="34" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               %
             </text>
-            <circle cx="94" cy="28" r="10" fill="#FEF3C7" />
-            <circle cx="94" cy="28" r="6.5" fill="#F59E0B" />
-            <text x="94" y="31" textAnchor="middle" fontSize="9" fontWeight="800" fill="#FFF">
+            <circle cx="95" cy="27" r="11" fill="#F59E0B" />
+            <text x="95" y="31.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
               $
             </text>
-            <circle cx="22" cy="64" r="9" fill="#DCFCE7" />
-            <path d="M19 64 L21 66 L26 61" stroke="#16A34A" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <circle cx="22" cy="66" r="10" fill="#10B981" />
+            <path d="M18 66 L21 69 L27 63" stroke="#FFFFFF" strokeWidth="2.4" fill="none" strokeLinecap="round" />
 
-            {/* Tax Clipboard */}
-            <rect x="38" y="28" width="38" height="54" rx="5" fill="#EF4444" />
-            <rect x="42" y="34" width="30" height="44" rx="3" fill="#FFFFFF" />
-            <rect x="49" y="24" width="16" height="7" rx="2.5" fill="#F59E0B" />
-            <line x1="47" y1="44" x2="67" y2="44" stroke="#CBD5E1" strokeWidth="3" strokeLinecap="round" />
-            <line x1="47" y1="52" x2="67" y2="52" stroke="#FCA5A5" strokeWidth="3" strokeLinecap="round" />
-            <line x1="47" y1="60" x2="62" y2="60" stroke="#CBD5E1" strokeWidth="3" strokeLinecap="round" />
+            {/* Bright Coral-Red Tax Clipboard */}
+            <rect x="35" y="26" width="42" height="58" rx="6" fill="#F43F5E" stroke="#BE123C" strokeWidth="1.8" />
+            <rect x="40" y="33" width="32" height="46" rx="3.5" fill="#FFFFFF" />
+            <rect x="47" y="21" width="18" height="8" rx="3" fill="#FACC15" stroke="#CA8A04" strokeWidth="1.5" />
+            <line x1="45" y1="43" x2="67" y2="43" stroke="#38BDF8" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="45" y1="51" x2="67" y2="51" stroke="#FB7185" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="45" y1="59" x2="61" y2="59" stroke="#34D399" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="45" y1="67" x2="58" y2="67" stroke="#FBBF24" strokeWidth="3.5" strokeLinecap="round" />
 
-            {/* Mini Calculator */}
-            <rect x="66" y="54" width="24" height="32" rx="4" fill="#E2E8F0" stroke="#94A3B8" strokeWidth="1.5" />
-            <rect x="70" y="58" width="16" height="6" rx="1.5" fill="#F59E0B" />
-            <circle cx="73" cy="70" r="2" fill="#64748B" />
-            <circle cx="78" cy="70" r="2" fill="#64748B" />
-            <circle cx="83" cy="70" r="2" fill="#64748B" />
-            <circle cx="73" cy="77" r="2" fill="#64748B" />
-            <circle cx="78" cy="77" r="2" fill="#64748B" />
-            <circle cx="83" cy="77" r="2" fill="#EF4444" />
+            {/* Vibrant Indigo/Cyan Mini Calculator */}
+            <rect x="64" y="52" width="27" height="36" rx="5" fill="#3B82F6" stroke="#1D4ED8" strokeWidth="1.8" />
+            <rect x="68" y="56" width="19" height="8" rx="2" fill="#FEF08A" />
+            <circle cx="71" cy="70" r="2.3" fill="#FFFFFF" />
+            <circle cx="77.5" cy="70" r="2.3" fill="#FFFFFF" />
+            <circle cx="84" cy="70" r="2.3" fill="#34D399" />
+            <circle cx="71" cy="78" r="2.3" fill="#FFFFFF" />
+            <circle cx="77.5" cy="78" r="2.3" fill="#FFFFFF" />
+            <circle cx="84" cy="78" r="2.3" fill="#FBBF24" />
           </g>
         )}
 
-        {/* MODULE 5: Types of Accounts (Stacked Account Cards + Coin + Piggy + Lock) */}
+        {/* MODULE 5: Types of Accounts (Colorful Layered Cards + Gold Dollar Medallion) */}
         {slot === 4 && (
           <g>
-            <circle cx="24" cy="28" r="10" fill="#FFE4E6" />
-            <ellipse cx="24" cy="28" rx="5.5" ry="4" fill="#FB7185" />
-            <circle cx="92" cy="26" r="10" fill="#DCFCE7" />
-            <rect x="88" y="25" width="8" height="6" rx="1.5" fill="#16A34A" />
-            <circle cx="24" cy="90" r="10" fill="#E0F2FE" />
-            <path d="M20 92 L24 88 L28 90" stroke="#0284C7" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <circle cx="24" cy="27" r="11" fill="#F43F5E" />
+            <ellipse cx="24" cy="27" rx="6" ry="4.5" fill="#FDE047" />
+            <circle cx="94" cy="26" r="11" fill="#10B981" />
+            <rect x="90" y="25" width="8" height="6" rx="1.5" fill="#FFFFFF" />
+            <circle cx="24" cy="90" r="11" fill="#8B5CF6" />
+            <path d="M19 92 L24 87 L29 90" stroke="#FDE047" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
-            {/* Stacked Cards */}
-            <rect x="38" y="64" width="46" height="24" rx="5" fill="#FBBF24" transform="rotate(-6 61 76)" />
-            <rect x="36" y="50" width="46" height="24" rx="5" fill="#34D399" transform="rotate(5 59 62)" />
-            <rect x="36" y="36" width="46" height="24" rx="5" fill="#38BDF8" />
-            <circle cx="59" cy="36" r="8" fill="#F59E0B" stroke="#FEF3C7" strokeWidth="1.5" />
-            <text x="59" y="39" textAnchor="middle" fontSize="9" fontWeight="800" fill="#FFF">
+            {/* Colorful Stacked Account Cards */}
+            <rect x="35" y="64" width="50" height="26" rx="6" fill="#F59E0B" stroke="#B45309" strokeWidth="1.5" transform="rotate(-7 60 77)" />
+            <rect x="35" y="49" width="50" height="26" rx="6" fill="#10B981" stroke="#047857" strokeWidth="1.5" transform="rotate(6 60 62)" />
+            <rect x="35" y="34" width="50" height="26" rx="6" fill="#2563EB" stroke="#1E40AF" strokeWidth="1.5" />
+            <rect x="41" y="42" width="16" height="4" rx="2" fill="#93C5FD" />
+            <rect x="41" y="49" width="26" height="4" rx="2" fill="#E0F2FE" />
+            <circle cx="60" cy="34" r="10" fill="#FACC15" stroke="#CA8A04" strokeWidth="2" />
+            <text x="60" y="38" textAnchor="middle" fontSize="12" fontWeight="900" fill="#713F12">
               $
             </text>
           </g>
         )}
 
-        {/* MODULE 6: Consumer Skills (Person holding Pie Chart + Bubbles) */}
+        {/* MODULE 6: Consumer Skills (Colorful Pie Chart & Shopping/Budget Icons) */}
         {slot === 5 && (
           <g>
-            <circle cx="24" cy="30" r="10" fill="#FEF3C7" />
-            <rect x="20" y="27" width="8" height="8" rx="1.5" fill="#F59E0B" />
-            <circle cx="94" cy="30" r="10" fill="#DCFCE7" />
-            <ellipse cx="94" cy="30" rx="5.5" ry="4" fill="#22C55E" />
-            <circle cx="96" cy="58" r="10" fill="#E0E7FF" />
-            <rect x="92" y="56" width="2.5" height="6" fill="#4F46E5" />
-            <rect x="96" y="53" width="2.5" height="9" fill="#4F46E5" />
+            <circle cx="23" cy="29" r="11" fill="#F59E0B" />
+            <rect x="19" y="25" width="8" height="8" rx="2" fill="#FFFFFF" />
+            <circle cx="95" cy="28" r="11" fill="#10B981" />
+            <text x="95" y="32" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
+              $
+            </text>
+            <circle cx="96" cy="60" r="11" fill="#EC4899" />
+            <rect x="91.5" y="58" width="3" height="6" rx="1" fill="#FFFFFF" />
+            <rect x="96" y="54" width="3" height="10" rx="1" fill="#FDE047" />
 
-            {/* Person + Pie Chart Board */}
-            <path d="M34 112 C34 88, 86 88, 86 112 Z" fill="#3B82F6" />
-            <circle cx="60" cy="34" r="12" fill="#1E293B" />
-            <rect x="42" y="42" width="36" height="44" rx="4" fill="#FFFFFF" stroke="#CBD5E1" strokeWidth="1.5" />
-            <circle cx="60" cy="60" r="11" fill="#3B82F6" />
-            <path d="M60 60 L60 49 A11 11 0 0 1 71 60 Z" fill="#F59E0B" />
-            <line x1="48" y1="77" x2="72" y2="77" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Person + Multi-Color Pie Chart Board */}
+            <path d="M32 112 C32 86, 88 86, 88 112 Z" fill="#4F46E5" />
+            <circle cx="60" cy="31" r="12" fill="#1E293B" />
+            <rect x="39" y="40" width="42" height="48" rx="6" fill="#FFFFFF" stroke="#6366F1" strokeWidth="2" />
+            <circle cx="60" cy="59" r="13" fill="#3B82F6" />
+            <path d="M60 59 L60 46 A13 13 0 0 1 73 59 Z" fill="#F59E0B" />
+            <path d="M60 59 L73 59 A13 13 0 0 1 52 70 Z" fill="#10B981" />
+            <line x1="46" y1="79" x2="74" y2="79" stroke="#F43F5E" strokeWidth="3.5" strokeLinecap="round" />
           </g>
         )}
 
-        {/* MODULE 7: Practical Financial Skills (Keys, Car, Apartment & Shield) */}
+        {/* MODULE 7: Practical Financial Skills (Colorful Home, Golden Key & Sun) */}
         {slot === 6 && (
           <g>
-            <circle cx="26" cy="30" r="10" fill="#EDE9FE" />
-            <text x="26" y="34" textAnchor="middle" fontSize="10" fontWeight="800" fill="#7C3AED">
+            <circle cx="25" cy="28" r="11" fill="#8B5CF6" />
+            <text x="25" y="32" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               $
             </text>
-            <circle cx="94" cy="30" r="10" fill="#DCFCE7" />
-            <path d="M90 30 L93 33 L99 27" stroke="#16A34A" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+            <circle cx="95" cy="28" r="11" fill="#10B981" />
+            <path d="M90 28 L94 32 L100 25" stroke="#FFFFFF" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <circle cx="24" cy="66" r="10" fill="#F59E0B" />
+            <circle cx="24" cy="66" r="4" fill="#FEF08A" />
 
-            {/* House / Apartment */}
-            <polygon points="60,30 88,52 32,52" fill="#8B5CF6" />
-            <rect x="38" y="52" width="44" height="36" rx="4" fill="#C4B5FD" />
-            <rect x="54" y="66" width="12" height="22" rx="2" fill="#5B21B6" />
-            <rect x="44" y="58" width="8" height="8" rx="1.5" fill="#FEF3C7" />
-            <rect x="68" y="58" width="8" height="8" rx="1.5" fill="#FEF3C7" />
+            {/* Colorful House / Apartment */}
+            <polygon points="60,26 92,52 28,52" fill="#EC4899" stroke="#BE185D" strokeWidth="1.8" />
+            <rect x="36" y="52" width="48" height="38" rx="4" fill="#8B5CF6" stroke="#5B21B6" strokeWidth="1.8" />
+            <rect x="53" y="66" width="14" height="24" rx="2.5" fill="#FACC15" stroke="#CA8A04" strokeWidth="1.5" />
+            <rect x="41" y="57" width="10" height="10" rx="2" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="1.5" />
+            <rect x="69" y="57" width="10" height="10" rx="2" fill="#38BDF8" stroke="#FFFFFF" strokeWidth="1.5" />
           </g>
         )}
 
-        {/* MODULE 8: Getting Out of Debt (Target Shield & Snowball/Avalanche Chart) */}
+        {/* MODULE 8: Getting Out of Debt (Rainbow Payoff Bars + Golden Lightning Arrow) */}
         {slot === 7 && (
           <g>
-            <circle cx="26" cy="30" r="10" fill="#FFE4E6" />
-            <text x="26" y="34" textAnchor="middle" fontSize="10" fontWeight="800" fill="#E11D48">
+            <circle cx="25" cy="28" r="11" fill="#F43F5E" />
+            <text x="25" y="32" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               %
             </text>
-            <circle cx="94" cy="30" r="10" fill="#DCFCE7" />
-            <path d="M90 30 L93 33 L99 27" stroke="#16A34A" strokeWidth="2.2" fill="none" strokeLinecap="round" />
+            <circle cx="95" cy="28" r="11" fill="#10B981" />
+            <path d="M90 28 L94 32 L100 25" stroke="#FFFFFF" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
-            {/* Descending Debt Bars + Check Shield */}
-            <rect x="32" y="44" width="10" height="42" rx="3" fill="#FB7185" />
-            <rect x="47" y="54" width="10" height="32" rx="3" fill="#F43F5E" />
-            <rect x="62" y="64" width="10" height="22" rx="3" fill="#E11D48" />
-            <rect x="77" y="74" width="10" height="12" rx="3" fill="#10B981" />
-            <path d="M34 40 L84 68" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
+            {/* Colorful Descending Debt Payoff Bars */}
+            <rect x="28" y="42" width="12" height="46" rx="3.5" fill="#F43F5E" stroke="#BE123C" strokeWidth="1.2" />
+            <rect x="45" y="52" width="12" height="36" rx="3.5" fill="#F59E0B" stroke="#B45309" strokeWidth="1.2" />
+            <rect x="62" y="62" width="12" height="26" rx="3.5" fill="#3B82F6" stroke="#1D4ED8" strokeWidth="1.2" />
+            <rect x="79" y="72" width="12" height="16" rx="3.5" fill="#10B981" stroke="#047857" strokeWidth="1.2" />
+            <path
+              d="M32 36 L86 64 M86 64 H75 M86 64 V53"
+              stroke="#FACC15"
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </g>
         )}
 
-        {/* MODULE 9: How Banks Work (Classical Bank Building with Pillars) */}
+        {/* MODULE 9: How Banks Work (Colorful Classical Bank Building with Gold Dome & Pillars) */}
         {slot === 8 && (
           <g>
-            <circle cx="24" cy="30" r="10" fill="#CCFBF1" />
-            <text x="24" y="34" textAnchor="middle" fontSize="10" fontWeight="800" fill="#0D9488">
+            <circle cx="24" cy="28" r="11" fill="#0EA5E9" />
+            <text x="24" y="32" textAnchor="middle" fontSize="11" fontWeight="900" fill="#FFFFFF">
               %
             </text>
-            <circle cx="94" cy="30" r="10" fill="#FEF3C7" />
-            <text x="94" y="34" textAnchor="middle" fontSize="10" fontWeight="800" fill="#D97706">
+            <circle cx="95" cy="28" r="11" fill="#F59E0B" />
+            <text x="95" y="32.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
               $
             </text>
 
-            {/* Bank Dome & Columns */}
-            <polygon points="60,28 90,46 30,46" fill="#0D9488" />
-            <rect x="32" y="46" width="56" height="6" rx="2" fill="#14B8A6" />
-            <rect x="38" y="52" width="7" height="28" rx="2" fill="#99F6E4" />
-            <rect x="56.5" y="52" width="7" height="28" rx="2" fill="#99F6E4" />
-            <rect x="75" y="52" width="7" height="28" rx="2" fill="#99F6E4" />
-            <rect x="28" y="80" width="64" height="8" rx="3" fill="#0F766E" />
+            {/* Colorful Bank Roof, Gold Pediment & Turquoise Columns */}
+            <polygon points="60,24 94,45 26,45" fill="#0D9488" stroke="#115E59" strokeWidth="1.8" />
+            <circle cx="60" cy="36" r="5" fill="#FACC15" />
+            <rect x="30" y="45" width="60" height="7" rx="2.5" fill="#F59E0B" />
+            <rect x="36" y="52" width="8" height="28" rx="2.5" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.2" />
+            <rect x="56" y="52" width="8" height="28" rx="2.5" fill="#34D399" stroke="#059669" strokeWidth="1.2" />
+            <rect x="76" y="52" width="8" height="28" rx="2.5" fill="#A855F7" stroke="#7E22CE" strokeWidth="1.2" />
+            <rect x="26" y="80" width="68" height="9" rx="3.5" fill="#1E293B" />
           </g>
         )}
 
-        {/* MODULE 10: Investing (Rising Growth Rocket & Compound Bars) */}
+        {/* MODULE 10: Investing (Colorful Ascending Bars + Golden Growth Arrow) */}
         {slot === 9 && (
           <g>
-            <circle cx="26" cy="32" r="10" fill="#FEF3C7" />
-            <text x="26" y="36" textAnchor="middle" fontSize="10" fontWeight="800" fill="#D97706">
+            <circle cx="25" cy="30" r="11" fill="#F59E0B" />
+            <text x="25" y="34.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
               $
             </text>
-            <circle cx="94" cy="28" r="10" fill="#DCFCE7" />
-            <text x="94" y="32" textAnchor="middle" fontSize="10" fontWeight="800" fill="#059669">
+            <circle cx="95" cy="26" r="11" fill="#EC4899" />
+            <text x="95" y="30.5" textAnchor="middle" fontSize="12" fontWeight="900" fill="#FFFFFF">
               +
             </text>
 
-            {/* Ascending Compound Bars + Upward Arrow */}
-            <rect x="32" y="72" width="10" height="16" rx="3" fill="#6EE7B7" />
-            <rect x="47" y="60" width="10" height="28" rx="3" fill="#34D399" />
-            <rect x="62" y="48" width="10" height="40" rx="3" fill="#10B981" />
-            <rect x="77" y="34" width="10" height="54" rx="3" fill="#059669" />
+            {/* Vibrant Multi-Color Compound Bars + Golden Upward Rocket Arrow */}
+            <rect x="28" y="72" width="12" height="17" rx="3.5" fill="#38BDF8" stroke="#0284C7" strokeWidth="1.2" />
+            <rect x="45" y="59" width="12" height="30" rx="3.5" fill="#A855F7" stroke="#7E22CE" strokeWidth="1.2" />
+            <rect x="62" y="46" width="12" height="43" rx="3.5" fill="#F59E0B" stroke="#B45309" strokeWidth="1.2" />
+            <rect x="79" y="32" width="12" height="57" rx="3.5" fill="#10B981" stroke="#047857" strokeWidth="1.2" />
             <path
-              d="M32 62 L54 46 L78 26 M78 26 H68 M78 26 V36"
-              stroke="#F59E0B"
-              strokeWidth="3.5"
+              d="M30 60 L54 42 L80 22 M80 22 H68 M80 22 V34"
+              stroke="#EF4444"
+              strokeWidth="4"
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
