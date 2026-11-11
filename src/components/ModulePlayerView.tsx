@@ -293,6 +293,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     null
   );
   const [battleSaPicks, setBattleSaPicks] = useState<number[]>([]);
+  const [battleMistakes, setBattleMistakes] = useState(0);
+  const [battleScorePercent, setBattleScorePercent] = useState<number | null>(
+    null
+  );
   const [battleCompleted, setBattleCompleted] = useState(false);
   const [confettiBurstKey, setConfettiBurstKey] = useState(0);
   const [wrongShakeActive, setWrongShakeActive] = useState(false);
@@ -366,7 +370,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     // Initialize Matching (MT)
     if (slide.problemFormat === 'mt' && slide.matchingPairs) {
       const savedMt = savedMtBySlideRef.current[historyKey];
-      if (savedMt && Object.keys(savedMt).length > 0 && existingRecord) {
+      if (savedMt && Object.keys(savedMt).length > 0) {
         setMtSelections(savedMt);
       } else {
         const nextMt: Record<string, string> = {};
@@ -384,11 +388,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     // Initialize Drag/Sort Bucket (DD)
     if (slide.problemFormat === 'dd-bucket' && slide.ddBucketConfig) {
       const savedBucket = savedBucketBySlideRef.current[historyKey];
-      if (
-        savedBucket &&
-        Object.keys(savedBucket).length > 0 &&
-        existingRecord
-      ) {
+      if (savedBucket && Object.keys(savedBucket).length > 0) {
         setDdBucketSelections(savedBucket);
       } else {
         const nextBucket: Record<string, string> = {};
@@ -414,8 +414,17 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           .sort((a, b) => a.correctPosition - b.correctPosition)
           .map((i) => i.id);
         setDdOrderedIds(sorted);
-      } else if (savedOrder && savedOrder.length === items.length && existingRecord) {
+      } else if (savedOrder && savedOrder.length === items.length) {
         setDdOrderedIds(savedOrder);
+        if (!existingRecord) {
+          const restoredOptionIds = savedOrder.map((itemId, pos) => {
+            const found = items.find((i) => i.id === itemId)!;
+            return found.correctPosition === pos
+              ? found.correctOptionId
+              : found.wrongOptionId;
+          });
+          setSelectedIds(restoredOptionIds);
+        }
       } else {
         // Deterministically scramble so it doesn't start already solved
         const scrambled = [...items]
@@ -446,6 +455,26 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         }
       }
     }
+
+    // Sync Boss Blitz completion status from verified answeredQuestions record
+    if (currentLesson.isBadgeBattle && currentLesson.badgeBattleQuestions) {
+      const isAlreadyScored = Boolean(
+        existingRecord?.evaluation.isFullyCorrect
+      );
+      setBattleActive(false);
+      setBattleStallMessage(null);
+      setBattleSaPicks([]);
+      setBattleCompleted(isAlreadyScored);
+      if (isAlreadyScored) {
+        setBattleClearedIds(
+          currentLesson.badgeBattleQuestions.map((q) => q.id)
+        );
+        setBattleScorePercent((prev) => prev ?? 100);
+      } else {
+        setBattleClearedIds([]);
+        setBattleScorePercent(null);
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slide.id, historyKey]);
 
@@ -469,6 +498,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setBattleSecondsLeft(180);
     setBattleStallMessage(null);
     setBattleSaPicks([]);
+    setBattleMistakes(0);
+    setBattleScorePercent(null);
     setBattleCompleted(false);
     setBattleActive(true);
   };
@@ -483,11 +514,35 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       setBattleQueue(remaining);
       setBattleSaPicks([]);
       if (remaining.length === 0) {
+        const totalQuestions =
+          currentLesson.badgeBattleQuestions?.length || 17;
+        const earnedScore = Math.max(
+          1,
+          Math.round(
+            (totalQuestions / (totalQuestions + battleMistakes)) * 100
+          )
+        );
+        setBattleScorePercent(earnedScore);
         setBattleCompleted(true);
         setBattleActive(false);
+
+        const clearOptionIds =
+          slide.options && slide.options.length > 0
+            ? slide.options.filter((o) => o.isCorrect).map((o) => o.id)
+            : ['m2-l13-c1-cleared'];
+        onSubmitAnswer(module.id, slide.id, clearOptionIds);
+        const nextCompletedIds = localCompletedLessonIds.includes(
+          currentLesson.id
+        )
+          ? localCompletedLessonIds
+          : [...localCompletedLessonIds, currentLesson.id];
+        setLocalCompletedLessonIds(nextCompletedIds);
+        onCompleteLesson?.(module.id, currentLesson.id);
+        triggerConfettiBreeze();
       }
     } else {
       // Missed question gets a 5s time penalty and cycles back later
+      setBattleMistakes((prev) => prev + 1);
       setBattleSecondsLeft((prev) => Math.max(0, prev - 5));
       setBattleStallMessage(
         'Time penalty (-5s) — this question will cycle back later.'
@@ -1168,8 +1223,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       <div className="flex items-center gap-2 text-emerald-200 text-xs sm:text-sm font-bold">
                         <Trophy className="h-5 w-5 text-amber-300 shrink-0" />
                         <span>
-                          All 17 Boss Blitz questions cleared! Proceed to the
-                          Final Showdown on the next slide.
+                          Boss Blitz Cleared! Score:{' '}
+                          {battleScorePercent ?? 100}% (
+                          {currentLesson.badgeBattleQuestions.length}/
+                          {currentLesson.badgeBattleQuestions.length} Cleared)
                         </span>
                       </div>
                       <button
@@ -1403,9 +1460,27 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                           delete savedMtBySlideRef.current[historyKey];
                           delete savedBucketBySlideRef.current[historyKey];
                           delete savedOrderBySlideRef.current[historyKey];
-                          setSelectedIds([]);
                           setMtSelections({});
                           setDdBucketSelections({});
+                          if (
+                            slide.problemFormat === 'dd-order' &&
+                            slide.ddOrderConfig
+                          ) {
+                            const items = slide.ddOrderConfig.items;
+                            const resetOptionIds = ddOrderedIds.map(
+                              (itemId, pos) => {
+                                const found = items.find(
+                                  (i) => i.id === itemId
+                                )!;
+                                return found.correctPosition === pos
+                                  ? found.correctOptionId
+                                  : found.wrongOptionId;
+                              }
+                            );
+                            setSelectedIds(resetOptionIds);
+                          } else {
+                            setSelectedIds([]);
+                          }
                           setWrongGlowActive(false);
                           setRevealedSolutionSlides((prev) => {
                             const next = { ...prev };
@@ -1497,8 +1572,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   <div className="space-y-2.5">
                     {slide.matchingPairs.map((pair) => {
                       const currentPick = mtSelections[pair.id] || '';
-                      const allRights = slide.matchingPairs!.map(
-                        (p) => p.right
+                      const allRights = Array.from(
+                        new Set(slide.matchingPairs!.map((p) => p.right))
                       );
                       return (
                         <div
@@ -1569,7 +1644,9 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                             )}
                           </div>
                           <div className="flex flex-wrap gap-1.5 shrink-0">
-                            {slide.ddBucketConfig!.categories.map((cat) => {
+                            {Array.from(
+                              new Set(slide.ddBucketConfig!.categories)
+                            ).map((cat) => {
                               const active = currentCat === cat;
                               return (
                                 <button
@@ -1766,7 +1843,29 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             <span>Back</span>
           </button>
 
-          {!isLastSlideOfLesson ? (
+          {currentLesson.isBadgeBattle ? (
+            <button
+              type="button"
+              onClick={() => {
+                const nextIncompleteLesson = module.lessons.find(
+                  (l) =>
+                    !l.isBadgeBattle &&
+                    !lessonProgress.completedLessonIdSet.has(l.id)
+                );
+                if (nextIncompleteLesson) {
+                  openLessonAtSlide(nextIncompleteLesson);
+                } else if (battleCompleted) {
+                  handleFinishLesson();
+                } else {
+                  setSubView('lessons');
+                }
+              }}
+              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Next</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          ) : !isLastSlideOfLesson ? (
             <button
               type="button"
               onClick={() =>

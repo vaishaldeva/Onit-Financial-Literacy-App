@@ -371,8 +371,12 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                       </button>
                     </div>
 
-                    {/* Compact High-Level Card Info (No image until clicked!) */}
-                    <div className="space-y-2.5">
+                    {/* Credit Card Visual + High-Level Card Info */}
+                    <div className="space-y-3">
+                      <div className="w-full max-w-[260px] sm:max-w-[280px] mx-auto">
+                        <PhysicalCardVisual card={card} compact />
+                      </div>
+
                       <div className="flex items-center justify-between gap-2">
                         <h2 className="text-sm sm:text-base font-medium text-white leading-snug">
                           {card.name}

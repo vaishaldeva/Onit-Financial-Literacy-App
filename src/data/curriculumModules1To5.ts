@@ -927,18 +927,21 @@ export const CURRICULUM_MODULES_1_TO_5: LearningModule[] = [
         isBadgeBattle: true,
         badgeBattleQuestions: MODULE_2_BADGE_BATTLE_QUESTIONS,
         slides: [
-          C(
-            'm2-l13-c1',
-            'BOSS BLITZ',
-            'Ready for the Module 2 Boss Blitz? Answer all 17 lightning questions before the timer runs out — missed questions add a brief time penalty and cycle back to the end of the queue!'
-          ),
-          MT('m2-l13-final-boss', 'FINAL BOSS', 'Final Boss — Match the credit term to what it actually means:', [
-            { left: 'Statement balance', right: 'How much you currently owe' },
-            { left: 'Credit limit', right: "The most you're allowed to borrow at once" },
-            { left: 'Credit utilization', right: "The percentage of your limit you're using" },
-            { left: 'Hard inquiry', right: 'Happens when you apply for new credit' },
-            { left: 'Credit freeze', right: 'Blocks new accounts from being opened in your name' },
-          ]),
+          {
+            ...C(
+              'm2-l13-c1',
+              'BOSS BLITZ',
+              'Ready for the Module 2 Boss Blitz? Answer all 17 lightning questions before the timer runs out — missed questions add a brief time penalty and cycle back to the end of the queue!'
+            ),
+            options: [
+              {
+                id: 'm2-l13-c1-cleared',
+                label: 'Boss Blitz Cleared',
+                isCorrect: true,
+                explanation: 'All 17 Boss Blitz questions cleared!',
+              },
+            ],
+          },
         ],
       },
     ],

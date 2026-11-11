@@ -700,6 +700,22 @@ export function calculateModuleLessonProgress(
   const completedLessonIdSet = new Set<string>();
 
   for (const lesson of module.lessons) {
+    if (lesson.isBadgeBattle) {
+      const lSlides = module.slides.filter((s) => s.lessonId === lesson.id);
+      const isBattleScoredAndCleared =
+        lSlides.length > 0 &&
+        lSlides.every((s) =>
+          Boolean(
+            answeredQuestions[getQuestionHistoryKey(module.id, s.id)]?.evaluation
+              .isFullyCorrect
+          )
+        );
+      if (isBattleScoredAndCleared) {
+        completedLessonIdSet.add(lesson.id);
+      }
+      continue;
+    }
+
     if (isModuleCompleted || explicitDoneSet.has(lesson.id)) {
       completedLessonIdSet.add(lesson.id);
       continue;
