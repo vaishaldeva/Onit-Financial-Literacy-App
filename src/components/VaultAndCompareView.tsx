@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Search,
-  Pin,
+  Heart,
   Scale,
   Building2,
   CreditCard,
@@ -38,7 +38,7 @@ interface VaultAndCompareViewProps {
 
 const SIMPLE_CARD_CATEGORIES = [
   { id: 'all', label: 'All Cards' },
-  { id: 'pinned', label: 'Pinned' },
+  { id: 'pinned', label: 'Liked' },
   { id: 'All Purchases', label: 'All Purchases' },
   { id: 'Groceries', label: 'Groceries' },
   { id: 'Gas', label: 'Gas' },
@@ -132,30 +132,17 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
     });
   };
 
-  const subCardClass = isModern
-    ? 'rounded-2xl bg-slate-900/55 border border-white/14 shadow-inner'
-    : 'rounded-xl bg-slate-950/90 border border-white/10';
+  const subCardClass = 'rounded-2xl bg-white/[0.035] border border-white/[0.06]';
 
-  const primaryCtaClass = isModern
-    ? 'rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 font-semibold shadow-[0_8px_20px_-4px_rgba(52,211,153,0.35)] hover:brightness-105'
-    : 'rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 font-semibold shadow-md shadow-emerald-500/15 hover:brightness-110';
+  const primaryCtaClass =
+    'rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 font-semibold shadow-[0_8px_20px_-4px_rgba(52,211,153,0.3)] hover:brightness-105';
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Compact Sub-Tab Switcher */}
-      <div
-        className={`glass-panel ${
-          isModern ? 'rounded-[28px] p-3 sm:p-3.5' : 'rounded-2xl p-2 sm:p-2.5'
-        } flex flex-col sm:flex-row items-center justify-between gap-2.5`}
-      >
-        <div className="flex items-center gap-2.5 px-2">
-          <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center ${
-              isModern
-                ? 'rounded-2xl bg-gradient-to-br from-emerald-400/25 via-sky-400/20 to-indigo-400/25 border border-white/20 shadow-sm'
-                : 'rounded-xl bg-white/10 border border-white/15'
-            }`}
-          >
+    <div className="space-y-4 sm:space-y-5">
+      {/* Flowing Pill Sub-Tab Switcher */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 px-1 self-start sm:self-auto">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] border border-white/[0.10]">
             {activeSubTab === 'cards' && (
               <CreditCard className="h-4 w-4 text-emerald-300" aria-hidden="true" />
             )}
@@ -166,30 +153,24 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               <Scale className="h-4 w-4 text-violet-300" aria-hidden="true" />
             )}
           </div>
-          <h1 className="text-base sm:text-lg font-bold text-white tracking-tight">
+          <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight">
             {activeSubTab === 'cards' && 'Credit Cards'}
             {activeSubTab === 'banks' && 'Banks'}
-            {activeSubTab === 'compare' && 'Compare Pinned'}
+            {activeSubTab === 'compare' && 'Compare Liked'}
           </h1>
         </div>
 
         <div
-          className={`grid grid-cols-3 items-center gap-1.5 ${
-            isModern
-              ? 'bg-slate-950/55 p-1.5 rounded-2xl border border-white/14'
-              : 'bg-slate-950/90 p-1 rounded-xl border border-white/10'
-          } w-full ${isPhoneView ? '' : 'sm:w-auto'} shrink-0`}
+          className={`grid grid-cols-3 items-center gap-1 bg-white/[0.05] p-1 rounded-full border border-white/[0.08] w-full ${
+            isPhoneView ? '' : 'sm:w-auto'
+          } shrink-0`}
         >
           <button
             type="button"
             onClick={() => onChangeSubTab('cards')}
-            className={`min-h-[38px] px-2.5 sm:px-3.5 py-1.5 ${
-              isModern ? 'rounded-xl' : 'rounded-lg'
-            } text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[36px] px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeSubTab === 'cards'
-                ? isModern
-                  ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-md'
-                  : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -200,13 +181,9 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           <button
             type="button"
             onClick={() => onChangeSubTab('banks')}
-            className={`min-h-[38px] px-2.5 sm:px-3.5 py-1.5 ${
-              isModern ? 'rounded-xl' : 'rounded-lg'
-            } text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[36px] px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeSubTab === 'banks'
-                ? isModern
-                  ? 'bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 text-slate-950 shadow-md'
-                  : 'bg-gradient-to-r from-cyan-400 to-sky-400 text-slate-950 shadow-md'
+                ? 'bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -217,13 +194,9 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           <button
             type="button"
             onClick={() => onChangeSubTab('compare')}
-            className={`min-h-[38px] px-2.5 sm:px-3.5 py-1.5 ${
-              isModern ? 'rounded-xl' : 'rounded-lg'
-            } text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 whitespace-nowrap cursor-pointer ${
+            className={`min-h-[36px] px-3 sm:px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer ${
               activeSubTab === 'compare'
-                ? isModern
-                  ? 'bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 text-slate-950 shadow-md'
-                  : 'bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white shadow-md'
+                ? 'bg-gradient-to-r from-violet-300 via-purple-300 to-fuchsia-300 text-slate-950 shadow-sm'
                 : 'text-slate-300 hover:text-white'
             }`}
           >
@@ -237,24 +210,20 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           TAB 1: CREDIT CARDS (Multi-Category Filter + High-Level Overview)
          ========================================================= */}
       {activeSubTab === 'cards' && (
-        <div className="space-y-4 sm:space-y-5">
-          {/* Multi-Category Filter Bar */}
-          <div
-            className={`glass-panel ${
-              isModern ? 'rounded-[28px] p-4 sm:p-5' : 'rounded-2xl p-3.5 sm:p-4'
-            } space-y-2.5`}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold text-emerald-300">
-                Filter by Category (Select One or More):
+        <div className="space-y-4">
+          {/* Flowing Pill Category Filter Bar */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 px-1">
+              <span className="text-xs font-medium text-slate-400">
+                Filter by Category
               </span>
               {selectedCardCategories.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setSelectedCardCategories([])}
-                  className="text-xs font-semibold text-slate-300 hover:text-white underline cursor-pointer"
+                  className="text-xs font-semibold text-emerald-300 hover:text-white cursor-pointer"
                 >
-                  Clear Filters ({selectedCardCategories.length})
+                  Clear ({selectedCardCategories.length})
                 </button>
               )}
             </div>
@@ -267,7 +236,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                     : selectedCardCategories.includes(cat.id);
                 const label =
                   cat.id === 'pinned'
-                    ? `Pinned (${pinnedCardIds.length})`
+                    ? `Liked (${pinnedCardIds.length})`
                     : cat.label;
 
                 return (
@@ -276,16 +245,10 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                     type="button"
                     aria-pressed={isSelected}
                     onClick={() => handleToggleCardCategory(cat.id)}
-                    className={`min-h-[38px] px-3.5 py-1.5 ${
-                      isModern ? 'rounded-2xl' : 'rounded-xl'
-                    } text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
+                    className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${
                       isSelected
-                        ? isModern
-                          ? 'bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-[0_6px_16px_-4px_rgba(52,211,153,0.4)]'
-                          : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-sm'
-                        : isModern
-                        ? 'bg-white/10 text-slate-100 hover:bg-white/15 border border-white/14'
-                        : 'bg-white/8 text-slate-200 hover:bg-white/15 border border-white/10'
+                        ? 'bg-white text-slate-950 shadow-sm'
+                        : 'bg-white/[0.06] text-slate-200 hover:bg-white/[0.12] border border-white/[0.08]'
                     }`}
                   >
                     {isSelected && cat.id !== 'all' && (
@@ -302,13 +265,13 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
             <div className="glass-panel rounded-3xl p-6 text-center space-y-3 border border-white/12">
               <p className="text-sm font-bold text-white">
                 {selectedCardCategories.includes('pinned') && pinnedCardIds.length === 0
-                  ? 'You have no pinned credit cards yet.'
+                  ? 'You have no liked credit cards yet.'
                   : `No cards matched all selected categories (${selectedCardCategories.join(' + ')}).`}
               </p>
               <button
                 type="button"
                 onClick={() => setSelectedCardCategories([])}
-                className="min-h-[40px] px-4 py-2 rounded-2xl bg-emerald-400 text-slate-950 text-xs font-bold hover:brightness-110 transition-all cursor-pointer"
+                className="min-h-[40px] px-4 py-2 rounded-full bg-emerald-400 text-slate-950 text-xs font-bold hover:brightness-110 transition-all cursor-pointer"
               >
                 Show All Cards
               </button>
@@ -328,16 +291,14 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 <article
                   key={card.id}
                   onClick={() => setSelectedCardDetail(card)}
-                  className={`glass-panel-elevated group ${
-                    isModern ? 'rounded-[28px] p-4 sm:p-5' : 'rounded-2xl p-3.5 sm:p-4'
-                  } transition-all flex flex-col justify-between cursor-pointer hover:border-emerald-400/45 ${
+                  className={`glass-panel-elevated group rounded-[28px] p-4 sm:p-5 transition-all flex flex-col justify-between cursor-pointer hover:border-emerald-400/45 ${
                     isPinned
-                      ? 'border-emerald-400/55 shadow-lg shadow-emerald-500/15'
-                      : 'border-white/12'
+                      ? 'border-rose-400/50 shadow-lg shadow-rose-500/10'
+                      : 'border-white/[0.09]'
                   }`}
                 >
                   <div>
-                    {/* Top Row: Issuer, Annual Fee & Pin Button */}
+                    {/* Top Row: Issuer, Annual Fee & Like Button */}
                     <div className="flex items-center justify-between gap-2 mb-2.5">
                       <div className="flex flex-wrap items-center gap-1.5 text-xs min-w-0">
                         <span className="font-medium text-emerald-300">{card.issuer}</span>
@@ -355,19 +316,22 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                         }}
                         aria-label={
                           isPinned
-                            ? `Unpin ${card.name}`
-                            : `Pin ${card.name} to top and compare`
+                            ? `Unlike ${card.name}`
+                            : `Like ${card.name} to save and compare`
                         }
-                        className={`min-h-[32px] px-3 py-1 ${
-                          isModern ? 'rounded-2xl' : 'rounded-xl'
-                        } text-xs font-medium flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                        className={`min-h-[32px] px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                           isPinned
-                            ? 'bg-amber-300 text-slate-950 shadow-md shadow-amber-400/20'
-                            : 'bg-white/10 hover:bg-white/15 text-white border border-white/15'
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-400/40 shadow-sm'
+                            : 'bg-white/[0.07] hover:bg-white/[0.14] text-white border border-white/[0.10]'
                         }`}
                       >
-                        <Pin className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>{isPinned ? 'Pinned' : 'Pin'}</span>
+                        <Heart
+                          className={`h-3.5 w-3.5 ${
+                            isPinned ? 'fill-rose-400 text-rose-400' : 'text-slate-300'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span>{isPinned ? 'Liked' : 'Like'}</span>
                       </button>
                     </div>
 
@@ -378,10 +342,10 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
-                        <h2 className="text-sm sm:text-base font-medium text-white leading-snug">
+                        <h2 className="text-sm sm:text-base font-semibold text-white leading-snug">
                           {card.name}
                         </h2>
-                        <span className="text-[11px] font-normal text-sky-300 shrink-0">
+                        <span className="text-[11px] font-medium text-sky-300 shrink-0">
                           Details →
                         </span>
                       </div>
@@ -392,7 +356,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                             key={i}
                             className={`${subCardClass} px-2.5 py-2`}
                           >
-                            <span className="font-mono-tabular text-xs sm:text-sm font-medium text-emerald-300 block">
+                            <span className="font-mono-tabular text-xs sm:text-sm font-semibold text-emerald-300 block">
                               {benefit.rate}
                             </span>
                             <span className="text-[11px] text-slate-300 font-normal leading-tight block truncate">
@@ -406,15 +370,13 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
 
                   {/* Action Bar: View Card & Details vs Apply */}
                   <div
-                    className="mt-3.5 pt-3 border-t border-white/12 grid grid-cols-2 gap-2.5"
+                    className="mt-3.5 pt-3 border-t border-white/[0.08] grid grid-cols-2 gap-2.5"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
                       type="button"
                       onClick={() => setSelectedCardDetail(card)}
-                      className={`min-h-[38px] px-3 py-1.5 ${
-                        isModern ? 'rounded-2xl' : 'rounded-xl'
-                      } bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-normal text-white flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer`}
+                      className="min-h-[38px] px-3 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/[0.10] text-xs font-medium text-white flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                     >
                       <span>View Card &amp; Details</span>
                       <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -443,14 +405,10 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
       {activeSubTab === 'banks' && (
         <div className="space-y-3.5">
           {/* Clean Search & Filter Pills */}
-          <div
-            className={`glass-panel ${
-              isModern ? 'rounded-[28px] p-3.5 sm:p-4' : 'rounded-2xl p-3'
-            } space-y-2.5`}
-          >
+          <div className="space-y-2.5">
             <div className="relative w-full">
               <Search
-                className="h-4 w-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"
+                className="h-4 w-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2"
                 aria-hidden="true"
               />
               <input
@@ -459,11 +417,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
                 placeholder="Search banks..."
-                className={`w-full ${
-                  isModern
-                    ? 'rounded-2xl bg-slate-950/60 border border-white/16'
-                    : 'rounded-xl bg-slate-950/90 border border-white/12'
-                } pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-400 focus:border-cyan-400 focus:outline-none`}
+                className="w-full rounded-full bg-white/[0.05] hover:bg-white/[0.07] border border-white/[0.08] pl-11 pr-4 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-400 focus:border-cyan-400/60 focus:outline-none transition-colors"
               />
             </div>
 
@@ -473,20 +427,16 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   key={cat}
                   type="button"
                   onClick={() => setBankCategory(cat)}
-                  className={`min-h-[36px] px-3.5 py-1.5 ${
-                    isModern ? 'rounded-2xl' : 'rounded-xl'
-                  } text-xs font-medium transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                  className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                     bankCategory === cat
-                      ? isModern
-                        ? 'bg-gradient-to-r from-sky-300 via-cyan-300 to-emerald-300 text-slate-950 font-semibold shadow-sm'
-                        : 'bg-white text-slate-950 shadow-sm'
-                      : 'bg-white/8 text-slate-200 hover:bg-white/15 border border-white/10'
+                      ? 'bg-white text-slate-950 shadow-sm'
+                      : 'bg-white/[0.06] text-slate-200 hover:bg-white/[0.12] border border-white/[0.08]'
                   }`}
                 >
                   {cat === 'all'
                     ? 'All'
                     : cat === 'pinned'
-                    ? `Pinned (${pinnedBankIds.length})`
+                    ? `Liked (${pinnedBankIds.length})`
                     : cat}
                 </button>
               ))}
@@ -496,7 +446,9 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           {sortedBanks.length === 0 ? (
             <div className="glass-panel rounded-3xl p-6 text-center">
               <p className="text-sm font-medium text-white">
-                No banks matched &ldquo;{bankSearch}&rdquo;
+                {bankCategory === 'pinned' && pinnedBankIds.length === 0
+                  ? 'You have no liked banks yet.'
+                  : `No banks matched "${bankSearch}"`}
               </p>
               <button
                 type="button"
@@ -504,7 +456,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   setBankSearch('');
                   setBankCategory('all');
                 }}
-                className="mt-3 min-h-[38px] px-4 py-1.5 rounded-2xl bg-cyan-400 text-slate-950 text-xs font-semibold cursor-pointer"
+                className="mt-3 min-h-[38px] px-4 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-semibold cursor-pointer"
               >
                 Reset
               </button>
@@ -517,31 +469,23 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 return (
                   <article
                     key={bank.id}
-                    className={`glass-panel-elevated ${
-                      isModern ? 'rounded-[28px] p-4 sm:p-5' : 'rounded-3xl p-4'
-                    } transition-all bg-gradient-to-r ${bank.brandGradient} ${
+                    className={`glass-panel-elevated rounded-[28px] p-4 sm:p-5 transition-all bg-gradient-to-r ${bank.brandGradient} ${
                       isPinned
-                        ? 'border-cyan-400/60 shadow-lg shadow-cyan-500/10'
-                        : 'border-white/14'
+                        ? 'border-rose-400/50 shadow-lg shadow-rose-500/10'
+                        : 'border-white/[0.09]'
                     }`}
                   >
-                    {/* Row 1: Badge + Bank Name + Pin */}
+                    {/* Row 1: Badge + Bank Name + Like */}
                     <div className="flex items-center justify-between gap-2.5">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div
-                          className={`flex h-11 w-11 shrink-0 items-center justify-center ${
-                            isModern
-                              ? 'rounded-2xl bg-slate-950/70 border border-white/20 shadow-inner'
-                              : 'rounded-xl bg-slate-950/90 border border-white/15'
-                          } font-mono-tabular text-[11px] font-semibold text-cyan-300`}
-                        >
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-black/40 border border-white/[0.12] font-mono-tabular text-[11px] font-semibold text-cyan-300">
                           {bank.badgeCode}
                         </div>
                         <div className="min-w-0">
                           <span className="inline-block text-[10px] font-medium uppercase tracking-wider text-cyan-300">
                             {bank.categoryTag}
                           </span>
-                          <h2 className="text-sm sm:text-base font-medium text-white leading-tight truncate">
+                          <h2 className="text-sm sm:text-base font-semibold text-white leading-tight truncate">
                             {bank.name}
                           </h2>
                         </div>
@@ -550,17 +494,20 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onTogglePinBank(bank.id)}
-                        aria-label={isPinned ? `Unpin ${bank.name}` : `Pin ${bank.name}`}
-                        className={`min-h-[34px] px-3 py-1 ${
-                          isModern ? 'rounded-2xl' : 'rounded-xl'
-                        } text-xs font-medium flex items-center gap-1 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
+                        aria-label={isPinned ? `Unlike ${bank.name}` : `Like ${bank.name}`}
+                        className={`min-h-[34px] px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap shrink-0 cursor-pointer ${
                           isPinned
-                            ? 'bg-amber-300 text-slate-950 shadow-sm'
-                            : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-400/40 shadow-sm'
+                            : 'bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.10]'
                         }`}
                       >
-                        <Pin className="h-3.5 w-3.5" aria-hidden="true" />
-                        <span>{isPinned ? 'Pinned' : 'Pin'}</span>
+                        <Heart
+                          className={`h-3.5 w-3.5 ${
+                            isPinned ? 'fill-rose-400 text-rose-400' : 'text-slate-300'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span>{isPinned ? 'Liked' : 'Like'}</span>
                       </button>
                     </div>
 
@@ -568,19 +515,19 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                     <div className="grid grid-cols-3 gap-2.5 mt-3.5">
                       <div className={`${subCardClass} px-3 py-2.5`}>
                         <p className="text-[10px] text-slate-400">Savings APY</p>
-                        <p className="font-mono-tabular text-sm sm:text-base font-medium text-emerald-300 mt-0.5">
+                        <p className="font-mono-tabular text-sm sm:text-base font-semibold text-emerald-300 mt-0.5">
                           {bank.savingsApy}
                         </p>
                       </div>
                       <div className={`${subCardClass} px-3 py-2.5`}>
                         <p className="text-[10px] text-slate-400">Checking</p>
-                        <p className="font-mono-tabular text-xs sm:text-sm font-normal text-cyan-300 mt-1">
+                        <p className="font-mono-tabular text-xs sm:text-sm font-medium text-cyan-300 mt-1">
                           {bank.checkingApy}
                         </p>
                       </div>
                       <div className={`${subCardClass} px-3 py-2.5`}>
                         <p className="text-[10px] text-slate-400">Monthly Fee</p>
-                        <p className="font-mono-tabular text-xs sm:text-sm font-normal text-white mt-1">
+                        <p className="font-mono-tabular text-xs sm:text-sm font-medium text-white mt-1">
                           {bank.monthlyFee}
                         </p>
                       </div>
@@ -592,13 +539,11 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                     </p>
 
                     {/* Row 4: Action Buttons */}
-                    <div className="mt-3.5 pt-3 border-t border-white/12 grid grid-cols-2 gap-2.5">
+                    <div className="mt-3.5 pt-3 border-t border-white/[0.08] grid grid-cols-2 gap-2.5">
                       <button
                         type="button"
                         onClick={() => setSelectedBankDetail(bank)}
-                        className={`min-h-[40px] px-3 py-2 ${
-                          isModern ? 'rounded-2xl bg-slate-950/65' : 'rounded-xl bg-slate-950/85'
-                        } hover:bg-slate-900 border border-white/15 text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer`}
+                        className="min-h-[40px] px-3 py-2 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/[0.10] text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer"
                       >
                         <span>Details</span>
                         <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -623,14 +568,12 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
       )}
 
       {/* =========================================================
-          TAB 3: SIDE-BY-SIDE COMPARE STUDIO (Strictly Pinned Items Only)
+          TAB 3: SIDE-BY-SIDE COMPARE STUDIO (Strictly Liked Items Only)
          ========================================================= */}
       {activeSubTab === 'compare' && (
         <div className="space-y-4">
           <div
-            className={`glass-panel ${
-              isModern ? 'rounded-[28px] p-4 sm:p-5' : 'rounded-2xl p-4'
-            } flex flex-col ${
+            className={`glass-panel rounded-[28px] p-4 sm:p-5 flex flex-col ${
               isPhoneView ? '' : 'sm:flex-row sm:items-center'
             } justify-between gap-3`}
           >
@@ -639,46 +582,36 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 Side-by-Side Comparison
               </h2>
               <p className="text-xs text-slate-300 mt-0.5">
-                Compare your pinned cards or banks side-by-side.
+                Compare your liked cards or banks side-by-side.
               </p>
             </div>
 
             <div
-              className={`grid grid-cols-2 items-center gap-1.5 ${
-                isModern
-                  ? 'bg-slate-950/55 p-1.5 rounded-2xl border border-white/14'
-                  : 'bg-slate-950/90 p-1.5 rounded-xl border border-white/10'
-              } w-full ${isPhoneView ? '' : 'sm:w-auto'} shrink-0`}
+              className={`grid grid-cols-2 items-center gap-1 bg-white/[0.05] p-1 rounded-full border border-white/[0.08] w-full ${
+                isPhoneView ? '' : 'sm:w-auto'
+              } shrink-0`}
             >
               <button
                 type="button"
                 onClick={() => setCompareMode('cards')}
-                className={`min-h-[38px] px-3 py-1.5 ${
-                  isModern ? 'rounded-xl' : 'rounded-lg'
-                } text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   compareMode === 'cards'
-                    ? isModern
-                      ? 'bg-gradient-to-r from-emerald-300 to-teal-300 text-slate-950 shadow-sm'
-                      : 'bg-emerald-400 text-slate-950'
+                    ? 'bg-gradient-to-r from-emerald-300 to-teal-300 text-slate-950 shadow-sm'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Pinned Cards ({pinnedCardsList.length})
+                Liked Cards ({pinnedCardsList.length})
               </button>
               <button
                 type="button"
                 onClick={() => setCompareMode('banks')}
-                className={`min-h-[38px] px-3 py-1.5 ${
-                  isModern ? 'rounded-xl' : 'rounded-lg'
-                } text-xs font-bold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap ${
                   compareMode === 'banks'
-                    ? isModern
-                      ? 'bg-gradient-to-r from-sky-300 to-cyan-300 text-slate-950 shadow-sm'
-                      : 'bg-cyan-400 text-slate-950'
+                    ? 'bg-gradient-to-r from-sky-300 to-cyan-300 text-slate-950 shadow-sm'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Pinned Banks ({pinnedBanksList.length})
+                Liked Banks ({pinnedBanksList.length})
               </button>
             </div>
           </div>
@@ -686,28 +619,24 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           {/* COMPARE CREDIT CARDS */}
           {compareMode === 'cards' && (
             <div className="space-y-4">
-              <div
-                className={`glass-panel ${
-                  isModern ? 'rounded-[28px] p-4' : 'rounded-2xl p-3.5 sm:p-4'
-                }`}
-              >
+              <div className="glass-panel rounded-[28px] p-4">
                 <p className="text-xs font-semibold text-slate-300 mb-2.5">
-                  Pinned Credit Cards:
+                  Liked Credit Cards:
                 </p>
                 {pinnedCardsList.length === 0 ? (
                   <div className={`${subCardClass} p-6 text-center`}>
                     <p className="text-sm font-bold text-white">
-                      You have no pinned credit cards yet.
+                      You have no liked credit cards yet.
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Pin at least 2 credit cards in the Cards tab to compare them side-by-side.
+                      Like at least 2 credit cards in the Cards tab to compare them side-by-side.
                     </p>
                     <button
                       type="button"
                       onClick={() => onChangeSubTab('cards')}
-                      className={`mt-4 min-h-[42px] px-4 py-2 ${primaryCtaClass} text-xs cursor-pointer`}
+                      className={`mt-4 min-h-[40px] px-5 py-2 ${primaryCtaClass} text-xs cursor-pointer`}
                     >
-                      Go Pin Credit Cards
+                      Go Like Credit Cards
                     </button>
                   </div>
                 ) : (
@@ -721,12 +650,10 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                           key={card.id}
                           type="button"
                           onClick={() => toggleCompareSelectionCard(card.id)}
-                          className={`min-h-[38px] px-3.5 py-1.5 ${
-                            isModern ? 'rounded-2xl' : 'rounded-xl'
-                          } text-xs font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                          className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                             isSelectedForMatrix
-                              ? 'bg-emerald-500/20 border-emerald-400 text-white'
-                              : 'bg-slate-950/60 border-white/15 text-slate-400 hover:text-white'
+                              ? 'bg-emerald-500/20 border-emerald-400/50 text-white'
+                              : 'bg-white/[0.05] border-white/[0.08] text-slate-400 hover:text-white'
                           }`}
                         >
                           <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -739,12 +666,8 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               </div>
 
               {activeComparedCards.length > 0 && (
-                <div className="glass-panel-elevated rounded-3xl border border-white/15 overflow-hidden">
-                  <div
-                    className={`${
-                      isModern ? 'bg-slate-950/60' : 'bg-slate-950/95'
-                    } border-b border-white/12 p-3 sm:p-4`}
-                  >
+                <div className="glass-panel-elevated rounded-3xl border border-white/[0.09] overflow-hidden">
+                  <div className="bg-white/[0.03] border-b border-white/[0.08] p-3 sm:p-4">
                     <div
                       className={`grid gap-2.5 sm:gap-3 ${
                         !isPhoneView && activeComparedCards.length >= 3
@@ -755,9 +678,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                       {activeComparedCards.slice(0, maxCompareCols).map((card, idx) => (
                         <div
                           key={card.id}
-                          className={`rounded-2xl ${
-                            isModern ? 'bg-slate-900/65' : 'bg-slate-900/90'
-                          } border border-white/12 p-2.5 sm:p-3 ${
+                          className={`rounded-2xl bg-white/[0.04] border border-white/[0.08] p-2.5 sm:p-3 ${
                             idx === 2 ? 'hidden lg:block' : ''
                           }`}
                         >
@@ -776,7 +697,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   </div>
 
                   {/* Side-by-Side Split Metric Rows */}
-                  <div className="divide-y divide-white/10 p-3 sm:p-5 space-y-3.5">
+                  <div className="divide-y divide-white/[0.07] p-3 sm:p-5 space-y-3.5">
                     {[
                       {
                         label: 'Key Cashback Multipliers',
@@ -821,7 +742,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                             href={c.applyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`min-h-[40px] px-2.5 py-2 ${primaryCtaClass} text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all text-center`}
+                            className={`min-h-[38px] px-2.5 py-2 ${primaryCtaClass} text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all text-center`}
                           >
                             <span>Apply</span>
                             <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -862,28 +783,24 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           {/* COMPARE BANKS */}
           {compareMode === 'banks' && (
             <div className="space-y-4">
-              <div
-                className={`glass-panel ${
-                  isModern ? 'rounded-[28px] p-4' : 'rounded-2xl p-3.5 sm:p-4'
-                }`}
-              >
+              <div className="glass-panel rounded-[28px] p-4">
                 <p className="text-xs font-semibold text-slate-300 mb-2.5">
-                  Pinned Banks:
+                  Liked Banks:
                 </p>
                 {pinnedBanksList.length === 0 ? (
                   <div className={`${subCardClass} p-6 text-center`}>
                     <p className="text-sm font-bold text-white">
-                      You have no pinned banks yet.
+                      You have no liked banks yet.
                     </p>
                     <p className="text-xs text-slate-400 mt-1">
-                      Pin at least 2 banks in the Banks tab to compare them side-by-side.
+                      Like at least 2 banks in the Banks tab to compare them side-by-side.
                     </p>
                     <button
                       type="button"
                       onClick={() => onChangeSubTab('banks')}
-                      className={`mt-4 min-h-[42px] px-4 py-2 ${primaryCtaClass} text-xs cursor-pointer`}
+                      className={`mt-4 min-h-[40px] px-5 py-2 ${primaryCtaClass} text-xs cursor-pointer`}
                     >
-                      Go Pin Banks
+                      Go Like Banks
                     </button>
                   </div>
                 ) : (
@@ -895,12 +812,10 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                           key={bank.id}
                           type="button"
                           onClick={() => toggleCompareSelectionBank(bank.id)}
-                          className={`min-h-[38px] px-3.5 py-1.5 ${
-                            isModern ? 'rounded-2xl' : 'rounded-xl'
-                          } text-xs font-bold border transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
+                          className={`min-h-[36px] px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                             isSelected
-                              ? 'bg-cyan-500/20 border-cyan-400 text-white'
-                              : 'bg-slate-950/60 border-white/15 text-slate-400 hover:text-white'
+                              ? 'bg-cyan-500/20 border-cyan-400/50 text-white'
+                              : 'bg-white/[0.05] border-white/[0.08] text-slate-400 hover:text-white'
                           }`}
                         >
                           <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -913,12 +828,8 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               </div>
 
               {activeComparedBanks.length > 0 && (
-                <div className="glass-panel-elevated rounded-3xl border border-white/15 overflow-hidden">
-                  <div
-                    className={`${
-                      isModern ? 'bg-slate-950/60' : 'bg-slate-950/95'
-                    } border-b border-white/12 p-3 sm:p-4`}
-                  >
+                <div className="glass-panel-elevated rounded-3xl border border-white/[0.09] overflow-hidden">
+                  <div className="bg-white/[0.03] border-b border-white/[0.08] p-3 sm:p-4">
                     <div
                       className={`grid gap-2.5 sm:gap-3 ${
                         !isPhoneView && activeComparedBanks.length >= 3
@@ -929,9 +840,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                       {activeComparedBanks.slice(0, maxCompareCols).map((bank, idx) => (
                         <div
                           key={bank.id}
-                          className={`rounded-2xl ${
-                            isModern ? 'bg-slate-900/65' : 'bg-slate-900/90'
-                          } border border-white/12 p-3 ${
+                          className={`rounded-2xl bg-white/[0.04] border border-white/[0.08] p-3 ${
                             idx === 2 ? 'hidden lg:block' : ''
                           }`}
                         >
@@ -950,7 +859,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   </div>
 
                   {/* Side-by-Side Split Bank Rows */}
-                  <div className="divide-y divide-white/10 p-3 sm:p-5 space-y-3.5">
+                  <div className="divide-y divide-white/[0.07] p-3 sm:p-5 space-y-3.5">
                     {[
                       {
                         label: 'Savings APY & Checking APY',
@@ -995,7 +904,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                             href={b.applyUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`min-h-[40px] px-2.5 py-2 ${primaryCtaClass} text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all text-center`}
+                            className={`min-h-[38px] px-2.5 py-2 ${primaryCtaClass} text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all text-center`}
                           >
                             <span>Apply</span>
                             <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -1042,7 +951,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           onClose={() => setSelectedCardDetail(null)}
           isPhoneView={isPhoneView}
           maxWidthClass="max-w-2xl"
-          cardClassName="bg-slate-900 border border-white/15"
+          cardClassName="bg-[#0F131C] border border-white/[0.12]"
           header={
             <div className="px-5 pt-5 pb-4 sm:px-8 sm:pt-6 sm:pb-4 flex items-start justify-between gap-3">
               <div>
@@ -1057,7 +966,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 type="button"
                 onClick={() => setSelectedCardDetail(null)}
                 aria-label="Close card details"
-                className="touch-manipulation min-h-[40px] min-w-[40px] rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
+                className="touch-manipulation min-h-[38px] min-w-[38px] rounded-full bg-white/[0.08] hover:bg-white/[0.15] flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1068,13 +977,23 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinCard(selectedCardDetail.id)}
-                className="touch-manipulation min-h-[44px] px-4 py-2 rounded-2xl bg-amber-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`touch-manipulation min-h-[42px] px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pinnedCardIds.includes(selectedCardDetail.id)
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-400/40 shadow-sm'
+                    : 'bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.10]'
+                }`}
               >
-                <Pin className="h-4 w-4" />
+                <Heart
+                  className={`h-4 w-4 ${
+                    pinnedCardIds.includes(selectedCardDetail.id)
+                      ? 'fill-rose-400 text-rose-400'
+                      : 'text-slate-300'
+                  }`}
+                />
                 <span>
                   {pinnedCardIds.includes(selectedCardDetail.id)
-                    ? 'Pinned to Top & Compare'
-                    : 'Pin This Card'}
+                    ? 'Liked · In Compare'
+                    : 'Like This Card'}
                 </span>
               </button>
 
@@ -1083,7 +1002,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                   href={selectedCardDetail.applyUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`touch-manipulation min-h-[44px] px-4 py-2.5 ${primaryCtaClass} text-xs transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer`}
+                  className={`touch-manipulation min-h-[42px] px-4 py-2 ${primaryCtaClass} text-xs transition-all flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer`}
                 >
                   <span>Apply</span>
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -1092,7 +1011,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedCardDetail(null)}
-                  className="touch-manipulation min-h-[44px] px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white cursor-pointer"
                 >
                   Done
                 </button>
@@ -1130,7 +1049,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               {selectedCardDetail.welcomeBonus}
             </p>
             <p>
-              <strong className="text-emerald-300">Fees & APR:</strong>{' '}
+              <strong className="text-emerald-300">Fees &amp; APR:</strong>{' '}
               {selectedCardDetail.annualFee} Annual Fee · {selectedCardDetail.foreignTxFee} Foreign Fee · {selectedCardDetail.introApr} ({selectedCardDetail.regularApr})
             </p>
             <p>
@@ -1155,7 +1074,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
           onClose={() => setSelectedBankDetail(null)}
           isPhoneView={isPhoneView}
           maxWidthClass="max-w-xl"
-          cardClassName="bg-slate-900 border border-white/15"
+          cardClassName="bg-[#0F131C] border border-white/[0.12]"
           header={
             <div className="px-5 pt-4 pb-3.5 sm:px-7 sm:pt-5 sm:pb-4 flex items-start justify-between gap-3">
               <div>
@@ -1170,7 +1089,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 type="button"
                 onClick={() => setSelectedBankDetail(null)}
                 aria-label="Close bank details"
-                className="touch-manipulation min-h-[38px] min-w-[38px] rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white shrink-0 cursor-pointer"
+                className="touch-manipulation min-h-[38px] min-w-[38px] rounded-full bg-white/[0.08] hover:bg-white/[0.15] flex items-center justify-center text-white shrink-0 cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -1181,13 +1100,23 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinBank(selectedBankDetail.id)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-2xl bg-amber-300 text-slate-950 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className={`touch-manipulation min-h-[42px] px-4 py-2 rounded-full text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer ${
+                  pinnedBankIds.includes(selectedBankDetail.id)
+                    ? 'bg-rose-500/20 text-rose-300 border border-rose-400/40 shadow-sm'
+                    : 'bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/[0.10]'
+                }`}
               >
-                <Pin className="h-4 w-4" />
+                <Heart
+                  className={`h-4 w-4 ${
+                    pinnedBankIds.includes(selectedBankDetail.id)
+                      ? 'fill-rose-400 text-rose-400'
+                      : 'text-slate-300'
+                  }`}
+                />
                 <span>
                   {pinnedBankIds.includes(selectedBankDetail.id)
-                    ? 'Pinned'
-                    : 'Pin Bank'}
+                    ? 'Liked'
+                    : 'Like Bank'}
                 </span>
               </button>
 
@@ -1205,7 +1134,7 @@ export const VaultAndCompareView: React.FC<VaultAndCompareViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedBankDetail(null)}
-                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
+                  className="touch-manipulation min-h-[42px] px-4 py-2 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white cursor-pointer"
                 >
                   Done
                 </button>

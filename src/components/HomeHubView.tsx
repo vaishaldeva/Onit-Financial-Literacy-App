@@ -4,7 +4,7 @@ import {
   Sliders,
   Award,
   Sparkles,
-  Pin,
+  Heart,
   ArrowRight,
   ExternalLink,
   CheckCircle2,
@@ -805,13 +805,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                     onClick={() => onTogglePinBank(topBankMatch.bank.id)}
                     className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
                       pinnedBankIds.includes(topBankMatch.bank.id)
-                        ? 'bg-amber-400 text-slate-950'
+                        ? 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
                         : 'bg-white/10 text-white hover:bg-white/20'
                     }`}
                   >
-                    <Pin className="h-3 w-3" />
+                    <Heart
+                      className={`h-3 w-3 ${
+                        pinnedBankIds.includes(topBankMatch.bank.id)
+                          ? 'fill-rose-400 text-rose-400'
+                          : 'text-slate-300'
+                      }`}
+                    />
                     <span>
-                      {pinnedBankIds.includes(topBankMatch.bank.id) ? 'Pinned' : 'Pin Bank'}
+                      {pinnedBankIds.includes(topBankMatch.bank.id) ? 'Liked' : 'Like Bank'}
                     </span>
                   </button>
                 </div>
@@ -883,13 +889,19 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                   onClick={() => onTogglePinCard(recommendedCard.id)}
                   className={`min-h-[34px] px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer ${
                     pinnedCardIds.includes(recommendedCard.id)
-                      ? 'bg-amber-400 text-slate-950'
+                      ? 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
                       : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
-                  <Pin className="h-3 w-3" />
+                  <Heart
+                    className={`h-3 w-3 ${
+                      pinnedCardIds.includes(recommendedCard.id)
+                        ? 'fill-rose-400 text-rose-400'
+                        : 'text-slate-300'
+                    }`}
+                  />
                   <span>
-                    {pinnedCardIds.includes(recommendedCard.id) ? 'Pinned' : 'Pin Card'}
+                    {pinnedCardIds.includes(recommendedCard.id) ? 'Liked' : 'Like Card'}
                   </span>
                 </button>
               </div>
@@ -977,7 +989,7 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
                 onClick={onOpenCompareTab}
                 className="font-bold text-amber-300 hover:text-amber-200 cursor-pointer"
               >
-                Compare Pinned ({pinnedBankIds.length + pinnedCardIds.length}) →
+                Compare Liked ({pinnedBankIds.length + pinnedCardIds.length}) →
               </button>
             )}
           </div>
@@ -1050,11 +1062,21 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinBank(inspectBank.id)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className={`touch-manipulation min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                  pinnedBankIds.includes(inspectBank.id)
+                    ? 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
+                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                }`}
               >
-                <Pin className="h-3.5 w-3.5" />
+                <Heart
+                  className={`h-3.5 w-3.5 ${
+                    pinnedBankIds.includes(inspectBank.id)
+                      ? 'fill-rose-400 text-rose-400'
+                      : 'text-slate-300'
+                  }`}
+                />
                 <span>
-                  {pinnedBankIds.includes(inspectBank.id) ? 'Pinned' : 'Pin This Bank'}
+                  {pinnedBankIds.includes(inspectBank.id) ? 'Liked' : 'Like This Bank'}
                 </span>
               </button>
               <button
@@ -1138,11 +1160,21 @@ export const HomeHubView: React.FC<HomeHubViewProps> = ({
               <button
                 type="button"
                 onClick={() => onTogglePinCard(inspectCard.id)}
-                className="touch-manipulation min-h-[42px] px-4 py-2 rounded-xl bg-amber-400 text-slate-950 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                className={`touch-manipulation min-h-[42px] px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer ${
+                  pinnedCardIds.includes(inspectCard.id)
+                    ? 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
+                    : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                }`}
               >
-                <Pin className="h-3.5 w-3.5" />
+                <Heart
+                  className={`h-3.5 w-3.5 ${
+                    pinnedCardIds.includes(inspectCard.id)
+                      ? 'fill-rose-400 text-rose-400'
+                      : 'text-slate-300'
+                  }`}
+                />
                 <span>
-                  {pinnedCardIds.includes(inspectCard.id) ? 'Pinned' : 'Pin This Card'}
+                  {pinnedCardIds.includes(inspectCard.id) ? 'Liked' : 'Like This Card'}
                 </span>
               </button>
               <button

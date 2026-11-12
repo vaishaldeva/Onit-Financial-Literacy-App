@@ -877,10 +877,10 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
                 </div>
 
                 <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-                  Pin & Compare Top Accounts Side-by-Side
+                  Like & Compare Top Accounts Side-by-Side
                 </h2>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  See upfront reward rates and fees before clicking, and pin your top picks to compare them head-to-head.
+                  See upfront reward rates and fees before clicking, and like your top picks to compare them head-to-head.
                 </p>
 
                 {demoVaultPreviewTab === 'cards' ? (
@@ -966,7 +966,7 @@ export const AuthAndIntroModal: React.FC<AuthAndIntroModalProps> = ({
                   </li>
                   <li className="flex items-start gap-2 text-xs text-slate-200">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
-                    <span>Isolated personal XP, lessons, and pinned favorites</span>
+                    <span>Isolated personal XP, lessons, and liked favorites</span>
                   </li>
                 </ul>
               </div>

@@ -593,38 +593,27 @@ export default function App() {
         )}
       </div>
 
-      {/* Desktop-Only Floating View Switcher */}
-      <div className="fixed top-3 right-4 z-[9999] hidden md:flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-white/20 p-1.5 rounded-2xl shadow-2xl">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pl-2">
-          Preview
-        </span>
-        <button
-          type="button"
-          onClick={() => setMobilePhoneFrameMode((prev) => !prev)}
-          className="px-3 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-300 to-sky-300 rounded-xl hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-md"
-        >
-          {mobilePhoneFrameMode ? (
-            <>
-              <Monitor className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>Full View</span>
-            </>
-          ) : (
-            <>
-              <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
-              <span>iPhone View</span>
-            </>
-          )}
-        </button>
-      </div>
+      {/* Desktop-Only Floating View Switcher (only shown during standalone onboarding when header is hidden) */}
+      {onboardingStage !== 'none' && !mobilePhoneFrameMode && (
+        <div className="fixed top-3 right-4 z-[9999] hidden md:flex items-center gap-2 bg-slate-900/90 backdrop-blur-xl border border-white/15 p-1.5 rounded-full shadow-2xl">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pl-2.5">
+            Preview
+          </span>
+          <button
+            type="button"
+            onClick={() => setMobilePhoneFrameMode((prev) => !prev)}
+            className="px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-300 to-sky-300 rounded-full hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer shadow-md"
+          >
+            <Smartphone className="h-3.5 w-3.5" aria-hidden="true" />
+            <span>iPhone View</span>
+          </button>
+        </div>
+      )}
 
       {/* Top Navigation Bar */}
       {(onboardingStage === 'none' || mobilePhoneFrameMode) && (
         <header
-          className={`sticky top-0 z-30 ${
-            isModern
-              ? 'bg-[#131D36]/90 backdrop-blur-2xl border-b border-white/12'
-              : 'bg-[#070B14] md:bg-slate-950/90 md:backdrop-blur-xl border-b border-white/10'
-          } safe-top-header ${
+          className={`sticky top-0 z-30 bg-[#090B10]/80 backdrop-blur-2xl border-b border-white/[0.07] safe-top-header ${
             isStandalonePWA ? 'safe-top-standalone-fallback' : ''
           }`}
         >
@@ -695,9 +684,7 @@ export default function App() {
                   type="button"
                   onClick={() => setShowSettingsModal(true)}
                   aria-label="Open Account Settings"
-                  className={`min-h-[40px] min-w-[40px] px-3 py-2 text-xs font-semibold text-slate-200 bg-white/10 hover:bg-white/15 border border-white/14 ${
-                    isModern ? 'rounded-2xl' : 'rounded-xl'
-                  } transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer`}
+                  className="min-h-[38px] min-w-[38px] px-3.5 py-1.5 text-xs font-semibold text-slate-100 bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.09] rounded-full transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer"
                 >
                   <Settings className="h-4 w-4 text-emerald-300" aria-hidden="true" />
                   <span className="hidden sm:inline">Settings</span>
@@ -707,7 +694,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setMobilePhoneFrameMode((prev) => !prev)}
-                className="hidden md:flex px-3.5 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-300 to-sky-300 rounded-2xl hover:brightness-105 transition-all items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
+                className="hidden md:flex px-4 py-2 text-xs font-bold text-slate-950 bg-gradient-to-r from-emerald-300 to-sky-300 rounded-full hover:brightness-105 transition-all items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer"
               >
                 {mobilePhoneFrameMode ? (
                   <>
@@ -807,12 +794,12 @@ export default function App() {
                   {modulesScreenMode === 'list' ? (
                     /* LEVEL 1: WELCOME BACK CARD + NESTED TOOLS + VIBRANT MODULE TILES GRID */
                     <div className="space-y-4">
-                      {/* Welcome Back Card (First Name Only, No Comma) + Nested Calculators & Badge Collection */}
-                      <section className="glass-panel-elevated rounded-3xl p-4 sm:p-5 border border-white/15 bg-gradient-to-br from-emerald-950/35 via-slate-900/80 to-sky-950/35 space-y-3.5">
+                      {/* Welcome Back Header (First Name Only, No Comma) + Nested Calculators & Badge Collection */}
+                      <section className="glass-panel-elevated rounded-[28px] p-4 sm:p-5 border border-white/[0.08] bg-gradient-to-br from-emerald-500/[0.10] via-white/[0.02] to-sky-500/[0.08] space-y-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <Sparkles className="h-5 w-5 text-emerald-300 shrink-0" aria-hidden="true" />
-                            <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight truncate">
+                            <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">
                               {userProfile?.name?.trim()
                                 ? `Welcome back ${userProfile.name.trim().split(/\s+/)[0]}`
                                 : 'Welcome back'}
@@ -822,7 +809,7 @@ export default function App() {
                           <button
                             type="button"
                             onClick={() => handleOpenModule(activeModuleId)}
-                            className="min-h-[40px] px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
+                            className="min-h-[40px] px-4.5 py-2 rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs font-bold shadow-md shadow-emerald-500/20 hover:brightness-105 transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer"
                           >
                             <Play className="h-3.5 w-3.5 fill-current shrink-0" aria-hidden="true" />
                             <span>
@@ -836,7 +823,7 @@ export default function App() {
                         {/* Smooth At-a-Glance Progress Bar */}
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between text-[11px] sm:text-xs">
-                            <span className="font-semibold text-slate-200 flex items-center gap-1.5">
+                            <span className="font-medium text-slate-300 flex items-center gap-1.5">
                               <Award className="h-3.5 w-3.5 text-emerald-300 shrink-0" aria-hidden="true" />
                               <span>
                                 {completedModulesCount}/{totalModulesCount} Modules Completed
@@ -852,7 +839,7 @@ export default function App() {
                             aria-valuemin={0}
                             aria-valuemax={100}
                             aria-label="Overall module completion progress"
-                            className="h-2.5 w-full rounded-full bg-slate-900 border border-white/10 overflow-hidden p-[1px]"
+                            className="h-2 w-full rounded-full bg-white/[0.08] overflow-hidden"
                           >
                             <div
                               className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 shadow-[0_0_12px_rgba(52,211,153,0.45)] transition-all duration-500 ease-out"
@@ -867,16 +854,16 @@ export default function App() {
                         </div>
 
                         {/* Nested Quick-Access Row: Badge Collection & Interactive Calculators */}
-                        <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2.5">
+                        <div className="pt-2.5 border-t border-white/[0.07] flex flex-wrap items-center justify-between gap-2.5">
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="flex -space-x-2 overflow-hidden shrink-0">
                               {badgeCollectionItems.slice(0, 4).map((item, idx) => (
                                 <div
                                   key={item.module.id}
-                                  className={`h-9 w-9 rounded-xl flex items-center justify-center p-0.5 border overflow-hidden ${
+                                  className={`h-9 w-9 rounded-full flex items-center justify-center p-0.5 border overflow-hidden ${
                                     item.isUnlocked
                                       ? 'bg-slate-900 border-amber-400/60'
-                                      : 'bg-[#171A21] border-white/10'
+                                      : 'bg-[#121620] border-white/[0.08]'
                                   }`}
                                 >
                                   <ModuleBadgeFigure
@@ -889,7 +876,7 @@ export default function App() {
                               ))}
                             </div>
                             <div className="min-w-0">
-                              <p className="text-xs font-bold text-white truncate">
+                              <p className="text-xs font-semibold text-white truncate">
                                 Badge Collection
                               </p>
                               <p className="text-[11px] text-emerald-300 font-mono-tabular">
@@ -903,7 +890,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setShowCalculatorsModal(true)}
-                              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-400/35 text-xs font-bold text-cyan-200 flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                              className="min-h-[36px] px-3.5 py-1.5 rounded-full bg-cyan-500/12 hover:bg-cyan-500/20 border border-cyan-400/25 text-xs font-semibold text-cyan-200 flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
                             >
                               <Sliders className="h-3.5 w-3.5 text-cyan-300" aria-hidden="true" />
                               <span>Interactive Calculators</span>
@@ -912,7 +899,7 @@ export default function App() {
                             <button
                               type="button"
                               onClick={() => setShowBadgeCollectionModal(true)}
-                              className="min-h-[38px] px-3.5 py-1.5 rounded-2xl bg-white/12 hover:bg-white/20 border border-white/18 text-xs font-bold text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
+                              className="min-h-[36px] px-3.5 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/[0.10] text-xs font-semibold text-white flex items-center gap-1.5 shrink-0 transition-all cursor-pointer"
                             >
                               <Award className="h-3.5 w-3.5 text-amber-300" aria-hidden="true" />
                               <span>Badge Collection</span>
@@ -940,7 +927,7 @@ export default function App() {
 
                       <div className="relative">
                         <Search
-                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-300"
+                          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
                           aria-hidden="true"
                         />
                         <input
@@ -949,18 +936,14 @@ export default function App() {
                           onChange={(e) => setModuleSearchQuery(e.target.value)}
                           placeholder="Search modules..."
                           aria-label="Search modules by keyword"
-                          className={`w-full ${
-                            isModern
-                              ? 'rounded-3xl bg-slate-900/65 border border-white/16 shadow-sm'
-                              : 'rounded-2xl bg-slate-950/90 border border-white/15'
-                          } pl-11 pr-20 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-300 focus:outline-none`}
+                          className="w-full rounded-full bg-white/[0.05] hover:bg-white/[0.07] border border-white/[0.08] pl-11 pr-20 py-3 text-sm text-white placeholder:text-slate-400 focus:border-emerald-300/60 focus:outline-none transition-colors"
                         />
                         {moduleSearchQuery.trim() && (
                           <button
                             type="button"
                             onClick={() => setModuleSearchQuery('')}
                             aria-label="Clear module search"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-white/[0.10] hover:bg-white/[0.18] text-xs font-semibold text-slate-200 flex items-center gap-1 cursor-pointer"
                           >
                             <X className="h-3.5 w-3.5" aria-hidden="true" />
                             <span>Clear</span>
@@ -1019,20 +1002,20 @@ export default function App() {
                                     setActiveModuleId(mod.id);
                                     setModulesScreenMode('module');
                                   }}
-                                  className={`group w-full text-left ${themeMeta.tileBgClass} rounded-[26px] p-3.5 sm:p-5 shadow-lg hover:brightness-105 active:scale-[0.99] transition-all flex flex-col justify-between gap-3 border border-white/20 cursor-pointer overflow-hidden`}
+                                  className={`group w-full text-left ${themeMeta.tileBgClass} rounded-[28px] p-4 sm:p-5 backdrop-blur-xl shadow-lg hover:brightness-110 active:scale-[0.985] transition-all flex flex-col justify-between gap-3.5 border border-white/[0.09] cursor-pointer overflow-hidden`}
                                 >
                                   <div className="flex items-start justify-between gap-2 w-full">
                                     <ModuleTileIllustration
                                       moduleId={mod.id}
                                       index={canonicalIdx}
-                                      className="h-20 w-20 sm:h-24 sm:w-24"
+                                      className="h-16 w-16 sm:h-20 sm:w-20 !rounded-2xl shadow-md"
                                     />
 
                                     <div
-                                      className={`h-10 w-10 rounded-xl flex items-center justify-center p-0.5 shrink-0 overflow-hidden ${
+                                      className={`h-9 w-9 rounded-full flex items-center justify-center p-0.5 shrink-0 overflow-hidden ${
                                         isUnlocked
-                                          ? 'bg-slate-950/65 border border-amber-300/70 shadow-sm'
-                                          : 'bg-black/30 border border-white/15'
+                                          ? 'bg-amber-400/15 border border-amber-300/60 shadow-sm'
+                                          : 'bg-white/[0.06] border border-white/[0.10]'
                                       }`}
                                       title={
                                         isUnlocked
@@ -1049,10 +1032,13 @@ export default function App() {
                                     </div>
                                   </div>
 
-                                  <div className="min-w-0 w-full">
-                                    <h2 className="text-sm sm:text-lg font-extrabold text-white leading-snug break-words">
+                                  <div className="min-w-0 w-full space-y-0.5">
+                                    <h2 className="text-sm sm:text-base font-bold text-white leading-snug break-words">
                                       {mod.title}
                                     </h2>
+                                    <p className="text-[11px] font-medium text-slate-300/80">
+                                      {mod.lessons.length} lessons
+                                    </p>
                                   </div>
                                 </button>
                               );
@@ -1241,15 +1227,11 @@ export default function App() {
                   }}
                   onTouchEnd={finishNavTouch}
                   onTouchCancel={finishNavTouch}
-                  className={`pointer-events-auto liquid-glass-dock relative mx-auto max-w-md ${
-                    isModern ? 'rounded-[32px] p-1.5' : 'rounded-[28px] p-1.5'
-                  } select-none touch-pan-x`}
+                  className="pointer-events-auto liquid-glass-dock relative mx-auto max-w-md rounded-full p-1.5 select-none touch-pan-x"
                 >
                   <div
                     aria-hidden="true"
-                    className={`liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 ${
-                      isModern ? 'rounded-[26px]' : 'rounded-[22px]'
-                    } ${
+                    className={`liquid-glass-pill pointer-events-none absolute top-1.5 bottom-1.5 left-1.5 rounded-full ${
                       navDragIndex !== null
                         ? 'transition-none scale-[1.04]'
                         : 'transition-transform duration-200 ease-out'
@@ -1260,7 +1242,7 @@ export default function App() {
                     }}
                   />
 
-                  <div className="relative z-10 grid grid-cols-4 items-center min-h-[58px]">
+                  <div className="relative z-10 grid grid-cols-4 items-center min-h-[56px]">
                     {navItems.map(({ id, label, Icon }, idx) => {
                       const isActive = idx === highlightedIdx;
                       return (
@@ -1273,21 +1255,17 @@ export default function App() {
                             if (id === 'modules') setModulesScreenMode('list');
                             setActiveTab(id);
                           }}
-                          className={`touch-manipulation flex flex-col items-center justify-center min-h-[54px] py-1.5 px-1 ${
-                            isModern ? 'rounded-[26px]' : 'rounded-[22px]'
-                          } text-[11px] transition-colors cursor-pointer ${
+                          className={`touch-manipulation flex flex-col items-center justify-center min-h-[52px] py-1.5 px-1 rounded-full text-[11px] transition-colors cursor-pointer ${
                             isActive
-                              ? 'text-white font-bold drop-shadow-[0_1px_6px_rgba(52,211,153,0.45)]'
-                              : 'text-slate-300/90 hover:text-white font-medium'
+                              ? 'text-white font-semibold'
+                              : 'text-slate-400 hover:text-white font-medium'
                           }`}
                         >
                           <Icon
                             className={`h-5 w-5 shrink-0 transition-transform duration-150 ${
                               isActive
-                                ? isModern
-                                  ? 'text-emerald-200 scale-110'
-                                  : 'text-emerald-300 scale-110'
-                                : 'text-slate-300'
+                                ? 'text-emerald-300 scale-105'
+                                : 'text-slate-400'
                             }`}
                             aria-hidden="true"
                           />

@@ -7,7 +7,7 @@ import {
   CheckCircle2,
   Play,
   ShieldCheck,
-  Pin,
+  Heart,
   Sparkles,
   Gamepad2,
 } from 'lucide-react';
@@ -285,11 +285,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-white/12 text-xs font-semibold text-slate-200 flex items-center justify-between gap-2 cursor-pointer"
           >
             <span className="flex items-center gap-2">
-              <Pin className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Clear Pinned Items</span>
+              <Heart className="h-3.5 w-3.5 text-rose-400 fill-rose-400/40" />
+              <span>Clear Liked Items</span>
             </span>
             <span className="font-mono-tabular text-[11px] text-slate-400">
-              {pinnedCardsCount + pinnedBanksCount} Pinned
+              {pinnedCardsCount + pinnedBanksCount} Liked
             </span>
           </button>
 

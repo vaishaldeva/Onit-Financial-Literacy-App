@@ -85,7 +85,6 @@ const SmoothConfettiBreeze: React.FC<{ burstKey: number }> = ({ burstKey }) => {
     canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // Spawn sleek paper ribbons that gently blow across the visible screen
     const particles = Array.from({ length: 70 }, (_, i) => {
       const fromLeftWave = i % 2 === 0;
       const startX = fromLeftWave
@@ -127,14 +126,13 @@ const SmoothConfettiBreeze: React.FC<{ burstKey: number }> = ({ burstKey }) => {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Smooth ease-out fade during the last 650ms of the 2-second breeze
       const fadeProgress =
         elapsed > 1350 ? Math.max(0, 1 - (elapsed - 1350) / 650) : 1;
       const alpha = fadeProgress * fadeProgress;
 
       for (const p of particles) {
         p.vx = p.vx * 0.985 + p.windX;
-        p.vy = p.vy * 0.985 + 0.16; // soft air resistance + gentle gravity
+        p.vy = p.vy * 0.985 + 0.16;
         p.x += p.vx;
         p.y += p.vy;
         p.rotation += p.rotationSpeed;
@@ -206,7 +204,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   );
   const slide: ModuleSlide = module.slides[safeSlideIndex] || module.slides[0];
 
-  // Identify current lesson and its slice of slides within the module
   const currentLesson: ModuleLesson =
     module.lessons.find((l) => l.id === slide.lessonId) || module.lessons[0];
 
@@ -217,22 +214,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const firstLessonSlideIdx = lessonSlideIndices[0] ?? 0;
   const lastLessonSlideIdx =
     lessonSlideIndices[lessonSlideIndices.length - 1] ?? module.slides.length - 1;
-  const positionInLesson = Math.max(
-    0,
-    lessonSlideIndices.indexOf(safeSlideIndex)
-  );
-  const totalSlidesInLesson = lessonSlideIndices.length || 1;
 
-  const currentLessonIdx = module.lessons.findIndex(
-    (l) => l.id === currentLesson.id
-  );
-  const nextLesson =
-    currentLessonIdx >= 0 && currentLessonIdx + 1 < module.lessons.length
-      ? module.lessons[currentLessonIdx + 1]
-      : null;
-
-  const isFirstSlideOfModule = safeSlideIndex === 0;
-  const isLastSlideOfModule = safeSlideIndex === module.slides.length - 1;
   const isLastSlideOfLesson = safeSlideIndex === lastLessonSlideIdx;
 
   const historyKey = getQuestionHistoryKey(module.id, slide.id);
@@ -270,14 +252,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     Record<string, boolean>
   >({});
 
-  // Interactive states for Matching (MT), Drag-and-Drop Bucket (DD), and Order (DD)
   const [mtSelections, setMtSelections] = useState<Record<string, string>>({});
   const [ddBucketSelections, setDdBucketSelections] = useState<
     Record<string, string>
   >({});
   const [ddOrderedIds, setDdOrderedIds] = useState<string[]>([]);
 
-  // Persist user's exact in-progress selections per slide so submitting a wrong answer or switching slides never erases selected choices
   const savedMtBySlideRef = useRef<Record<string, Record<string, string>>>({});
   const savedBucketBySlideRef = useRef<Record<string, Record<string, string>>>(
     {}
@@ -302,7 +282,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   const [wrongShakeActive, setWrongShakeActive] = useState(false);
   const [wrongGlowActive, setWrongGlowActive] = useState(false);
 
-  // Calculate regular lesson completion percentage for the 70% Badge Battle unlock rule using equal points per lesson
   const regularLessons = module.lessons.filter((l) => !l.isBadgeBattle);
   const completedRegularLessonsCount = regularLessons.filter((l) =>
     lessonProgress.completedLessonIdSet.has(l.id)
@@ -320,7 +299,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setSubView(initialSubView);
   }, [module.id, initialSubView]);
 
-  // Scroll to top when changing slide, lesson, or subView
   useEffect(() => {
     if (typeof window !== 'undefined') {
       window.scrollTo({
@@ -345,14 +323,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setShowCelebration(false);
   }, [module.id]);
 
-  // Reset confetti and wrong-answer glow when navigating to a different slide or module
   useEffect(() => {
     setConfettiBurstKey(0);
     setWrongShakeActive(false);
     setWrongGlowActive(false);
   }, [slide.id, module.id]);
 
-  // Sync problem interactive states ONLY when navigating to a different slide
   useEffect(() => {
     setValidationMessage('');
     if (existingRecord) {
@@ -367,7 +343,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       });
     }
 
-    // Initialize Matching (MT)
     if (slide.problemFormat === 'mt' && slide.matchingPairs) {
       const savedMt = savedMtBySlideRef.current[historyKey];
       if (savedMt && Object.keys(savedMt).length > 0) {
@@ -385,7 +360,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       }
     }
 
-    // Initialize Drag/Sort Bucket (DD)
     if (slide.problemFormat === 'dd-bucket' && slide.ddBucketConfig) {
       const savedBucket = savedBucketBySlideRef.current[historyKey];
       if (savedBucket && Object.keys(savedBucket).length > 0) {
@@ -405,7 +379,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       }
     }
 
-    // Initialize Sequence Order (DD)
     if (slide.problemFormat === 'dd-order' && slide.ddOrderConfig) {
       const items = slide.ddOrderConfig.items;
       const savedOrder = savedOrderBySlideRef.current[historyKey];
@@ -426,7 +399,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           setSelectedIds(restoredOptionIds);
         }
       } else {
-        // Deterministically scramble so it doesn't start already solved
         const scrambled = [...items]
           .sort((a, b) => {
             const aKey = (a.correctPosition * 3 + 1) % items.length;
@@ -443,7 +415,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           scrambled[1] = first;
         }
         setDdOrderedIds(scrambled);
-        // Sync selectedIds for initial order
         const initialOptionIds = scrambled.map((itemId, pos) => {
           const found = items.find((i) => i.id === itemId)!;
           return found.correctPosition === pos
@@ -456,7 +427,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
       }
     }
 
-    // Sync Boss Blitz completion status from verified answeredQuestions record
     if (currentLesson.isBadgeBattle && currentLesson.badgeBattleQuestions) {
       const isAlreadyScored = Boolean(
         existingRecord?.evaluation.isFullyCorrect
@@ -478,7 +448,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slide.id, historyKey]);
 
-  // Badge Battle countdown timer
   useEffect(() => {
     if (!battleActive || battleCompleted) return;
     if (battleSecondsLeft <= 0) {
@@ -541,7 +510,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         triggerConfettiBreeze();
       }
     } else {
-      // Missed question gets a 5s time penalty and cycles back later
       setBattleMistakes((prev) => prev + 1);
       setBattleSecondsLeft((prev) => Math.max(0, prev - 5));
       setBattleStallMessage(
@@ -573,7 +541,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
   };
 
   const handleTfPick = (
-    statementId: string,
+    _statementId: string,
     trueOptionId: string,
     falseOptionId: string,
     pickTrue: boolean
@@ -705,13 +673,11 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     setValidationMessage('');
     onSubmitAnswer(module.id, slide.id, selectedIds);
 
-    // Check if the submitted selection is fully correct to trigger the 2-second confetti breeze or subtle wrong shake/red glow
     if (slide.options) {
       const evalResult = evaluateQuestionSelection(slide.options, selectedIds);
       if (evalResult.isFullyCorrect) {
         setWrongGlowActive(false);
         setWrongShakeActive(false);
-        // Hide any open side solution hints once solved
         setRevealedSolutionSlides((prev) => {
           if (!prev[historyKey]) return prev;
           const next = { ...prev };
@@ -779,7 +745,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     module.lessons[module.lessons.length - 1]?.id === currentLesson.id;
 
   // =========================================================
-  // LEVEL 2: MODULE OVERVIEW & GAME-LIKE VERTICAL LESSON PATH (IMG_4175)
+  // LEVEL 2: MODULE OVERVIEW & FLOWING VERTICAL LESSON PATH
   // =========================================================
   if (subView === 'lessons') {
     const progressPercent = lessonProgress.progressPercent;
@@ -787,7 +753,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     const canCompleteModuleNow =
       completionGate.canComplete || progressPercent >= 100;
 
-    // Find the first incomplete unlocked lesson to highlight as "Up Next"
     const nextUpLessonId = module.lessons.find((l) => {
       const done = lessonProgress.completedLessonIdSet.has(l.id);
       const locked = Boolean(l.isBadgeBattle) && !isBadgeBattleUnlocked;
@@ -795,68 +760,69 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     })?.id;
 
     return (
-      <div ref={playerTopRef} className="space-y-5 pb-4">
-        {/* Top Module Banner Inspired by IMG_4175 + Module Thumbnail + Badge Status Under Title */}
+      <div ref={playerTopRef} className="space-y-6 pb-4">
+        {/* Top Module Header with Smooth Ambient Gradient + High-Contrast Text */}
         <div
-          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${moduleTheme.headerBgClass} p-4 sm:p-6 shadow-xl border border-white/15`}
+          className={`relative overflow-hidden rounded-[28px] bg-gradient-to-br ${moduleTheme.headerBgClass} p-5 sm:p-6 backdrop-blur-xl shadow-xl border border-white/[0.09]`}
         >
           {/* Top Navigation Row */}
-          <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center justify-between gap-2 mb-3.5">
             <button
               type="button"
               onClick={onBackToModuleList}
               aria-label="Back to Modules"
-              className="h-9 w-9 rounded-full bg-slate-950/20 hover:bg-slate-950/35 text-slate-950 flex items-center justify-center transition-colors cursor-pointer"
+              className="h-9 px-3.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] border border-white/[0.10] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
             >
-              <ArrowLeft className="h-5 w-5 stroke-[2.4]" aria-hidden="true" />
+              <ArrowLeft className="h-4 w-4 stroke-[2.2]" aria-hidden="true" />
+              <span>Modules</span>
             </button>
 
             {(isModuleCompleted || canCompleteModuleNow) && (
-              <div className="px-3.5 py-1.5 rounded-full bg-slate-950 text-emerald-300 text-xs font-bold shadow-md inline-flex items-center gap-1.5 select-none">
-                <Trophy className="h-3.5 w-3.5" aria-hidden="true" />
+              <div className="px-3.5 py-1.5 rounded-full bg-emerald-400/20 border border-emerald-300/40 text-emerald-200 text-xs font-bold shadow-sm inline-flex items-center gap-1.5 select-none">
+                <Trophy className="h-3.5 w-3.5 text-emerald-300" aria-hidden="true" />
                 <span>Module Complete</span>
               </div>
             )}
           </div>
 
-          {/* Main Banner Content: Left Info + Badge Status Under Title | Right Circular % Badge */}
-          <div className="flex items-center justify-between gap-3.5">
-            <div className="min-w-0 flex-1 space-y-2.5">
+          {/* Main Banner Content: Left Info + Badge Status Pill | Right Circular % Badge */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1 space-y-3">
               {/* Module Thumbnail Picture + Title */}
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-center gap-3.5 min-w-0">
                 <ModuleTileIllustration
                   moduleId={module.id}
-                  className="h-12 w-12 sm:h-14 sm:w-14 shrink-0 !rounded-2xl shadow-md"
+                  className="h-13 w-13 sm:h-15 sm:w-15 shrink-0 !rounded-2xl shadow-md"
                 />
                 <div className="min-w-0">
-                  <h1 className="text-lg sm:text-2xl font-extrabold text-slate-950 tracking-tight leading-tight break-words">
+                  <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight leading-tight break-words">
                     {module.title}
                   </h1>
-                  <p className="text-xs sm:text-sm font-semibold text-slate-950/80 mt-0.5">
+                  <p className="text-xs sm:text-sm font-medium text-slate-300 mt-0.5">
                     {lessonProgress.completedLessonsCount} of{' '}
                     {lessonProgress.totalLessons} lessons completed
                   </p>
                 </div>
               </div>
 
-              {/* Compact Badge Status Card Under Title (Grey if < 100%, Full Color if 100%) */}
-              <div className="inline-flex items-center gap-2 rounded-xl bg-slate-950/85 border border-slate-950/40 px-2 py-1 shadow-sm max-w-full">
-                <div className="h-8 w-8 shrink-0 rounded-lg bg-[#1C1E22] border border-white/10 flex items-center justify-center overflow-hidden p-0.5">
+              {/* Sleek Pill Badge Status Under Title */}
+              <div className="inline-flex items-center gap-2 rounded-full bg-white/[0.07] border border-white/[0.10] pl-1.5 pr-3 py-1 max-w-full">
+                <div className="h-7 w-7 shrink-0 rounded-full bg-black/40 border border-white/[0.10] flex items-center justify-center overflow-hidden p-0.5">
                   <ModuleBadgeFigure
                     moduleId={module.id}
                     unlocked={isBadgeUnlocked}
                     size="sm"
                   />
                 </div>
-                <div className="min-w-0 flex items-center gap-1.5 flex-wrap pr-0.5">
-                  <span className="text-[11px] font-bold text-white leading-tight">
+                <div className="min-w-0 flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] font-semibold text-white leading-tight">
                     {moduleTheme.badgeName}
                   </span>
                   <span
-                    className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider leading-none ${
+                    className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider leading-none ${
                       isBadgeUnlocked
                         ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40'
-                        : 'bg-white/10 text-slate-400 border border-white/10'
+                        : 'bg-white/[0.08] text-slate-300 border border-white/[0.08]'
                     }`}
                   >
                     {isBadgeUnlocked ? 'Unlocked' : 'Locked'}
@@ -865,22 +831,22 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               </div>
             </div>
 
-            {/* Circular % Complete Ring Badge on Right (Matches IMG_4175) */}
+            {/* Circular % Complete Ring Badge on Right */}
             <div className="shrink-0">
-              <div className="h-16 w-16 sm:h-[74px] sm:w-[74px] rounded-full bg-[#246BFD] border-[3.5px] border-slate-950 shadow-[0_6px_18px_rgba(0,0,0,0.32)] flex flex-col items-center justify-center text-white">
-                <span className="font-mono-tabular text-base sm:text-lg font-extrabold leading-none">
+              <div className="h-16 w-16 sm:h-[72px] sm:w-[72px] rounded-full bg-white/[0.08] backdrop-blur-md border-2 border-emerald-400/50 shadow-lg flex flex-col items-center justify-center text-white">
+                <span className="font-mono-tabular text-base sm:text-lg font-bold leading-none">
                   {progressPercent}%
                 </span>
-                <span className="text-[10px] font-semibold text-white/90 mt-0.5">
-                  Complete
+                <span className="text-[10px] font-medium text-slate-300 mt-0.5">
+                  Done
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Game-Like Vertical Lesson Path (Inspired by IMG_4175 + Enhanced Game Feel) */}
-        <div className="rounded-[28px] bg-[#0B0E13]/95 border border-white/10 px-3.5 py-5 sm:px-6 sm:py-6 shadow-xl">
+        {/* Flowing Vertical Lesson Path (Un-boxed, direct on canvas) */}
+        <div className="px-1 sm:px-3 py-1">
           <div className="relative">
             {module.lessons.map((lesson, idx) => {
               const isLessonDone = lessonProgress.completedLessonIdSet.has(
@@ -891,18 +857,16 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               const isUpNext = lesson.id === nextUpLessonId;
               const isLastLessonNode = idx === module.lessons.length - 1;
 
-              // Node circle style
               const nodeCircleClass = isBattleLocked
-                ? 'bg-slate-900 border-slate-700 text-slate-500 shadow-none'
+                ? 'bg-white/[0.05] border-white/[0.12] text-slate-500 shadow-none'
                 : lesson.isBadgeBattle
-                ? 'bg-gradient-to-br from-amber-400 to-orange-500 border-slate-950 text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.5)]'
+                ? 'bg-gradient-to-br from-amber-400 to-orange-500 border-amber-200/40 text-slate-950 shadow-[0_0_18px_rgba(245,158,11,0.45)]'
                 : isLessonDone
-                ? 'bg-[#10B981] border-slate-950 text-slate-950 shadow-[0_0_18px_rgba(16,185,129,0.5)]'
+                ? 'bg-emerald-400 border-emerald-200/40 text-slate-950 shadow-[0_0_16px_rgba(16,185,129,0.4)]'
                 : isUpNext
-                ? 'bg-[#246BFD] border-slate-950 text-white shadow-[0_0_22px_rgba(36,107,253,0.65)] ring-4 ring-[#246BFD]/25'
-                : 'bg-[#246BFD] border-slate-950 text-white shadow-[0_0_14px_rgba(36,107,253,0.35)]';
+                ? 'bg-sky-500 border-sky-200/50 text-white shadow-[0_0_20px_rgba(14,165,233,0.55)] ring-4 ring-sky-500/20'
+                : 'bg-white/[0.08] border-white/[0.16] text-white';
 
-              // Status label
               const statusText = isBattleLocked
                 ? `Unlock at 70% (${regularLessonsCompletionPercent}%/70%)`
                 : lesson.isBadgeBattle
@@ -918,16 +882,16 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               return (
                 <div
                   key={lesson.id}
-                  className="relative flex items-stretch gap-3.5 sm:gap-5"
+                  className="relative flex items-stretch gap-3.5 sm:gap-4"
                 >
-                  {/* Left Column: Circular Path Node + Vertical Dashed Connector Line */}
-                  <div className="flex flex-col items-center shrink-0 w-12 sm:w-14">
+                  {/* Left Column: Circular Path Node + Smooth Connector Line */}
+                  <div className="flex flex-col items-center shrink-0 w-11 sm:w-12">
                     <button
                       type="button"
                       disabled={isBattleLocked}
                       onClick={() => openLessonAtSlide(lesson)}
                       aria-label={`Lesson ${lesson.number}: ${lesson.title}`}
-                      className={`relative z-10 h-11 w-11 sm:h-12 sm:w-12 rounded-full border-[3px] flex items-center justify-center transition-transform ${
+                      className={`relative z-10 h-10 w-10 sm:h-11 sm:w-11 rounded-full border-2 flex items-center justify-center transition-transform ${
                         isBattleLocked
                           ? 'cursor-not-allowed'
                           : 'hover:scale-105 active:scale-95 cursor-pointer'
@@ -937,102 +901,102 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                         <Lock className="h-4 w-4" aria-hidden="true" />
                       ) : lesson.isBadgeBattle ? (
                         <Zap
-                          className="h-5 w-5 fill-current"
+                          className="h-4 w-4 fill-current"
                           aria-hidden="true"
                         />
                       ) : isLessonDone ? (
                         <Check
-                          className="h-5 w-5 stroke-[3]"
+                          className="h-4 w-4 stroke-[3]"
                           aria-hidden="true"
                         />
                       ) : (
-                        <span className="h-3.5 w-3.5 rounded-full bg-white shadow-sm" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-white shadow-sm" />
                       )}
                     </button>
 
-                    {/* Vertical Dashed Path Line to Next Node (or to Final Badge Pedestal) */}
+                    {/* Vertical Connector Line to Next Node */}
                     <div
-                      className={`w-0 flex-1 my-1 border-l-[3px] border-dashed transition-colors ${
-                        isLastLessonNode ? 'min-h-[28px]' : 'min-h-[34px]'
+                      className={`w-[2px] flex-1 my-1.5 rounded-full transition-colors ${
+                        isLastLessonNode ? 'min-h-[24px]' : 'min-h-[30px]'
                       } ${
                         isLessonDone
-                          ? 'border-emerald-400/75'
-                          : 'border-slate-600/70'
+                          ? 'bg-emerald-400/60'
+                          : 'bg-white/[0.10]'
                       }`}
                     />
                   </div>
 
-                  {/* Right Column: Interactive Game Lesson Card */}
-                  <div className="flex-1 min-w-0 pb-5 sm:pb-6">
+                  {/* Right Column: Airy Lesson Card */}
+                  <div className="flex-1 min-w-0 pb-3.5 sm:pb-4">
                     <button
                       type="button"
                       disabled={isBattleLocked}
                       onClick={() => openLessonAtSlide(lesson)}
-                      className={`w-full text-left rounded-2xl p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 ${
+                      className={`w-full text-left rounded-[24px] p-3.5 sm:p-4 border transition-all flex items-center justify-between gap-3 backdrop-blur-md ${
                         isBattleLocked
-                          ? 'bg-[#17191D]/60 border-white/8 opacity-75 cursor-not-allowed'
+                          ? 'bg-white/[0.02] border-white/[0.06] opacity-65 cursor-not-allowed'
                           : lesson.isBadgeBattle
-                          ? 'bg-gradient-to-r from-amber-500/18 via-[#1C1F26] to-rose-500/15 border-amber-400/45 hover:border-amber-300 shadow-lg cursor-pointer'
+                          ? 'bg-gradient-to-r from-amber-500/15 via-white/[0.04] to-rose-500/12 border-amber-400/35 hover:border-amber-300/60 cursor-pointer'
                           : isLessonDone
-                          ? 'bg-[#1C1F26] border-emerald-400/40 hover:border-emerald-300/70 shadow-md cursor-pointer'
+                          ? 'bg-emerald-500/[0.07] border-emerald-400/30 hover:border-emerald-300/50 cursor-pointer'
                           : isUpNext
-                          ? 'bg-[#1E222B] border-[#3B82F6]/65 hover:border-[#60A5FA] shadow-[0_6px_20px_rgba(36,107,253,0.18)] cursor-pointer'
-                          : 'bg-[#1C1E22] border-white/12 hover:border-white/25 cursor-pointer'
+                          ? 'bg-sky-500/[0.10] border-sky-400/45 hover:border-sky-300/70 shadow-[0_6px_20px_rgba(14,165,233,0.12)] cursor-pointer'
+                          : 'bg-white/[0.035] hover:bg-white/[0.06] border-white/[0.07] hover:border-white/[0.15] cursor-pointer'
                       }`}
                     >
-                      <div className="min-w-0 flex-1 space-y-1">
+                      <div className="min-w-0 flex-1 space-y-0.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
-                            className={`px-2 py-0.5 rounded-md font-mono-tabular text-[10px] font-bold uppercase tracking-wider ${
+                            className={`text-[11px] font-semibold tracking-wide ${
                               lesson.isBadgeBattle
-                                ? 'bg-amber-400/20 text-amber-300 border border-amber-400/35'
+                                ? 'text-amber-300'
                                 : isLessonDone
-                                ? 'bg-emerald-400/15 text-emerald-300'
+                                ? 'text-emerald-300'
                                 : isUpNext
-                                ? 'bg-blue-500/25 text-blue-300'
-                                : 'bg-white/8 text-slate-400'
+                                ? 'text-sky-300'
+                                : 'text-slate-400'
                             }`}
                           >
                             {lesson.isBadgeBattle
                               ? 'Boss Blitz'
                               : `Lesson ${lesson.number}`}
                           </span>
+                          <span aria-hidden="true" className="text-slate-600">·</span>
+                          <span
+                            className={`text-[11px] font-medium ${
+                              isBattleLocked
+                                ? 'text-amber-300/80'
+                                : isLessonDone
+                                ? 'text-emerald-300/90'
+                                : isUpNext
+                                ? 'text-sky-300/90'
+                                : 'text-slate-400'
+                            }`}
+                          >
+                            {statusText}
+                          </span>
                         </div>
 
-                        <h3 className="text-sm sm:text-base font-bold text-white leading-snug break-words">
+                        <h3 className="text-sm sm:text-base font-semibold text-white leading-snug break-words">
                           {lesson.title}
                         </h3>
-
-                        <p
-                          className={`text-xs font-medium ${
-                            isBattleLocked
-                              ? 'text-amber-300/90'
-                              : isLessonDone
-                              ? 'text-emerald-300'
-                              : isUpNext
-                              ? 'text-sky-300'
-                              : 'text-slate-400'
-                          }`}
-                        >
-                          {statusText}
-                        </p>
                       </div>
 
                       <div className="shrink-0 flex items-center">
                         {isBattleLocked ? (
-                          <span className="h-9 w-9 rounded-xl bg-white/5 border border-white/10 text-amber-300 flex items-center justify-center">
+                          <span className="h-9 w-9 rounded-full bg-white/[0.05] text-amber-300/80 flex items-center justify-center">
                             <Lock className="h-4 w-4" />
                           </span>
                         ) : isLessonDone ? (
-                          <span className="h-9 w-9 rounded-xl bg-emerald-400/15 border border-emerald-400/35 text-emerald-300 flex items-center justify-center">
+                          <span className="h-9 w-9 rounded-full bg-emerald-400/15 text-emerald-300 flex items-center justify-center">
                             <CheckCircle2 className="h-5 w-5" />
                           </span>
                         ) : (
                           <span
-                            className={`h-9 w-9 rounded-xl flex items-center justify-center ${
+                            className={`h-9 w-9 rounded-full flex items-center justify-center ${
                               isUpNext
-                                ? 'bg-[#246BFD] text-white shadow-sm'
-                                : 'bg-white/8 text-slate-300'
+                                ? 'bg-sky-500 text-white shadow-sm'
+                                : 'bg-white/[0.07] text-slate-300'
                             }`}
                           >
                             <ArrowRight className="h-4 w-4" />
@@ -1046,18 +1010,18 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             })}
 
             {/* Final Finish Node on the Path: Module Badge Pedestal */}
-            <div className="relative flex items-center gap-3.5 sm:gap-5">
-              <div className="flex flex-col items-center shrink-0 w-12 sm:w-14">
+            <div className="relative flex items-center gap-3.5 sm:gap-4">
+              <div className="flex flex-col items-center shrink-0 w-11 sm:w-12">
                 <div
-                  className={`h-12 w-12 sm:h-13 sm:w-13 rounded-2xl border-2 flex items-center justify-center ${
+                  className={`h-11 w-11 rounded-full border-2 flex items-center justify-center ${
                     isBadgeUnlocked
-                      ? 'bg-emerald-500/20 border-emerald-400 shadow-[0_0_22px_rgba(16,185,129,0.45)]'
-                      : 'bg-[#17191D] border-white/15'
+                      ? 'bg-emerald-500/20 border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.4)]'
+                      : 'bg-white/[0.04] border-white/[0.12]'
                   }`}
                 >
                   <Trophy
-                    className={`h-5 w-5 ${
-                      isBadgeUnlocked ? 'text-amber-300' : 'text-slate-500'
+                    className={`h-4 w-4 ${
+                      isBadgeUnlocked ? 'text-amber-300' : 'text-slate-400'
                     }`}
                     aria-hidden="true"
                   />
@@ -1065,10 +1029,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               </div>
 
               <div
-                className={`flex-1 min-w-0 rounded-2xl p-3.5 sm:p-4 border flex items-center justify-between gap-3 ${
+                className={`flex-1 min-w-0 rounded-[24px] p-4 border flex items-center justify-between gap-3 ${
                   isBadgeUnlocked
-                    ? 'bg-gradient-to-r from-emerald-500/15 via-[#1C1F26] to-sky-500/15 border-emerald-400/45'
-                    : 'bg-[#16181D] border-white/10'
+                    ? 'bg-gradient-to-r from-emerald-500/15 via-white/[0.04] to-sky-500/15 border-emerald-400/40'
+                    : 'bg-white/[0.03] border-white/[0.07]'
                 }`}
               >
                 <div className="min-w-0 flex-1">
@@ -1084,7 +1048,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       : 'Complete all lessons on the path to unlock'}
                   </p>
                 </div>
-                <div className="h-16 w-16 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
+                <div className="h-14 w-14 shrink-0 rounded-2xl bg-black/30 border border-white/[0.08] flex items-center justify-center p-0.5 overflow-hidden">
                   <ModuleBadgeFigure
                     moduleId={module.id}
                     unlocked={isBadgeUnlocked}
@@ -1108,19 +1072,19 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
     <div ref={playerTopRef} className="space-y-4 relative">
       {confettiBurstKey > 0 && <SmoothConfettiBreeze burstKey={confettiBurstKey} />}
 
-      {/* Clean Lesson Header (Lesson Number to the Left of its Title) */}
-      <div className="glass-panel rounded-3xl p-3 sm:p-4 border border-white/14 flex items-center justify-between gap-3">
+      {/* Clean Un-boxed Lesson Header Row */}
+      <div className="flex items-center justify-between gap-3 px-1">
         <button
           type="button"
           onClick={() => setSubView('lessons')}
-          className="min-h-[36px] px-3.5 py-1.5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/14 text-xs font-semibold text-white flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
+          className="min-h-[36px] px-3.5 py-1.5 rounded-full bg-white/[0.07] hover:bg-white/[0.14] border border-white/[0.10] text-xs font-semibold text-white flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Lessons</span>
         </button>
 
         <div className="flex items-center gap-2 min-w-0">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-400/20 border border-emerald-300/35 font-mono-tabular text-xs font-bold text-emerald-300">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-400/20 border border-emerald-300/35 font-mono-tabular text-[11px] font-bold text-emerald-300">
             {currentLesson.number}
           </span>
           <span className="text-xs sm:text-sm font-semibold text-white truncate">
@@ -1129,14 +1093,14 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
         </div>
       </div>
 
-      {/* Main Slide Card (Glows emerald green when right, subtle red glow + gentle shake when wrong) */}
+      {/* Main Slide Card */}
       <div
         className={`glass-panel-elevated rounded-3xl border transition-all duration-300 ${
           !isContentSlide && existingRecord?.evaluation.isFullyCorrect
             ? 'border-emerald-400 ring-2 ring-emerald-400/40 shadow-[0_0_32px_rgba(16,185,129,0.25)]'
             : !isContentSlide && wrongGlowActive
             ? 'border-rose-400/75 ring-1 ring-rose-400/35 shadow-[0_0_24px_rgba(244,63,94,0.22)]'
-            : 'border-white/15'
+            : 'border-white/[0.09]'
         } ${wrongShakeActive ? 'animate-subtle-shake' : ''} ${
           isPhoneView ? 'p-5' : 'p-6 sm:p-8'
         } min-h-[240px] flex flex-col justify-between`}
@@ -1179,12 +1143,12 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       </h2>
                     </div>
                     <div className="flex items-center gap-2 font-mono-tabular text-xs font-bold">
-                      <span className="px-2.5 py-1 rounded-lg bg-slate-950/90 border border-white/15 text-emerald-300">
+                      <span className="px-2.5 py-1 rounded-full bg-slate-950/90 border border-white/15 text-emerald-300">
                         Cleared: {battleClearedIds.length}/
                         {currentLesson.badgeBattleQuestions.length}
                       </span>
                       <span
-                        className={`px-2.5 py-1 rounded-lg border flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-full border flex items-center gap-1 ${
                           battleSecondsLeft <= 30
                             ? 'bg-rose-500/20 border-rose-400 text-rose-200'
                             : 'bg-slate-950/90 border-amber-400/30 text-amber-300'
@@ -1207,7 +1171,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                     <button
                       type="button"
                       onClick={startBadgeBattle}
-                      className="min-h-[44px] px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg flex items-center gap-2 cursor-pointer"
+                      className="min-h-[44px] px-5 py-2.5 rounded-full bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 text-xs sm:text-sm font-bold shadow-lg flex items-center gap-2 cursor-pointer"
                     >
                       <Zap className="h-4 w-4 fill-current" />
                       <span>
@@ -1219,286 +1183,203 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   )}
 
                   {battleCompleted && (
-                    <div className="rounded-xl bg-emerald-500/20 border border-emerald-400/40 p-3.5 flex items-center justify-between gap-3">
+                    <div className="rounded-2xl bg-emerald-500/20 border border-emerald-400/40 p-3.5 flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 text-emerald-200 text-xs sm:text-sm font-bold">
                         <Trophy className="h-5 w-5 text-amber-300 shrink-0" />
                         <span>
                           Boss Blitz Cleared! Score:{' '}
-                          {battleScorePercent ?? 100}% (
-                          {currentLesson.badgeBattleQuestions.length}/
-                          {currentLesson.badgeBattleQuestions.length} Cleared)
+                          {battleScorePercent ?? 100}%
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={startBadgeBattle}
-                        className="px-3 py-1.5 rounded-lg bg-white/10 text-xs font-semibold text-white shrink-0 cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-semibold text-white cursor-pointer"
                       >
-                        Replay
+                        Play Again
                       </button>
                     </div>
                   )}
-                </div>
 
-                {battleActive && battleQueue.length > 0 && (() => {
-                  const q = battleQueue[0];
-                  return (
-                    <div className="rounded-2xl bg-slate-950/90 border border-white/15 p-4 sm:p-5 space-y-3.5">
-                      <div className="flex items-center justify-between text-xs text-slate-400">
-                        <span className="font-bold text-amber-300">
-                          {q.lessonLabel}
-                        </span>
-                        <span className="font-mono-tabular">
-                          {battleQueue.length} remaining in queue
-                        </span>
-                      </div>
-
-                      <p className="text-sm sm:text-base font-bold text-white">
-                        {q.prompt}
-                      </p>
-
-                      {battleStallMessage ? (
-                        <div className="rounded-xl bg-rose-500/20 border border-rose-400 p-4 text-xs sm:text-sm font-bold text-rose-200 flex items-center gap-2 animate-pulse">
-                          <AlertCircle className="h-4 w-4 shrink-0 text-rose-300" />
-                          <span>{battleStallMessage}</span>
-                        </div>
-                      ) : q.format === 'sa' ? (
-                        <div className="space-y-2">
-                          {q.choices.map((choice, idx) => {
-                            const picked = battleSaPicks.includes(idx);
-                            return (
-                              <button
-                                key={choice.id}
-                                type="button"
-                                onClick={() =>
-                                  setBattleSaPicks((prev) =>
-                                    prev.includes(idx)
-                                      ? prev.filter((i) => i !== idx)
-                                      : [...prev, idx]
-                                  )
-                                }
-                                className={`w-full text-left p-3 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-between cursor-pointer ${
-                                  picked
-                                    ? 'bg-cyan-500/20 border-cyan-400 text-white'
-                                    : 'bg-slate-900 border-white/10 text-slate-200'
-                                }`}
-                              >
-                                <span>{choice.label}</span>
-                                {picked && <Check className="h-4 w-4 text-cyan-300" />}
-                              </button>
-                            );
-                          })}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const expected = q.choices
-                                .map((c, idx) => (c.isCorrect ? idx : -1))
-                                .filter((idx) => idx !== -1)
-                                .sort();
-                              const actual = [...battleSaPicks].sort();
-                              const match =
-                                expected.length === actual.length &&
-                                expected.every((v, i) => v === actual[i]);
-                              handleAnswerBattleQuestion(match);
-                            }}
-                            className="mt-2 px-4 py-2 rounded-xl bg-emerald-400 text-slate-950 text-xs font-bold cursor-pointer"
-                          >
-                            Submit Selection
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {q.choices.map((choice) => (
-                            <button
-                              key={choice.id}
-                              type="button"
-                              onClick={() =>
-                                handleAnswerBattleQuestion(choice.isCorrect)
-                              }
-                              className="p-3.5 rounded-xl bg-slate-900 hover:bg-white/10 border border-white/12 text-left text-xs sm:text-sm font-semibold text-white transition-colors cursor-pointer"
-                            >
-                              {choice.label}
-                            </button>
-                          ))}
+                  {battleActive && battleQueue.length > 0 && (
+                    <div className="rounded-2xl bg-slate-950/90 border border-white/15 p-4 space-y-3">
+                      {battleStallMessage && (
+                        <div className="rounded-xl bg-rose-500/20 border border-rose-400/40 px-3 py-2 text-xs font-semibold text-rose-200">
+                          {battleStallMessage}
                         </div>
                       )}
+
+                      {(() => {
+                        const q = battleQueue[0];
+                        return (
+                          <div className="space-y-3">
+                            <p className="text-xs sm:text-sm font-semibold text-white">
+                              {q.prompt}
+                            </p>
+
+                            {(q.format === 'tof' || q.format === 'mc') && q.choices && (
+                              <div className="space-y-2">
+                                {q.choices.map((choice) => (
+                                  <button
+                                    key={choice.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleAnswerBattleQuestion(choice.isCorrect)
+                                    }
+                                    className="w-full text-left p-3 rounded-2xl bg-white/8 hover:bg-white/15 border border-white/10 text-xs text-slate-100 cursor-pointer"
+                                  >
+                                    {choice.label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+
+                            {q.format === 'sa' && q.choices && (
+                              <div className="space-y-2.5">
+                                <div className="space-y-2">
+                                  {q.choices.map((choice, idx) => {
+                                    const picked = battleSaPicks.includes(idx);
+                                    return (
+                                      <button
+                                        key={choice.id}
+                                        type="button"
+                                        onClick={() =>
+                                          setBattleSaPicks((prev) =>
+                                            prev.includes(idx)
+                                              ? prev.filter((i) => i !== idx)
+                                              : [...prev, idx]
+                                          )
+                                        }
+                                        className={`w-full text-left p-3 rounded-2xl border text-xs flex items-center gap-2.5 cursor-pointer ${
+                                          picked
+                                            ? 'bg-cyan-500/20 border-cyan-400 text-white'
+                                            : 'bg-white/8 border-white/10 text-slate-200'
+                                        }`}
+                                      >
+                                        <span
+                                          className={`h-4 w-4 rounded flex items-center justify-center border ${
+                                            picked
+                                              ? 'bg-cyan-400 border-cyan-400 text-slate-950'
+                                              : 'border-white/30'
+                                          }`}
+                                        >
+                                          {picked && (
+                                            <Check className="h-3 w-3 stroke-[3]" />
+                                          )}
+                                        </span>
+                                        <span>{choice.label}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const expectedIndices = q.choices
+                                      .map((c, idx) => (c.isCorrect ? idx : -1))
+                                      .filter((idx) => idx !== -1);
+                                    const isExact =
+                                      battleSaPicks.length ===
+                                        expectedIndices.length &&
+                                      expectedIndices.every((i) =>
+                                        battleSaPicks.includes(i)
+                                      );
+                                    handleAnswerBattleQuestion(isExact);
+                                  }}
+                                  className="px-4 py-2 rounded-full bg-emerald-400 text-slate-950 text-xs font-bold cursor-pointer"
+                                >
+                                  Submit Selection
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
-                  );
-                })()}
+                  )}
+                </div>
               </div>
             )}
 
           {/* =========================================================
-              PROBLEM SLIDE VIEW (MC, SA, TF, MT, DD-BUCKET, DD-ORDER)
+              INTERACTIVE PROBLEM SLIDE (TF / MT / DD / MC / SA)
              ========================================================= */}
           {!isContentSlide && slide.options && (() => {
-            const attemptsCount = existingRecord?.attemptsCount || 0;
+            const pFormat =
+              slide.problemFormat ||
+              (slide.type === 'select-all' ? 'sa' : 'mc');
+            const attemptsUsed = existingRecord?.attemptsCount || 0;
             const isFullyCorrect = Boolean(
               existingRecord?.evaluation.isFullyCorrect
             );
-            // Only show the side answers AFTER the user clicks "Show Solution" and BEFORE they fill/solve it
-            const isShowingSolution =
-              !isFullyCorrect && Boolean(revealedSolutionSlides[historyKey]);
-            const canOfferSolution = Boolean(
-              existingRecord &&
-                !isFullyCorrect &&
-                attemptsCount >= 2 &&
-                !isShowingSolution
+            const canShowSolutionButton =
+              attemptsUsed >= 2 && !isFullyCorrect;
+            const isShowingSolution = Boolean(
+              revealedSolutionSlides[historyKey]
             );
-
-            const handleApplySolution = () => {
-              if (!slide.options) return;
-              const correctIds = slide.options
-                .filter((o) => o.isCorrect)
-                .map((o) => o.id);
-              setSelectedIds(correctIds);
-              // Clear the side solution state so the side answers disappear once filled in
-              setRevealedSolutionSlides((prev) => {
-                const next = { ...prev };
-                delete next[historyKey];
-                return next;
-              });
-
-              if (slide.problemFormat === 'mt' && slide.matchingPairs) {
-                const solvedMt: Record<string, string> = {};
-                slide.matchingPairs.forEach((p) => {
-                  solvedMt[p.id] = p.right;
-                });
-                setMtSelections(solvedMt);
-                savedMtBySlideRef.current[historyKey] = solvedMt;
-              }
-              if (slide.problemFormat === 'dd-bucket' && slide.ddBucketConfig) {
-                const solvedBuckets: Record<string, string> = {};
-                slide.ddBucketConfig.items.forEach((i) => {
-                  solvedBuckets[i.id] = i.correctCategory;
-                });
-                setDdBucketSelections(solvedBuckets);
-                savedBucketBySlideRef.current[historyKey] = solvedBuckets;
-              }
-              if (slide.problemFormat === 'dd-order' && slide.ddOrderConfig) {
-                const solvedOrder = [...slide.ddOrderConfig.items]
-                  .sort((a, b) => a.correctPosition - b.correctPosition)
-                  .map((i) => i.id);
-                setDdOrderedIds(solvedOrder);
-                savedOrderBySlideRef.current[historyKey] = solvedOrder;
-              }
-              onSubmitAnswer(module.id, slide.id, correctIds);
-              triggerConfettiBreeze();
-            };
-
-            const pFormat = slide.problemFormat || 'mc';
 
             return (
               <div className="space-y-4">
-                <div>
-                  <h2 className="text-base sm:text-lg font-normal text-slate-100 leading-relaxed">
-                    {slide.questionPrompt || slide.title}
-                  </h2>
-                  {slide.helperInstruction && pFormat !== 'tf' && (
-                    <p className="text-xs text-cyan-300/90 mt-1 font-normal">
-                      {slide.helperInstruction}
-                    </p>
-                  )}
-                </div>
-
-                {/* Subtle Non-Exam Helper Actions */}
-                {existingRecord && (!isFullyCorrect || isShowingSolution) && (
-                  <div
-                    className={`flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 transition-colors ${
-                      wrongGlowActive && !isShowingSolution
-                        ? 'bg-rose-500/12 border-rose-400/35'
-                        : 'bg-white/5 border-white/10'
-                    }`}
-                  >
-                    <span
-                      className={`text-xs font-normal ${
-                        wrongGlowActive && !isShowingSolution
-                          ? 'text-rose-200'
-                          : 'text-slate-300'
-                      }`}
-                    >
-                      {isShowingSolution
-                        ? 'Right answers shown on the side — tap Fill Solution to fill them in.'
-                        : 'That’s not quite right — please select another.'}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ListChecks className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-emerald-300">
+                      {pFormat === 'tf' && 'True or False'}
+                      {pFormat === 'mt' && 'Matching'}
+                      {pFormat === 'dd-bucket' && 'Sort into Categories'}
+                      {pFormat === 'dd-order' && 'Put in Order'}
+                      {pFormat === 'mc' && 'Multiple Choice'}
+                      {pFormat === 'sa' && 'Select All That Apply'}
                     </span>
+                  </div>
 
-                    <div className="flex flex-wrap items-center gap-2 shrink-0">
-                      {canOfferSolution && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWrongGlowActive(false);
-                            setRevealedSolutionSlides((prev) => ({
-                              ...prev,
-                              [historyKey]: true,
-                            }));
-                          }}
-                          className="min-h-[32px] px-2.5 py-1 rounded-lg bg-amber-400/90 text-slate-950 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                        >
-                          <Sparkles className="h-3.5 w-3.5" />
-                          <span>Show Solution</span>
-                        </button>
-                      )}
+                  <div className="flex items-center gap-2">
+                    {canShowSolutionButton && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setRevealedSolutionSlides((prev) => ({
+                            ...prev,
+                            [historyKey]: !prev[historyKey],
+                          }))
+                        }
+                        className="px-3 py-1 rounded-full bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-xs font-medium text-amber-200 transition-colors cursor-pointer"
+                      >
+                        {isShowingSolution ? 'Hide Solution' : 'Show Solution'}
+                      </button>
+                    )}
 
-                      {isShowingSolution && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWrongGlowActive(false);
-                            handleApplySolution();
-                          }}
-                          className="min-h-[32px] px-2.5 py-1 rounded-lg bg-emerald-400 text-slate-950 text-xs font-medium flex items-center gap-1 cursor-pointer"
-                        >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          <span>Fill Solution</span>
-                        </button>
-                      )}
-
+                    {existingRecord && (
                       <button
                         type="button"
                         onClick={() => {
+                          onResetSingleQuestion(module.id, slide.id);
+                          setSelectedIds([]);
+                          setMtSelections({});
+                          setDdBucketSelections({});
                           delete savedMtBySlideRef.current[historyKey];
                           delete savedBucketBySlideRef.current[historyKey];
                           delete savedOrderBySlideRef.current[historyKey];
-                          setMtSelections({});
-                          setDdBucketSelections({});
-                          if (
-                            slide.problemFormat === 'dd-order' &&
-                            slide.ddOrderConfig
-                          ) {
-                            const items = slide.ddOrderConfig.items;
-                            const resetOptionIds = ddOrderedIds.map(
-                              (itemId, pos) => {
-                                const found = items.find(
-                                  (i) => i.id === itemId
-                                )!;
-                                return found.correctPosition === pos
-                                  ? found.correctOptionId
-                                  : found.wrongOptionId;
-                              }
-                            );
-                            setSelectedIds(resetOptionIds);
-                          } else {
-                            setSelectedIds([]);
-                          }
-                          setWrongGlowActive(false);
                           setRevealedSolutionSlides((prev) => {
                             const next = { ...prev };
                             delete next[historyKey];
                             return next;
                           });
-                          onResetSingleQuestion(module.id, slide.id);
                         }}
-                        className="min-h-[32px] px-2.5 py-1 rounded-lg bg-slate-950/70 border border-white/15 text-xs font-normal text-slate-300 flex items-center gap-1 cursor-pointer"
+                        className="px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-[11px] font-normal text-slate-300 flex items-center gap-1 cursor-pointer"
                       >
-                        <RotateCcw className="h-3.5 w-3.5" />
+                        <RotateCcw className="h-3 w-3" />
                         <span>Reset</span>
                       </button>
-                    </div>
+                    )}
                   </div>
-                )}
+                </div>
 
-                {/* FORMAT 1: TRUE / FALSE MULTI-STATEMENT (TF) */}
+                <h2 className="text-sm sm:text-base font-medium text-white leading-snug">
+                  {slide.questionPrompt || slide.title}
+                </h2>
+
+                {/* FORMAT 1: TRUE / FALSE STATEMENTS */}
                 {pFormat === 'tf' && slide.tfStatements && (
                   <div className="space-y-2.5">
                     {slide.tfStatements.map((st) => {
@@ -1510,20 +1391,20 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                       return (
                         <div
                           key={st.id}
-                          className="rounded-2xl bg-slate-950/85 border border-white/12 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          className="rounded-2xl bg-slate-900/80 border border-white/12 p-3.5 space-y-2.5"
                         >
-                          <div className="flex items-center justify-between sm:justify-start gap-2.5 min-w-0">
-                            <p className="text-xs sm:text-sm font-normal text-slate-100">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="text-xs sm:text-sm text-slate-100 leading-relaxed">
                               {st.text}
                             </p>
                             {isShowingSolution && (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
-                                → {st.isTrue ? 'True' : 'False'}
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                                Solution: {st.isTrue ? 'True' : 'False'}
                               </span>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="grid grid-cols-2 gap-2">
                             <button
                               type="button"
                               onClick={() =>
@@ -1534,10 +1415,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                                   true
                                 )
                               }
-                              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              className={`min-h-[38px] rounded-full border text-xs font-medium transition-all cursor-pointer ${
                                 pickedTrue
-                                  ? 'bg-emerald-400 text-slate-950 border-emerald-300'
-                                  : 'bg-white/5 text-slate-300 border-white/12 hover:bg-white/10'
+                                  ? 'bg-emerald-500/25 border-emerald-400 text-white'
+                                  : 'bg-slate-950/70 border-white/12 text-slate-300 hover:text-white'
                               }`}
                             >
                               True
@@ -1552,10 +1433,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                                   false
                                 )
                               }
-                              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                              className={`min-h-[38px] rounded-full border text-xs font-medium transition-all cursor-pointer ${
                                 pickedFalse
-                                  ? 'bg-cyan-400 text-slate-950 border-cyan-300'
-                                  : 'bg-white/5 text-slate-300 border-white/12 hover:bg-white/10'
+                                  ? 'bg-cyan-500/25 border-cyan-400 text-white'
+                                  : 'bg-slate-950/70 border-white/12 text-slate-300 hover:text-white'
                               }`}
                             >
                               False
@@ -1567,110 +1448,102 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   </div>
                 )}
 
-                {/* FORMAT 2: MATCHING PAIRS (MT) */}
-                {pFormat === 'mt' && slide.matchingPairs && (
-                  <div className="space-y-2.5">
-                    {slide.matchingPairs.map((pair) => {
-                      const currentPick = mtSelections[pair.id] || '';
-                      const allRights = Array.from(
-                        new Set(slide.matchingPairs!.map((p) => p.right))
-                      );
-                      return (
-                        <div
-                          key={pair.id}
-                          className="rounded-2xl bg-slate-950/85 border border-white/12 p-3.5 space-y-2"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs sm:text-sm font-normal text-emerald-300">
-                              {pair.left}
-                            </span>
-                            {isShowingSolution && (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300">
-                                → {pair.right}
+                {/* FORMAT 2: MATCHING PAIRS */}
+                {pFormat === 'mt' && slide.matchingPairs && (() => {
+                  const uniqueRightChoices = Array.from(
+                    new Set(slide.matchingPairs.map((c) => c.right))
+                  );
+                  return (
+                    <div className="space-y-2.5">
+                      {slide.matchingPairs.map((pair) => {
+                        const currentVal = mtSelections[pair.id] || '';
+                        return (
+                          <div
+                            key={pair.id}
+                            className="rounded-2xl bg-slate-900/80 border border-white/12 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                          >
+                            <div className="space-y-1">
+                              <span className="text-xs sm:text-sm font-medium text-white block">
+                                {pair.left}
                               </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {allRights.map((rText, rIdx) => {
-                              const isChosen = currentPick === rText;
-                              return (
-                                <button
-                                  key={rIdx}
-                                  type="button"
-                                  onClick={() =>
-                                    handleMtPick(
-                                      pair.id,
-                                      rText,
-                                      pair.right,
-                                      pair.correctOptionId,
-                                      pair.wrongOptionId
-                                    )
-                                  }
-                                  className={`px-2.5 py-1.5 rounded-xl text-left text-xs font-normal border transition-all cursor-pointer ${
-                                    isChosen
-                                      ? 'bg-cyan-400 text-slate-950 font-medium border-cyan-300'
-                                      : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
-                                  }`}
-                                >
-                                  {rText}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                              {isShowingSolution && (
+                                <span className="inline-block px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[11px] font-medium text-amber-300">
+                                  → {pair.right}
+                                </span>
+                              )}
+                            </div>
 
-                {/* FORMAT 3: DRAG/SORT INTO CATEGORY BUCKETS (DD-BUCKET) */}
+                            <select
+                              aria-label={`Match for ${pair.left}`}
+                              value={currentVal}
+                              onChange={(e) =>
+                                handleMtPick(
+                                  pair.id,
+                                  e.target.value,
+                                  pair.right,
+                                  pair.correctOptionId,
+                                  pair.wrongOptionId
+                                )
+                              }
+                              className="rounded-xl bg-slate-950 border border-white/20 px-3 py-2 text-xs text-white focus:border-emerald-400 focus:outline-none sm:max-w-[260px]"
+                            >
+                              <option value="">Select match...</option>
+                              {uniqueRightChoices.map((choiceText, idx) => (
+                                <option key={idx} value={choiceText}>
+                                  {choiceText}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* FORMAT 3: DRAG/SORT INTO BUCKETS */}
                 {pFormat === 'dd-bucket' && slide.ddBucketConfig && (
                   <div className="space-y-2.5">
                     {slide.ddBucketConfig.items.map((item) => {
-                      const currentCat = ddBucketSelections[item.id] || '';
+                      const pickedCat = ddBucketSelections[item.id] || '';
                       return (
                         <div
                           key={item.id}
-                          className="rounded-2xl bg-slate-950/85 border border-white/12 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          className="rounded-2xl bg-slate-900/80 border border-white/12 p-3.5 space-y-2.5"
                         >
-                          <div className="flex items-center justify-between sm:justify-start gap-2.5">
-                            <p className="text-xs sm:text-sm font-normal text-slate-100">
+                          <div className="flex items-start justify-between gap-3">
+                            <span className="text-xs sm:text-sm text-slate-100">
                               {item.label}
-                            </p>
+                            </span>
                             {isShowingSolution && (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
+                              <span className="px-2 py-0.5 rounded-md bg-amber-400/20 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
                                 → {item.correctCategory}
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-wrap gap-1.5 shrink-0">
-                            {Array.from(
-                              new Set(slide.ddBucketConfig!.categories)
-                            ).map((cat) => {
-                              const active = currentCat === cat;
-                              return (
-                                <button
-                                  key={cat}
-                                  type="button"
-                                  onClick={() =>
-                                    handleDdBucketPick(
-                                      item.id,
-                                      cat,
-                                      item.correctCategory,
-                                      item.correctOptionId,
-                                      item.wrongOptionId
-                                    )
-                                  }
-                                  className={`px-3 py-1.5 rounded-xl text-xs font-normal border transition-all cursor-pointer ${
-                                    active
-                                      ? 'bg-emerald-400 text-slate-950 font-medium border-emerald-300'
-                                      : 'bg-white/5 text-slate-300 border-white/12 hover:bg-white/10'
-                                  }`}
-                                >
-                                  {cat}
-                                </button>
-                              );
-                            })}
+                          <div className="flex flex-wrap gap-2">
+                            {slide.ddBucketConfig!.categories.map((cat) => (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() =>
+                                  handleDdBucketPick(
+                                    item.id,
+                                    cat,
+                                    item.correctCategory,
+                                    item.correctOptionId,
+                                    item.wrongOptionId
+                                  )
+                                }
+                                className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all cursor-pointer ${
+                                  pickedCat === cat
+                                    ? 'bg-emerald-500/25 border-emerald-400 text-white'
+                                    : 'bg-slate-950/70 border-white/12 text-slate-300 hover:text-white'
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            ))}
                           </div>
                         </div>
                       );
@@ -1678,30 +1551,31 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   </div>
                 )}
 
-                {/* FORMAT 4: PUT STEPS IN SEQUENCE ORDER (DD-ORDER) */}
+                {/* FORMAT 4: SEQUENCE ORDER */}
                 {pFormat === 'dd-order' && slide.ddOrderConfig && (
                   <div className="space-y-2">
                     {ddOrderedIds.map((itemId, idx) => {
-                      const item = slide.ddOrderConfig!.items.find(
+                      const itemObj = slide.ddOrderConfig!.items.find(
                         (i) => i.id === itemId
                       );
-                      if (!item) return null;
+                      if (!itemObj) return null;
+
                       return (
                         <div
-                          key={item.id}
-                          className="rounded-2xl bg-slate-950/85 border border-white/12 p-3 flex items-center justify-between gap-3"
+                          key={itemObj.id}
+                          className="rounded-2xl bg-slate-900/80 border border-white/12 p-3 flex items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="h-7 w-7 rounded-lg bg-emerald-500/20 border border-emerald-400/30 font-mono-tabular text-xs font-medium text-emerald-300 flex items-center justify-center shrink-0">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 font-mono-tabular text-xs font-semibold text-emerald-300">
                               {idx + 1}
                             </span>
-                            <div className="flex flex-wrap items-center gap-2 min-w-0">
-                              <p className="text-xs sm:text-sm font-normal text-slate-100">
-                                {item.label}
-                              </p>
+                            <div className="min-w-0">
+                              <span className="text-xs sm:text-sm text-white block">
+                                {itemObj.label}
+                              </span>
                               {isShowingSolution && (
-                                <span className="px-2 py-0.5 rounded-md bg-amber-400/15 border border-amber-400/40 text-[11px] font-medium text-amber-300 whitespace-nowrap shrink-0">
-                                  → Step #{item.correctPosition + 1}
+                                <span className="text-[11px] font-medium text-amber-300">
+                                  Correct position: #{itemObj.correctPosition + 1}
                                 </span>
                               )}
                             </div>
@@ -1712,19 +1586,19 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                               type="button"
                               disabled={idx === 0}
                               onClick={() => handleDdMoveOrder(idx, -1)}
-                              aria-label="Move step up"
-                              className="p-1.5 rounded-lg bg-white/8 hover:bg-white/15 disabled:opacity-30 text-white cursor-pointer"
+                              aria-label="Move up"
+                              className="p-1.5 rounded-full bg-white/8 hover:bg-white/15 disabled:opacity-30 text-white cursor-pointer"
                             >
-                              <ArrowUp className="h-4 w-4" />
+                              <ArrowUp className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
                               disabled={idx === ddOrderedIds.length - 1}
                               onClick={() => handleDdMoveOrder(idx, 1)}
-                              aria-label="Move step down"
-                              className="p-1.5 rounded-lg bg-white/8 hover:bg-white/15 disabled:opacity-30 text-white cursor-pointer"
+                              aria-label="Move down"
+                              className="p-1.5 rounded-full bg-white/8 hover:bg-white/15 disabled:opacity-30 text-white cursor-pointer"
                             >
-                              <ArrowDown className="h-4 w-4" />
+                              <ArrowDown className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -1812,10 +1686,10 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                     disabled={isFullyCorrect}
                     aria-disabled={isFullyCorrect}
                     onClick={handleCheckAnswer}
-                    className={`w-full sm:w-auto min-h-[42px] px-6 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${
+                    className={`w-full sm:w-auto min-h-[42px] px-6 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all ${
                       isFullyCorrect
                         ? 'bg-emerald-500/30 text-emerald-200/75 border border-emerald-400/30 shadow-none opacity-80 cursor-default pointer-events-none'
-                        : 'bg-gradient-to-r from-emerald-400 to-cyan-400 text-slate-950 shadow-md hover:brightness-110 cursor-pointer'
+                        : 'bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 shadow-md hover:brightness-110 cursor-pointer'
                     }`}
                   >
                     {isFullyCorrect ? 'Got it!' : 'Submit'}
@@ -1826,8 +1700,8 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
           })()}
         </div>
 
-        {/* Bottom Slide Navigation Bar (No auto-start of next lesson) */}
-        <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+        {/* Bottom Slide Navigation Bar */}
+        <div className="mt-6 pt-4 border-t border-white/[0.08] flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => {
@@ -1837,7 +1711,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 onChangeSlideIndex(Math.max(0, safeSlideIndex - 1));
               }
             }}
-            className="min-h-[42px] px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/15 text-xs font-medium text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="min-h-[42px] px-4.5 py-2 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-xs font-semibold text-white flex items-center gap-1.5 transition-colors cursor-pointer"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             <span>Back</span>
@@ -1860,7 +1734,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   setSubView('lessons');
                 }
               }}
-              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[42px] px-5 py-2 rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>Next</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -1873,7 +1747,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                   Math.min(module.slides.length - 1, safeSlideIndex + 1)
                 )
               }
-              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[42px] px-5 py-2 rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <span>Next</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -1882,7 +1756,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
             <button
               type="button"
               onClick={handleFinishLesson}
-              className="min-h-[42px] px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[42px] px-5 py-2 rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-semibold shadow-md hover:brightness-105 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
               <span>Finish Lesson</span>
@@ -1913,7 +1787,6 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
               </h3>
             </div>
 
-            {/* Subtle Module Badge Incorporation on Completing the Last Lesson of a Module */}
             {(isFinalLessonInModule || lessonProgress.progressPercent >= 100) && (
               <div className="rounded-2xl bg-[#181B20]/95 border border-emerald-400/35 p-3 flex items-center gap-3 text-left shadow-inner">
                 <div className="h-16 w-16 shrink-0 rounded-2xl bg-[#1E1E1E] border border-white/10 flex items-center justify-center p-0.5 overflow-hidden">
@@ -1953,7 +1826,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 setShowLessonComplete(false);
                 setSubView('lessons');
               }}
-              className="w-full min-h-[44px] px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-bold shadow-md hover:brightness-105 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              className="w-full min-h-[44px] px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-300 via-teal-300 to-sky-300 text-slate-950 text-xs sm:text-sm font-bold shadow-md hover:brightness-105 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <span>Back to Module</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -1993,7 +1866,7 @@ export const ModulePlayerView: React.FC<ModulePlayerViewProps> = ({
                 setShowCelebration(false);
                 onCompleteModule(module.id);
               }}
-              className="w-full min-h-[46px] px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-300 to-sky-300 text-slate-950 text-sm font-bold shadow-lg hover:brightness-105 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full min-h-[46px] px-5 py-3 rounded-full bg-gradient-to-r from-emerald-300 to-sky-300 text-slate-950 text-sm font-bold shadow-lg hover:brightness-105 transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Continue</span>
               <ArrowRight className="h-4 w-4" />

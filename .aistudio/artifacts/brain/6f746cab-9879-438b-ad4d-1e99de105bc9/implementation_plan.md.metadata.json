@@ -1,6 +1,0 @@
-{
-  "summary":  "Implementation plan covering all 7 owner-requested changes: hiding credit card previews in the list view until clicked, rendering realistic card face designs in the detail modal, adding a Checking filter in the Banks tab, rewording 'stall' to 'time penalty' in Badge Battle, locking the Badge Battle upfront until 70% of module lessons are completed, replacing exam-like Correct/Incorrect labels with a green screen border glow and submit-button confetti, and switching module/card text to smaller regular-weight typography.",
-  "updatedAt":  "2026-10-27T17:36:29.277279678Z",
-  "requestFeedback":  true,
-  "userFacing":  true
-}
